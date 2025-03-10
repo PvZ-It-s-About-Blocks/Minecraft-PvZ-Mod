@@ -1,12 +1,12 @@
-mod_id = project.hasProperty('mod_id') ? project.mod_id : 'pvz_blocks'
-mod_version = project.hasProperty('mod_version') ? project.mod_version : '1.0.0'
-
 plugins {
     id 'eclipse'
     id 'idea'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
 }
+
+mod_id = project.hasProperty('mod_id') ? project.mod_id : 'pvz_blocks'
+mod_version = project.hasProperty('mod_version') ? project.mod_version : '1.0.0'
 
 version = mod_version
 group = mod_group_id
