@@ -1,0 +1,32 @@
+# Ignore Gradle build files
+/.gradle/
+/build/
+/out/
+
+# Ignore IntelliJ IDEA and Eclipse project files
+/.idea/
+/*.iml
+*.ipr
+*.iws
+/.vscode/
+/bin/
+/run/
+run/
+run-data/
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore logs and caches
+logs/
+*.log
+*.lock
+
+# Ignore Minecraft files
+.minecraft/
+config/
+saves/
+mods/
+resourcepacks/
+shaderpacks/
