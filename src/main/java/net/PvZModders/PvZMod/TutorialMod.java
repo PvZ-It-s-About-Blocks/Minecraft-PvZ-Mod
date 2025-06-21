@@ -1,8 +1,8 @@
-package net.kaupenjoe.tutorialmod;
+package net.PvZModders.PvZMod;
 
 import com.mojang.logging.LogUtils;
-import net.kaupenjoe.tutorialmod.item.ModCreativeModTabs;
-import net.kaupenjoe.tutorialmod.item.ModItems;
+import net.PvZModders.PvZMod.item.ModCreativeModTabs;
+import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;

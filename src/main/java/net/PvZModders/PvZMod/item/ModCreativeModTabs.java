@@ -1,6 +1,6 @@
-package net.kaupenjoe.tutorialmod.item;
+package net.PvZModders.PvZMod.item;
 
-import net.kaupenjoe.tutorialmod.TutorialMod;
+import net.PvZModders.PvZMod.TutorialMod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;

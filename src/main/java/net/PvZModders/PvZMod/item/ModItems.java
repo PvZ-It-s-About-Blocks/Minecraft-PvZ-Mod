@@ -1,6 +1,6 @@
-package net.kaupenjoe.tutorialmod.item;
+package net.PvZModders.PvZMod.item;
 
-import net.kaupenjoe.tutorialmod.TutorialMod;
+import net.PvZModders.PvZMod.TutorialMod;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
