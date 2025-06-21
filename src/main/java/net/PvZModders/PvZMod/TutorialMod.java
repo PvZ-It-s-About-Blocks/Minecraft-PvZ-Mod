@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod;
 
 import com.mojang.logging.LogUtils;
+import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -28,7 +29,7 @@ public class TutorialMod {
         ModCreativeModTabs.register(modEventBus);
 
         ModItems.register(modEventBus);
-
+        ModEntities.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
 
         MinecraftForge.EVENT_BUS.register(this);

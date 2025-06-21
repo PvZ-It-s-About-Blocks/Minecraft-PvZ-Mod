@@ -1,4 +1,4 @@
-C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19_mapped_parchment_2023.06.26-1.20.1\forge-1.20.1-47.0.19_mapped_parchment_2023.06.26-1.20.1.jar
+C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19_mapped_parchment_2023.06.26-1.20.1\forge-1.20.1-47.0.19_mapped_parchment_2023.06.26-1.20.1-recomp.jar
 C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_repo\versions\1.20.1\client-extra.jar
 C:\Users\Owner\.gradle\caches\modules-2\files-2.1\net.minecraftforge\fmlearlydisplay\1.20.1-47.0.19\553be3670c16dc98b9f6dbf3df5468d9652c3e2c\fmlearlydisplay-1.20.1-47.0.19.jar
 C:\Users\Owner\.gradle\caches\modules-2\files-2.1\net.minecraftforge\javafmllanguage\1.20.1-47.0.19\11325ab7cc62ad123c202b63216724c0a9af1a21\javafmllanguage-1.20.1-47.0.19.jar
