@@ -1,6 +1,5 @@
 {
-  "item.tutorialmod.sapphire": "Sapphire",
-  "item.tutorialmod.raw_sapphire": "Raw Sapphire",
-
-  "creativetab.tutorial_tab": "Sapphire Tutorial Tab"
+  "item.tutorialmod.sunflower_seed_packet": "Sunflower Seed Packet",
+  "item.tutorialmod.peashooter_seed_packet": "Peashooter Seed Packet",
+  "creativetab.pvz_tab": "PvZ: It's About Blocks"
 }
