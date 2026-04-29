@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod;
 import com.mojang.logging.LogUtils;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
+import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
@@ -37,7 +38,7 @@ public class TutorialMod {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-
+        LOGGER.info("Loaded {} garden definitions for progression", GardenDefinitions.all().size());
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
