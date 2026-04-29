@@ -1,9 +1,12 @@
 package net.PvZModders.PvZMod;
 
 import com.mojang.logging.LogUtils;
+import net.PvZModders.PvZMod.block.ModBlocks;
+import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
+import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -17,48 +20,45 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
-// The value here should match an entry in the META-INF/mods.toml file
-@Mod(TutorialMod.MOD_ID)
-public class TutorialMod {
-    public static final String MOD_ID = "tutorialmod";
+@Mod(PvZ2Mod.MOD_ID)
+public class PvZ2Mod {
+    public static final String MOD_ID = "pvz2mod";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public TutorialMod() {
+    public PvZ2Mod() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModCreativeModTabs.register(modEventBus);
-
+        ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
         ModEntities.register(modEventBus);
-        modEventBus.addListener(this::commonSetup);
 
-        MinecraftForge.EVENT_BUS.register(this);
+        modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-
+        LOGGER.info("Loaded {} garden definitions for progression", GardenDefinitions.all().size());
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if(event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
-            event.accept(ModItems.SAPPHIRE);
-            event.accept(ModItems.RAW_SAPPHIRE);
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            event.accept(ModItems.SUNFLOWER_SEED_PACKET);
+            event.accept(ModItems.PEASHOOTER_SEED_PACKET);
+            event.accept(ModItems.GARDEN_PLOTTER);
         }
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
-
     }
 
-    // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
     @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-
         }
     }
 }

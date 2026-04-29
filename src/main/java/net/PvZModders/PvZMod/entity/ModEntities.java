@@ -1,6 +1,6 @@
 package net.PvZModders.PvZMod.entity;
 
-import net.PvZModders.PvZMod.TutorialMod;
+import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.SunflowerEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -11,7 +11,7 @@ import net.minecraftforge.registries.RegistryObject;
 
 public class ModEntities {
     public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
-            DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, TutorialMod.MOD_ID);
+            DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, PvZ2Mod.MOD_ID);
 
 /*    public static final RegistryObject<EntityType<SunflowerEntity>> Sunflower =
             ENTITY_TYPES.register(name: "Sunflower", () -> EntityType.Builder.of(SunflowerEntity::new, MobCategory.CREATURE))
