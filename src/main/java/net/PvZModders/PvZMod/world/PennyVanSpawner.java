@@ -2,9 +2,12 @@ package net.PvZModders.PvZMod.world;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.item.ModItems;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -29,12 +32,14 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class PennyVanSpawner {
-    private static final int PENNY_VAN_SPAWN_DELAY_TICKS = 20 * 120;
+    private static final int PENNY_VAN_SPAWN_DELAY_TICKS = 20 * 30;
     private static final int PENNY_VAN_SPAWN_HEIGHT = 20;
+    private static final double PENNY_VAN_DESCENT_SPEED = 0.35D;
 
     private static UUID firstPlayerId;
     private static boolean pennyVanSpawned;
     private static Sniffer activePennyVan;
+    private static BlockPos activePennyVanLandingPos;
     private static final Set<UUID> REWARDED_PLAYERS = new HashSet<>();
 
     private PennyVanSpawner() {
@@ -67,6 +72,7 @@ public final class PennyVanSpawner {
         }
 
         if (activePennyVan != null && activePennyVan.isAlive() && activePennyVan.level() == overworld) {
+            movePennyVanTowardGround();
             spawnVanMarkerParticles(overworld, activePennyVan.position());
         }
     }
@@ -101,7 +107,7 @@ public final class PennyVanSpawner {
     }
 
     private static void spawnPennyVan(ServerLevel level, ServerPlayer player) {
-        BlockPos landingPos = player.blockPosition().relative(player.getDirection(), 6);
+        BlockPos landingPos = findGroundSpawnPos(level, player);
         BlockPos spawnPos = landingPos.above(PENNY_VAN_SPAWN_HEIGHT);
 
         Sniffer pennyVan = EntityType.SNIFFER.create(level);
@@ -115,10 +121,80 @@ public final class PennyVanSpawner {
         pennyVan.setPersistenceRequired();
         pennyVan.setInvulnerable(true);
         pennyVan.setNoAi(true);
-        pennyVan.setDeltaMovement(0.0D, -2.0D, 0.0D);
+        pennyVan.setNoGravity(true);
+        pennyVan.setDeltaMovement(Vec3.ZERO);
         level.addFreshEntity(pennyVan);
+        player.sendSystemMessage(Component.literal("penny spawned"));
 
         activePennyVan = pennyVan;
+        activePennyVanLandingPos = landingPos;
+    }
+
+    private static void movePennyVanTowardGround() {
+        if (activePennyVanLandingPos == null) {
+            return;
+        }
+
+        double landingY = activePennyVanLandingPos.getY();
+        Vec3 position = activePennyVan.position();
+        if (position.y <= landingY) {
+            activePennyVan.setPos(position.x, landingY, position.z);
+            activePennyVan.setDeltaMovement(Vec3.ZERO);
+            activePennyVan.setNoGravity(false);
+            activePennyVanLandingPos = null;
+            return;
+        }
+
+        activePennyVan.setDeltaMovement(0.0D, -PENNY_VAN_DESCENT_SPEED, 0.0D);
+        activePennyVan.setPos(position.x, Math.max(landingY, position.y - PENNY_VAN_DESCENT_SPEED), position.z);
+    }
+
+    private static BlockPos findGroundSpawnPos(ServerLevel level, ServerPlayer player) {
+        BlockPos playerPos = player.blockPosition();
+        Direction direction = player.getDirection();
+        BlockPos preferredPos = playerPos.relative(direction, 6);
+
+        BlockPos groundPos = findStandablePos(level, preferredPos, playerPos.getY());
+        if (groundPos != null) {
+            return groundPos;
+        }
+
+        for (int radius = 3; radius <= 8; radius++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    if (Math.abs(dx) != radius && Math.abs(dz) != radius) {
+                        continue;
+                    }
+
+                    groundPos = findStandablePos(level, playerPos.offset(dx, 0, dz), playerPos.getY());
+                    if (groundPos != null) {
+                        return groundPos;
+                    }
+                }
+            }
+        }
+
+        return playerPos.above();
+    }
+
+    private static BlockPos findStandablePos(ServerLevel level, BlockPos xzPos, int centerY) {
+        int minY = Math.max(level.getMinBuildHeight() + 1, centerY - 8);
+        int maxY = Math.min(level.getMaxBuildHeight() - 2, centerY + 8);
+
+        for (int y = maxY; y >= minY; y--) {
+            BlockPos floorPos = new BlockPos(xzPos.getX(), y - 1, xzPos.getZ());
+            BlockPos feetPos = floorPos.above();
+            BlockPos headPos = feetPos.above();
+            BlockState floorState = level.getBlockState(floorPos);
+
+            if (floorState.isFaceSturdy(level, floorPos, Direction.UP)
+                    && level.getBlockState(feetPos).isAir()
+                    && level.getBlockState(headPos).isAir()) {
+                return feetPos;
+            }
+        }
+
+        return null;
     }
 
     private static void spawnVanMarkerParticles(ServerLevel level, Vec3 vanPos) {

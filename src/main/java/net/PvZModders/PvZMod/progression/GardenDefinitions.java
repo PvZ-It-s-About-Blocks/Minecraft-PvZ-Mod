@@ -5,6 +5,7 @@ import net.minecraft.world.level.biome.Biomes;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public final class GardenDefinitions {
     private static final Map<GardenId, GardenDefinition> DEFINITIONS = new EnumMap<>(GardenId.class);
@@ -49,5 +50,11 @@ public final class GardenDefinitions {
 
     public static Map<GardenId, GardenDefinition> all() {
         return Map.copyOf(DEFINITIONS);
+    }
+
+    public static Optional<GardenDefinition> forBiome(net.minecraft.resources.ResourceKey<net.minecraft.world.level.biome.Biome> biome) {
+        return DEFINITIONS.values().stream()
+                .filter(definition -> definition.biome().equals(biome))
+                .findFirst();
     }
 }
