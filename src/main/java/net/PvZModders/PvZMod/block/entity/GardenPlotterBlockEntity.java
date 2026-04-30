@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3f;
@@ -16,11 +17,11 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         super(ModBlockEntities.GARDEN_PLOTTER_BE.get(), pos, state);
     }
 
-    public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, GardenPlotterBlockEntity be) {
-        if (level.getGameTime() % 10 != 0) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, GardenPlotterBlockEntity be) {
+        if (!(level instanceof ServerLevel serverLevel) || serverLevel.getGameTime() % 10 != 0) {
             return;
         }
-        be.showValidationParticles(level, pos);
+        be.showValidationParticles(serverLevel, pos);
     }
 
     private void showValidationParticles(ServerLevel level, BlockPos origin) {
