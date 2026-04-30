@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod;
 import com.mojang.logging.LogUtils;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
+import net.PvZModders.PvZMod.client.screen.BiomeDetectorScreen;
 import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
@@ -58,6 +59,7 @@ public class PvZ2Mod {
             event.accept(ModItems.SUNFLOWER_SEED_PACKET);
             event.accept(ModItems.PEASHOOTER_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
+            event.accept(ModItems.BIOME_DETECTOR);
         }
     }
 
@@ -76,6 +78,7 @@ public class PvZ2Mod {
             event.enqueueWork(() -> {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
                 MenuScreens.register(ModMenuTypes.GARDEN_TOTEM.get(), GardenTotemScreen::new);
+                MenuScreens.register(ModMenuTypes.BIOME_DETECTOR.get(), BiomeDetectorScreen::new);
             });
         }
 

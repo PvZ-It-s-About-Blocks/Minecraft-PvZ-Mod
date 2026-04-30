@@ -91,9 +91,9 @@ public final class OriginalGardenWaves {
             case 10 -> List.of(new WaveReward(
                     WaveRewardType.ITEM_UNLOCK,
                     "biome_scouter",
-                    "New Biome Scouter and Crafting Recipe",
-                    "minecraft:compass",
-                    "Penny gives a biome scouter that will point toward a selected biome."
+                    "New Biome Detector and Crafting Recipe",
+                    "pvz2mod:biome_detector",
+                    "Penny gives a biome detector that will point toward a selected biome."
             ));
             case 12 -> List.of(new WaveReward(
                     WaveRewardType.PLANT_UNLOCK,

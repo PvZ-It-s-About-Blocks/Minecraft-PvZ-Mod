@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.block.entity;
 
 import net.PvZModders.PvZMod.progression.GardenDefinition;
+import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.block.ModBlocks;
@@ -11,6 +12,7 @@ import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -197,15 +199,20 @@ public class GardenPlotterBlockEntity extends BlockEntity {
 
         ValidationResult validation = validateGarden(level, origin);
         Optional<ResourceKey<Biome>> biomeKey = level.getBiome(origin).unwrapKey();
-        String biomeName = biomeKey
-                .map(key -> key.location().toString())
-                .orElse("unknown");
-        GardenDefinition garden = biomeKey
-                .flatMap(GardenDefinitions::forBiome)
+        Optional<GardenBiomeCategory> category = biomeKey.flatMap(GardenBiomeCategory::forBiome);
+        String biomeName = category
+                .map(GardenBiomeCategory::displayName)
+                .orElse("Unknown");
+        GardenDefinition garden = category
+                .map(GardenBiomeCategory::gardenId)
+                .map(GardenDefinitions::get)
+                .or(() -> biomeKey.flatMap(GardenDefinitions::forBiome))
                 .orElse(GardenDefinitions.get(GardenId.INITIAL_PLAINS));
-        ChatFormatting color = validation.valid() ? ChatFormatting.GREEN : ChatFormatting.RED;
+        TextColor color = validation.valid()
+                ? TextColor.fromRgb(category.map(GardenBiomeCategory::color).orElse(0x2F9F3F))
+                : TextColor.fromRgb(0xD33F3F);
         Component message = Component.literal("Current Biome: " + biomeName + ", Garden: " + garden.displayName())
-                .withStyle(color);
+                .withStyle(style -> style.withColor(color));
 
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(origin.getX() + 0.5D, origin.getY() + 0.5D, origin.getZ() + 0.5D) <= 144.0D) {

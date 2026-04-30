@@ -2,6 +2,7 @@
   "item.pvz2mod.sunflower_seed_packet": "Sunflower Seed Packet",
   "item.pvz2mod.peashooter_seed_packet": "Peashooter Seed Packet",
   "item.pvz2mod.garden_plotter": "Garden Plotter",
+  "item.pvz2mod.biome_detector": "Biome Detector",
   "creativetab.pvz_tab": "PvZ: It's About Blocks",
   "tooltip.pvz2mod.garden_plotter.line1": "Place in a flat 15x15 area to validate a garden plot.",
   "tooltip.pvz2mod.garden_plotter.line2": "Ground must be dirt or sand. Green = valid, Red = invalid."

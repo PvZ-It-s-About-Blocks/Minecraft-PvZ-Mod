@@ -14,6 +14,8 @@ public class ModMenuTypes {
 
     public static final RegistryObject<MenuType<GardenTotemMenu>> GARDEN_TOTEM =
             MENU_TYPES.register("garden_totem", () -> new MenuType<>(GardenTotemMenu::new, FeatureFlags.VANILLA_SET));
+    public static final RegistryObject<MenuType<BiomeDetectorMenu>> BIOME_DETECTOR =
+            MENU_TYPES.register("biome_detector", () -> new MenuType<>(BiomeDetectorMenu::new, FeatureFlags.VANILLA_SET));
 
     public static void register(IEventBus eventBus) {
         MENU_TYPES.register(eventBus);

@@ -90,11 +90,11 @@ public final class GardenDefinitions {
         register(new GardenDefinition(
                 GardenId.JURASSIC_MARSH,
                 "Jurassic Marsh Garden",
-                Biomes.BADLANDS,
+                Biomes.SWAMP,
                 List.of("primal_peashooter", "primal_wall_nut", "perfume_shroom", "primal_sunflower", "primal_potato_mine"),
                 List.of("triceratops_schematic"),
                 10
-        ));
+        ), Biomes.MANGROVE_SWAMP);
         register(new GardenDefinition(
                 GardenId.BIG_WAVE_BEACH,
                 "Big Wave Beach Garden",

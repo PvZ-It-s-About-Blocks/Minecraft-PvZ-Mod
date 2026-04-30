@@ -20,6 +20,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.SUNFLOWER_SEED_PACKET.get());
                         output.accept(ModItems.PEASHOOTER_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
+                        output.accept(ModItems.BIOME_DETECTOR.get());
                     })
                     .build());
 
