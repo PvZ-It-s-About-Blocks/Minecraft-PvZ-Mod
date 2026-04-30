@@ -41,6 +41,11 @@ public class GardenTotemBlock extends BaseEntityBlock {
         }
 
         if (level.getBlockEntity(pos) instanceof GardenTotemBlockEntity gardenTotem && player instanceof ServerPlayer serverPlayer) {
+            if (player.isShiftKeyDown()) {
+                gardenTotem.startTotemDefense(serverPlayer);
+                return InteractionResult.CONSUME;
+            }
+
             gardenTotem.openGardenMenu(serverPlayer);
             return InteractionResult.CONSUME;
         }

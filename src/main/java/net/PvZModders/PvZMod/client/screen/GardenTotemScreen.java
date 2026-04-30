@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,6 +22,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private static final int TAB_SIZE = 30;
     private static final int TAB_SPACING = 4;
     private static final int TAB_COUNT = 3;
+    private static final int START_WAVE_BUTTON = 0;
     private int selectedTab = TAB_PROGRESS;
     private int selectedWave = 1;
 
@@ -55,6 +57,14 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             }
 
             if (selectedTab == TAB_PROGRESS) {
+                if (isMouseOverStartWave(mouseX, mouseY)) {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if (minecraft.gameMode != null) {
+                        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, START_WAVE_BUTTON);
+                    }
+                    return true;
+                }
+
                 int hoveredWave = getHoveredWave(mouseX, mouseY);
                 if (hoveredWave > 0) {
                     selectedWave = hoveredWave;
@@ -129,7 +139,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             int nodeX = startX + (index % columns) * spacing;
             int nodeY = startY + (index / columns) * 40;
             if (index % columns != 0) {
-                drawLine(guiGraphics, nodeX - 10, nodeY + 9, nodeX - 1, nodeY + 9);
+                drawWaveLine(guiGraphics, nodeX - 10, nodeY + 9, nodeX - 1, nodeY + 9, wave.wave());
             }
 
             guiGraphics.drawString(font, String.valueOf(wave.wave()), nodeX + 3, nodeY - 12, 0x3F3F3F, false);
@@ -140,7 +150,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         }
 
         GardenWaveDefinition selected = OriginalGardenWaves.get(selectedWave);
-        guiGraphics.drawString(font, Component.literal("Scans: " + selected.scanText()).withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 164, 0x3F3F3F, false);
+        renderSelectedWaveBox(guiGraphics, x, y, selected);
     }
 
     private void renderRewardIcons(GuiGraphics guiGraphics, GardenWaveDefinition wave, int x, int y) {
@@ -152,12 +162,41 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private void drawWaveNode(GuiGraphics guiGraphics, int x, int y, int wave) {
-        boolean reached = wave <= menu.currentWave();
+        boolean completed = wave < menu.currentWave();
+        boolean current = wave == menu.currentWave();
         boolean selected = wave == selectedWave;
-        int border = selected ? 0xFF6B5100 : 0xFF1F1F1F;
-        int fill = reached ? 0xFFC99A00 : 0xFFC6C6C6;
+        int border = selected ? 0xFFFFFFFF : 0xFF1F1F1F;
+        int fill = completed ? 0xFF3F9F3F : current ? 0xFF3366CC : 0xFF363636;
         guiGraphics.fill(x, y, x + 18, y + 18, border);
         guiGraphics.fill(x + 3, y + 3, x + 15, y + 15, fill);
+    }
+
+    private void drawWaveLine(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int wave) {
+        int color = wave <= menu.currentWave() ? 0xFFBFBFBF : 0xFF050505;
+        guiGraphics.fill(x1, y1 - 1, x2, y2 + 1, color);
+    }
+
+    private void renderSelectedWaveBox(GuiGraphics guiGraphics, int x, int y, GardenWaveDefinition selected) {
+        int boxX = x + 20;
+        int boxY = y + 142;
+        int boxW = imageWidth - 40;
+        int boxH = 30;
+        boolean completed = selected.wave() < menu.currentWave();
+        boolean current = selected.wave() == menu.currentWave();
+        int fill = completed ? 0x883F9F3F : current ? 0x883366CC : 0x88363636;
+        int border = completed ? 0xFF3F9F3F : current ? 0xFF3366CC : 0xFF111111;
+
+        guiGraphics.fill(boxX, boxY, boxX + boxW, boxY + boxH, border);
+        guiGraphics.fill(boxX + 2, boxY + 2, boxX + boxW - 2, boxY + boxH - 2, fill);
+        guiGraphics.drawString(font, Component.literal("Scans: " + selected.scanText()).withStyle(ChatFormatting.DARK_GRAY), boxX + 6, boxY + 6, 0x3F3F3F, false);
+
+        if (current && !menu.waveActive()) {
+            int buttonX = boxX + boxW - 82;
+            int buttonY = boxY + 8;
+            guiGraphics.fill(buttonX, buttonY, buttonX + 76, buttonY + 16, 0xFF1F1F1F);
+            guiGraphics.fill(buttonX + 2, buttonY + 2, buttonX + 74, buttonY + 14, 0xFF3366CC);
+            guiGraphics.drawString(font, "Start Wave?", buttonX + 7, buttonY + 5, 0xFFFFFF, false);
+        }
     }
 
     private int getHoveredWave(double mouseX, double mouseY) {
@@ -182,6 +221,18 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(itemId)));
     }
 
+    private boolean isMouseOverStartWave(double mouseX, double mouseY) {
+        if (selectedWave != menu.currentWave() || menu.waveActive()) {
+            return false;
+        }
+
+        int boxX = leftPos + 20;
+        int boxY = topPos + 142;
+        int buttonX = boxX + imageWidth - 40 - 82;
+        int buttonY = boxY + 8;
+        return mouseX >= buttonX && mouseX < buttonX + 76 && mouseY >= buttonY && mouseY < buttonY + 16;
+    }
+
     private void renderPortalTab(GuiGraphics guiGraphics, int x, int y) {
         guiGraphics.drawString(font, Component.literal("Portal").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
         guiGraphics.drawString(font, Component.literal("Current garden").withStyle(ChatFormatting.DARK_GREEN), x + 70, y + 96, 0x2F6F2F, false);
@@ -200,10 +251,6 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         guiGraphics.fill(x, y, x + 28, y + 28, border);
         guiGraphics.fill(x + 3, y + 3, x + 25, y + 25, fill);
         guiGraphics.renderItem(icon, x + 6, y + 6);
-    }
-
-    private void drawLine(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2) {
-        guiGraphics.fill(x1, y1 - 1, x2, y2 + 1, 0xFF1F1F1F);
     }
 
     private boolean isMouseOverTab(int tab, double mouseX, double mouseY) {

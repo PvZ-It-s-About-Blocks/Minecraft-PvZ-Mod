@@ -8,20 +8,27 @@ import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
+import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
+import net.PvZModders.PvZMod.progression.waves.WaveSpawnGroup;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -29,7 +36,12 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public class GardenTotemBlockEntity extends BlockEntity {
@@ -44,6 +56,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private String gardenName = "Original Garden";
     private String biomeName = "unknown";
     private final GardenWaveProgress waveProgress = new GardenWaveProgress();
+    private final Set<UUID> activeWaveEntityIds = new HashSet<>();
 
     public GardenTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GARDEN_TOTEM_BE.get(), pos, state);
@@ -59,6 +72,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.ensureInitialized(serverLevel, pos);
         be.tickSinkingPlotter(serverLevel, pos);
         be.tickGardenTotem(serverLevel, pos);
+        be.tickWaveObjective(serverLevel);
     }
 
     public void initializeFromPlotter(ServerLevel level, BlockPos pos) {
@@ -78,9 +92,17 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     public void openGardenMenu(ServerPlayer player) {
         player.openMenu(new SimpleMenuProvider(
-                (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory, waveProgress.currentWave(), waveProgress.waveActive()),
+                (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory, this),
                 Component.literal(gardenName + " Totem").withStyle(ChatFormatting.GREEN)
         ));
+    }
+
+    public int getCurrentWave() {
+        return waveProgress.currentWave();
+    }
+
+    public boolean isWaveActive() {
+        return waveProgress.waveActive();
     }
 
     public void startTotemDefense(ServerPlayer player) {
@@ -94,7 +116,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         waveProgress.startWave();
-        spawnWavePlaceholder(player.serverLevel(), waveProgress.currentWave());
+        List<WaveSpawnDirection> directions = spawnWave(player.serverLevel(), OriginalGardenWaves.get(waveProgress.currentWave()));
+        showWaveDirectionTitle(player, directions);
         setChanged();
     }
 
@@ -113,8 +136,118 @@ public class GardenTotemBlockEntity extends BlockEntity {
         player.sendSystemMessage(Component.literal("Tutorial unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
     }
 
-    private void spawnWavePlaceholder(ServerLevel level, int wave) {
-        // TODO: Spawn and balance zombies for this wave around the Totem.
+    private List<WaveSpawnDirection> spawnWave(ServerLevel level, GardenWaveDefinition definition) {
+        activeWaveEntityIds.clear();
+        List<WaveSpawnDirection> waveDirections = new ArrayList<>();
+
+        for (WaveSpawnGroup group : definition.spawnGroups()) {
+            List<WaveSpawnDirection> directions = resolveDirections(level, group);
+            waveDirections.addAll(directions);
+            spawnGroup(level, group, directions);
+        }
+
+        return waveDirections.stream().distinct().toList();
+    }
+
+    private List<WaveSpawnDirection> resolveDirections(ServerLevel level, WaveSpawnGroup group) {
+        if (!group.usesRandomDirections()) {
+            return group.fixedDirections();
+        }
+
+        List<WaveSpawnDirection> directions = new ArrayList<>(List.of(WaveSpawnDirection.values()));
+        for (int i = directions.size() - 1; i > 0; i--) {
+            Collections.swap(directions, i, level.random.nextInt(i + 1));
+        }
+        return directions.subList(0, Math.max(1, Math.min(group.directionCount(), directions.size())));
+    }
+
+    private void spawnGroup(ServerLevel level, WaveSpawnGroup group, List<WaveSpawnDirection> directions) {
+        Optional<EntityType<?>> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(new ResourceLocation(group.entityTypeId()));
+        if (entityType.isEmpty()) {
+            return;
+        }
+
+        int perDirection = Math.max(1, (int) Math.ceil(group.count() / (double) directions.size()));
+        int spawned = 0;
+        for (WaveSpawnDirection direction : directions) {
+            for (int i = 0; i < perDirection && spawned < group.count(); i++) {
+                BlockPos spawnPos = findSpawnPos(level, direction, i);
+                Entity entity = entityType.get().create(level);
+                if (entity == null) {
+                    continue;
+                }
+
+                entity.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D, 0.0F, 0.0F);
+                if (entity instanceof Mob mob) {
+                    mob.setPersistenceRequired();
+                }
+                level.addFreshEntity(entity);
+                activeWaveEntityIds.add(entity.getUUID());
+                spawned++;
+            }
+        }
+    }
+
+    private BlockPos findSpawnPos(ServerLevel level, WaveSpawnDirection direction, int index) {
+        int distance = 18 + level.random.nextInt(6);
+        int sideOffset = (index % 2 == 0 ? 1 : -1) * (2 + (index / 2) * 2);
+        BlockPos base = direction.offsetFrom(worldPosition, distance, sideOffset);
+        return level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, base);
+    }
+
+    private void showWaveDirectionTitle(ServerPlayer player, List<WaveSpawnDirection> directions) {
+        String directionText = formatDirections(directions);
+        Component message = Component.literal("The Zombies are coming from the " + directionText + "!").withStyle(ChatFormatting.LIGHT_PURPLE);
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 10));
+        player.connection.send(new ClientboundSetTitleTextPacket(message));
+    }
+
+    private String formatDirections(List<WaveSpawnDirection> directions) {
+        if (directions.isEmpty()) {
+            return "Unknown";
+        }
+        if (directions.size() == 1) {
+            return directions.get(0).displayName();
+        }
+
+        List<String> names = directions.stream().map(WaveSpawnDirection::displayName).toList();
+        return String.join(", ", names.subList(0, names.size() - 1)) + " and " + names.get(names.size() - 1);
+    }
+
+    private void tickWaveObjective(ServerLevel level) {
+        if (!waveProgress.waveActive()) {
+            return;
+        }
+
+        activeWaveEntityIds.removeIf(entityId -> {
+            Entity entity = level.getEntity(entityId);
+            return entity == null || !entity.isAlive();
+        });
+
+        if (activeWaveEntityIds.isEmpty()) {
+            completeCurrentWaveForNearbyPlayers(level);
+        }
+    }
+
+    private void completeCurrentWaveForNearbyPlayers(ServerLevel level) {
+        ServerPlayer nearestPlayer = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (ServerPlayer player : level.players()) {
+            double distance = player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D);
+            if (distance < nearestDistance && distance <= 4096.0D) {
+                nearestDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+
+        if (nearestPlayer != null) {
+            completeCurrentWave(nearestPlayer);
+        } else {
+            int completedWave = waveProgress.currentWave();
+            waveProgress.completeCurrentWave();
+            waveProgress.markRewardClaimed(completedWave);
+            setChanged();
+        }
     }
 
     private void grantMilestoneRewards(ServerPlayer player, int wave) {
@@ -235,6 +368,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (tag.contains("WaveProgress")) {
             waveProgress.load(tag.getCompound("WaveProgress"));
         }
+        activeWaveEntityIds.clear();
+        ListTag activeEntities = tag.getList("ActiveWaveEntities", net.minecraft.nbt.Tag.TAG_STRING);
+        for (int i = 0; i < activeEntities.size(); i++) {
+            activeWaveEntityIds.add(UUID.fromString(activeEntities.getString(i)));
+        }
     }
 
     @Override
@@ -248,6 +386,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
         CompoundTag waveTag = new CompoundTag();
         waveProgress.save(waveTag);
         tag.put("WaveProgress", waveTag);
+        ListTag activeEntities = new ListTag();
+        for (UUID entityId : activeWaveEntityIds) {
+            activeEntities.add(net.minecraft.nbt.StringTag.valueOf(entityId.toString()));
+        }
+        tag.put("ActiveWaveEntities", activeEntities);
     }
 
     @Override

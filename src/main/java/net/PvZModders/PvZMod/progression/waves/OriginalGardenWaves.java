@@ -21,9 +21,22 @@ public final class OriginalGardenWaves {
     private static List<GardenWaveDefinition> createWaves() {
         List<GardenWaveDefinition> waves = new ArrayList<>();
         for (int wave = 1; wave <= MAX_WAVE; wave++) {
-            waves.add(new GardenWaveDefinition(wave, scanTextFor(wave), rewardsFor(wave)));
+            waves.add(new GardenWaveDefinition(
+                    wave,
+                    scanTextFor(wave),
+                    rewardsFor(wave),
+                    wave == MAX_WAVE ? WaveObjectiveType.BOSS : WaveObjectiveType.KILL_ALL_ZOMBIES,
+                    spawnGroupsFor(wave),
+                    wave == MAX_WAVE
+            ));
         }
         return List.copyOf(waves);
+    }
+
+    private static List<WaveSpawnGroup> spawnGroupsFor(int wave) {
+        int zombieCount = Math.min(45, 3 + wave + (wave / 5) * 2);
+        int directionCount = wave >= 30 ? 4 : wave >= 20 ? 3 : wave >= 10 ? 2 : 1;
+        return List.of(new WaveSpawnGroup("minecraft:zombie", zombieCount, directionCount, List.of()));
     }
 
     private static String scanTextFor(int wave) {
