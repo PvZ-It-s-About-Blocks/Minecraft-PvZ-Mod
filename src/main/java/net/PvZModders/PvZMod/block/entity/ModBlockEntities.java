@@ -17,6 +17,11 @@ public class ModBlockEntities {
                     .of(GardenPlotterBlockEntity::new, ModBlocks.GARDEN_PLOTTER.get())
                     .build(null));
 
+    public static final RegistryObject<BlockEntityType<GardenTotemBlockEntity>> GARDEN_TOTEM_BE =
+            BLOCK_ENTITIES.register("garden_totem_be", () -> BlockEntityType.Builder
+                    .of(GardenTotemBlockEntity::new, ModBlocks.GARDEN_TOTEM.get())
+                    .build(null));
+
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }

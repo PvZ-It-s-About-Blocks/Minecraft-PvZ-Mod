@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.block;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.block.custom.GardenPlotterBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -20,6 +21,14 @@ public class ModBlocks {
                     .mapColor(MapColor.PLANT)
                     .strength(0.2F)
                     .noCollission()
+                    .sound(SoundType.GRASS)));
+
+    public static final RegistryObject<Block> GARDEN_TOTEM = BLOCKS.register("garden_totem",
+            () -> new GardenTotemBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT)
+                    .strength(0.2F)
+                    .noCollission()
+                    .noOcclusion()
                     .sound(SoundType.GRASS)));
 
     public static void register(IEventBus eventBus) {

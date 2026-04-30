@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.block.entity;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.block.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -33,13 +34,9 @@ public class GardenPlotterBlockEntity extends BlockEntity {
     private static final int LENGTH = 15;
     private static final int PREVIEW_REFRESH_TICKS = 20;
     private static final int STATUS_REFRESH_TICKS = 40;
-    private static final double TOTEM_RISE_SPEED = 0.08D;
 
     private final List<UUID> previewDisplayIds = new ArrayList<>();
     private UUID promptDisplayId;
-    private UUID totemDisplayId;
-    private boolean gardenCreated;
-    private double totemY;
 
     public GardenPlotterBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GARDEN_PLOTTER_BE.get(), pos, state);
@@ -47,13 +44,6 @@ public class GardenPlotterBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, GardenPlotterBlockEntity be) {
         if (!(level instanceof ServerLevel serverLevel) || serverLevel.getGameTime() % 10 != 0) {
-            return;
-        }
-
-        if (be.gardenCreated) {
-            be.clearValidationPreview(serverLevel);
-            be.clearPromptDisplay(serverLevel);
-            be.tickGardenTotem(serverLevel, pos);
             return;
         }
 
@@ -105,10 +95,6 @@ public class GardenPlotterBlockEntity extends BlockEntity {
 
     private CompoundTag createPreviewDisplayTag(BlockState previewState) {
         return createBlockDisplayTag(previewState, 0.0F, 0.03F, 0.0F, 1.0F, 0.04F, 1.0F);
-    }
-
-    private CompoundTag createTotemDisplayTag() {
-        return createBlockDisplayTag(Blocks.TALL_GRASS.defaultBlockState(), 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private CompoundTag createBlockDisplayTag(BlockState previewState, float translateX, float translateY, float translateZ, float scaleX, float scaleY, float scaleZ) {
@@ -214,33 +200,20 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
         }
-        if (gardenCreated) {
-            openGardenMenu(player);
-            return true;
-        }
-
         ValidationResult validation = validateGarden(serverLevel, worldPosition);
         if (!validation.valid()) {
             player.displayClientMessage(Component.literal("Garden area is invalid").withStyle(ChatFormatting.RED), true);
             return false;
         }
 
-        gardenCreated = true;
-        totemY = worldPosition.getY() - 1.0D;
         clearValidationPreview(serverLevel);
         clearPromptDisplay(serverLevel);
-        spawnGardenTotem(serverLevel, worldPosition);
-        setChanged();
+        serverLevel.setBlock(worldPosition, ModBlocks.GARDEN_TOTEM.get().defaultBlockState(), 3);
+        if (serverLevel.getBlockEntity(worldPosition) instanceof GardenTotemBlockEntity gardenTotem) {
+            gardenTotem.initializeFromPlotter(serverLevel, worldPosition);
+        }
         player.displayClientMessage(Component.literal("Garden created").withStyle(ChatFormatting.GREEN), true);
         return true;
-    }
-
-    public void openGardenMenu(ServerPlayer player) {
-        player.sendSystemMessage(Component.literal("Garden totem menu coming soon").withStyle(ChatFormatting.GREEN));
-    }
-
-    public boolean isGardenCreated() {
-        return gardenCreated;
     }
 
     private ValidationResult validateGarden(ServerLevel level, BlockPos origin) {
@@ -272,58 +245,11 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         return new ValidationResult(valid, validTiles);
     }
 
-    private void spawnGardenTotem(ServerLevel level, BlockPos origin) {
-        Display.BlockDisplay totem = EntityType.BLOCK_DISPLAY.create(level);
-        if (totem == null) {
-            return;
-        }
-
-        totem.load(createTotemDisplayTag());
-        totem.setPos(origin.getX(), totemY, origin.getZ());
-        totem.setNoGravity(true);
-        level.addFreshEntity(totem);
-        totemDisplayId = totem.getUUID();
-    }
-
-    private void tickGardenTotem(ServerLevel level, BlockPos origin) {
-        Entity entity = totemDisplayId == null ? null : level.getEntity(totemDisplayId);
-        if (entity == null) {
-            totemY = Math.min(totemY, origin.getY());
-            spawnGardenTotem(level, origin);
-            return;
-        }
-
-        if (totemY < origin.getY()) {
-            totemY = Math.min(origin.getY(), totemY + TOTEM_RISE_SPEED);
-            entity.setPos(origin.getX(), totemY, origin.getZ());
-        }
-    }
-
-    @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
-        gardenCreated = tag.getBoolean("GardenCreated");
-        totemY = tag.contains("TotemY") ? tag.getDouble("TotemY") : worldPosition.getY();
-    }
-
-    @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        tag.putBoolean("GardenCreated", gardenCreated);
-        tag.putDouble("TotemY", totemY);
-    }
-
     @Override
     public void setRemoved() {
         if (level instanceof ServerLevel serverLevel) {
             clearValidationPreview(serverLevel);
             clearPromptDisplay(serverLevel);
-            if (totemDisplayId != null) {
-                Entity entity = serverLevel.getEntity(totemDisplayId);
-                if (entity != null) {
-                    entity.discard();
-                }
-            }
         }
         super.setRemoved();
     }
