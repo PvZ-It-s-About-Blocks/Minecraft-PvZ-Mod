@@ -14,19 +14,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -75,37 +72,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public void openGardenMenu(ServerPlayer player) {
-        SimpleContainer container = new SimpleContainer(27) {
-            @Override
-            public boolean canPlaceItem(int index, ItemStack stack) {
-                return false;
-            }
-
-            @Override
-            public ItemStack removeItem(int index, int count) {
-                return ItemStack.EMPTY;
-            }
-
-            @Override
-            public ItemStack removeItemNoUpdate(int index) {
-                return ItemStack.EMPTY;
-            }
-        };
-        container.setItem(10, namedItem(Items.EXPERIENCE_BOTTLE, "Progress", "Linear garden progress placeholder"));
-        container.setItem(13, namedItem(Items.ENDER_PEARL, "Portal", gardenName + " - current garden"));
-        container.setItem(16, namedItem(Items.GRASS_BLOCK, "Planter", "Plant growth locations placeholder"));
-
         player.openMenu(new SimpleMenuProvider(
-                (containerId, inventory, p) -> ChestMenu.threeRows(containerId, inventory, container),
+                (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory),
                 Component.literal(gardenName + " Totem").withStyle(ChatFormatting.GREEN)
         ));
-    }
-
-    private ItemStack namedItem(net.minecraft.world.item.Item item, String name, String description) {
-        ItemStack stack = new ItemStack(item);
-        stack.setHoverName(Component.literal(name).withStyle(ChatFormatting.GREEN));
-        stack.getOrCreateTag().putString("GardenTotemDescription", description);
-        return stack;
     }
 
     private void ensureInitialized(ServerLevel level, BlockPos pos) {

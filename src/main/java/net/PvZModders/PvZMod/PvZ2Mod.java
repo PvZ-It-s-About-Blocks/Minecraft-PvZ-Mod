@@ -3,13 +3,16 @@ package net.PvZModders.PvZMod;
 import com.mojang.logging.LogUtils;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
+import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
+import net.PvZModders.PvZMod.menu.ModMenuTypes;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
+import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -38,6 +41,7 @@ public class PvZ2Mod {
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModEntities.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
@@ -69,7 +73,10 @@ public class PvZ2Mod {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            event.enqueueWork(() -> net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new));
+            event.enqueueWork(() -> {
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
+                MenuScreens.register(ModMenuTypes.GARDEN_TOTEM.get(), GardenTotemScreen::new);
+            });
         }
 
         @SubscribeEvent
