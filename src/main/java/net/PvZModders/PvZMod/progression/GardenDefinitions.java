@@ -17,7 +17,7 @@ public final class GardenDefinitions {
     static {
         register(new GardenDefinition(
                 GardenId.INITIAL_PLAINS,
-                "Initial Garden",
+                "Original Garden",
                 Biomes.PLAINS,
                 List.of("peashooter", "sunflower", "wall_nut", "potato_mine"),
                 List.of("garden_bot_auto_planter"),

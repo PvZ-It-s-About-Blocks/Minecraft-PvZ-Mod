@@ -4,6 +4,10 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
+import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
+import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
+import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -37,8 +41,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private double totemY;
     private double sinkingPlotterY;
     private boolean initialized;
-    private String gardenName = "Initial Garden";
+    private String gardenName = "Original Garden";
     private String biomeName = "unknown";
+    private final GardenWaveProgress waveProgress = new GardenWaveProgress();
 
     public GardenTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GARDEN_TOTEM_BE.get(), pos, state);
@@ -73,9 +78,56 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     public void openGardenMenu(ServerPlayer player) {
         player.openMenu(new SimpleMenuProvider(
-                (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory),
+                (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory, waveProgress.currentWave(), waveProgress.waveActive()),
                 Component.literal(gardenName + " Totem").withStyle(ChatFormatting.GREEN)
         ));
+    }
+
+    public void startTotemDefense(ServerPlayer player) {
+        if (waveProgress.waveActive()) {
+            player.displayClientMessage(Component.literal("Totem defense already active").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+
+        if (waveProgress.currentWave() == 1) {
+            grantStarterPlants(player);
+        }
+
+        waveProgress.startWave();
+        spawnWavePlaceholder(player.serverLevel(), waveProgress.currentWave());
+        setChanged();
+    }
+
+    public void completeCurrentWave(ServerPlayer player) {
+        if (!waveProgress.waveActive()) {
+            return;
+        }
+
+        int completedWave = waveProgress.currentWave();
+        waveProgress.completeCurrentWave();
+        grantMilestoneRewards(player, completedWave);
+        setChanged();
+    }
+
+    private void grantStarterPlants(ServerPlayer player) {
+        player.sendSystemMessage(Component.literal("Tutorial unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
+    }
+
+    private void spawnWavePlaceholder(ServerLevel level, int wave) {
+        // TODO: Spawn and balance zombies for this wave around the Totem.
+    }
+
+    private void grantMilestoneRewards(ServerPlayer player, int wave) {
+        GardenWaveDefinition definition = OriginalGardenWaves.get(wave);
+        if (definition.rewards().isEmpty() || waveProgress.isRewardClaimed(wave)) {
+            return;
+        }
+
+        waveProgress.markRewardClaimed(wave);
+        for (WaveReward reward : definition.rewards()) {
+            player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
+        }
+        // TODO: Apply plant unlocks, item unlocks, upgrades, and completion flags to real player/garden progression.
     }
 
     private void ensureInitialized(ServerLevel level, BlockPos pos) {
@@ -180,6 +232,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         biomeName = tag.getString("BiomeName");
         totemY = tag.contains("TotemY") ? tag.getDouble("TotemY") : worldPosition.getY();
         sinkingPlotterY = tag.contains("SinkingPlotterY") ? tag.getDouble("SinkingPlotterY") : worldPosition.getY();
+        if (tag.contains("WaveProgress")) {
+            waveProgress.load(tag.getCompound("WaveProgress"));
+        }
     }
 
     @Override
@@ -190,6 +245,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         tag.putString("BiomeName", biomeName);
         tag.putDouble("TotemY", totemY);
         tag.putDouble("SinkingPlotterY", sinkingPlotterY);
+        CompoundTag waveTag = new CompoundTag();
+        waveProgress.save(waveTag);
+        tag.put("WaveProgress", waveTag);
     }
 
     @Override

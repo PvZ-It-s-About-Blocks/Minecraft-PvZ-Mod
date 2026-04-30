@@ -1,10 +1,15 @@
 package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
+import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
+import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
+import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -13,7 +18,11 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private static final int TAB_PROGRESS = 0;
     private static final int TAB_PORTAL = 1;
     private static final int TAB_PLANTER = 2;
+    private static final int TAB_SIZE = 30;
+    private static final int TAB_SPACING = 4;
+    private static final int TAB_COUNT = 3;
     private int selectedTab = TAB_PROGRESS;
+    private int selectedWave = 1;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -32,7 +41,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(font, title, 14, 10, 0x3F3F3F, false);
+        guiGraphics.drawString(font, title, 14, 10, 0x1F8F2F, false);
     }
 
     @Override
@@ -41,6 +50,14 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             for (int tab = 0; tab < 3; tab++) {
                 if (isMouseOverTab(tab, mouseX, mouseY)) {
                     selectedTab = tab;
+                    return true;
+                }
+            }
+
+            if (selectedTab == TAB_PROGRESS) {
+                int hoveredWave = getHoveredWave(mouseX, mouseY);
+                if (hoveredWave > 0) {
+                    selectedWave = hoveredWave;
                     return true;
                 }
             }
@@ -66,20 +83,20 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private void renderTabs(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
-        renderTab(guiGraphics, x, y, TAB_PROGRESS, new ItemStack(Items.EXPERIENCE_BOTTLE), "Progress", mouseX, mouseY);
+        renderTab(guiGraphics, x, y, TAB_PROGRESS, new ItemStack(Items.EXPERIENCE_BOTTLE), "Waves", mouseX, mouseY);
         renderTab(guiGraphics, x, y, TAB_PORTAL, new ItemStack(Items.ENDER_PEARL), "Portal", mouseX, mouseY);
         renderTab(guiGraphics, x, y, TAB_PLANTER, new ItemStack(Items.GRASS_BLOCK), "Planter", mouseX, mouseY);
     }
 
     private void renderTab(GuiGraphics guiGraphics, int x, int y, int tab, ItemStack icon, String tooltip, int mouseX, int mouseY) {
-        int tabX = x + 20 + tab * 34;
+        int tabX = getTabX(x, tab);
         int tabY = y - 24;
         boolean selected = selectedTab == tab;
         boolean hovered = isMouseOverTab(tab, mouseX, mouseY);
         int border = selected ? 0xFF1F1F1F : 0xFF555555;
         int fill = selected ? 0xFFC6C6C6 : hovered ? 0xFFB0B0B0 : 0xFF8F8F8F;
 
-        guiGraphics.fill(tabX, tabY, tabX + 30, tabY + 28, border);
+        guiGraphics.fill(tabX, tabY, tabX + TAB_SIZE, tabY + 28, border);
         guiGraphics.fill(tabX + 3, tabY + 3, tabX + 27, tabY + 27, fill);
         guiGraphics.renderItem(icon, tabX + 7, tabY + 7);
 
@@ -99,14 +116,70 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private void renderProgressTab(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.drawString(font, Component.literal("Progress").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        int startX = x + 64;
-        int centerY = y + 105;
-        drawNode(guiGraphics, startX, centerY, new ItemStack(Items.GRASS_BLOCK), true);
-        drawLine(guiGraphics, startX + 26, centerY + 12, startX + 86, centerY + 12);
-        drawNode(guiGraphics, startX + 90, centerY, new ItemStack(Items.WHEAT_SEEDS), false);
-        drawLine(guiGraphics, startX + 116, centerY + 12, startX + 176, centerY + 12);
-        drawNode(guiGraphics, startX + 180, centerY, new ItemStack(Items.SUNFLOWER), false);
+        guiGraphics.drawString(font, Component.literal("Waves").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
+        guiGraphics.drawString(font, Component.literal("Current: " + menu.currentWave() + "/30" + (menu.waveActive() ? " Active" : " Ready")).withStyle(ChatFormatting.DARK_GREEN), x + 176, y + 48, 0x2F6F2F, false);
+
+        int startX = x + 24;
+        int startY = y + 78;
+        int spacing = 18;
+        int columns = 15;
+
+        for (GardenWaveDefinition wave : OriginalGardenWaves.all()) {
+            int index = wave.wave() - 1;
+            int nodeX = startX + (index % columns) * spacing;
+            int nodeY = startY + (index / columns) * 40;
+            if (index % columns != 0) {
+                drawLine(guiGraphics, nodeX - 10, nodeY + 9, nodeX - 1, nodeY + 9);
+            }
+
+            guiGraphics.drawString(font, String.valueOf(wave.wave()), nodeX + 3, nodeY - 12, 0x3F3F3F, false);
+            if (!wave.rewards().isEmpty()) {
+                renderRewardIcons(guiGraphics, wave, nodeX, nodeY - 30);
+            }
+            drawWaveNode(guiGraphics, nodeX, nodeY, wave.wave());
+        }
+
+        GardenWaveDefinition selected = OriginalGardenWaves.get(selectedWave);
+        guiGraphics.drawString(font, Component.literal("Scans: " + selected.scanText()).withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 164, 0x3F3F3F, false);
+    }
+
+    private void renderRewardIcons(GuiGraphics guiGraphics, GardenWaveDefinition wave, int x, int y) {
+        int iconX = x;
+        for (WaveReward reward : wave.rewards()) {
+            guiGraphics.renderItem(itemFromId(reward.iconItemId()), iconX, y);
+            iconX += 16;
+        }
+    }
+
+    private void drawWaveNode(GuiGraphics guiGraphics, int x, int y, int wave) {
+        boolean reached = wave <= menu.currentWave();
+        boolean selected = wave == selectedWave;
+        int border = selected ? 0xFF6B5100 : 0xFF1F1F1F;
+        int fill = reached ? 0xFFC99A00 : 0xFFC6C6C6;
+        guiGraphics.fill(x, y, x + 18, y + 18, border);
+        guiGraphics.fill(x + 3, y + 3, x + 15, y + 15, fill);
+    }
+
+    private int getHoveredWave(double mouseX, double mouseY) {
+        int startX = leftPos + 24;
+        int startY = topPos + 78;
+        int spacing = 18;
+        int columns = 15;
+
+        for (int wave = 1; wave <= OriginalGardenWaves.MAX_WAVE; wave++) {
+            int index = wave - 1;
+            int nodeX = startX + (index % columns) * spacing;
+            int nodeY = startY + (index / columns) * 40;
+            if (mouseX >= nodeX && mouseX < nodeX + 18 && mouseY >= nodeY && mouseY < nodeY + 18) {
+                return wave;
+            }
+        }
+
+        return -1;
+    }
+
+    private ItemStack itemFromId(String itemId) {
+        return new ItemStack(BuiltInRegistries.ITEM.get(new ResourceLocation(itemId)));
     }
 
     private void renderPortalTab(GuiGraphics guiGraphics, int x, int y) {
@@ -134,8 +207,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private boolean isMouseOverTab(int tab, double mouseX, double mouseY) {
-        int tabX = leftPos + 20 + tab * 34;
+        int tabX = getTabX(leftPos, tab);
         int tabY = topPos - 24;
-        return mouseX >= tabX && mouseX < tabX + 30 && mouseY >= tabY && mouseY < tabY + 28;
+        return mouseX >= tabX && mouseX < tabX + TAB_SIZE && mouseY >= tabY && mouseY < tabY + 28;
+    }
+
+    private int getTabX(int x, int tab) {
+        int totalWidth = TAB_COUNT * TAB_SIZE + (TAB_COUNT - 1) * TAB_SPACING;
+        return x + (imageWidth - totalWidth) / 2 + tab * (TAB_SIZE + TAB_SPACING);
     }
 }
