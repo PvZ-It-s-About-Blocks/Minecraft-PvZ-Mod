@@ -1,6 +1,8 @@
 package net.PvZModders.PvZMod.world;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.ModEntities;
+import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -13,8 +15,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.animal.sniffer.Sniffer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
@@ -27,10 +27,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Spawns the first Penny Van event using a Sniffer placeholder.
- * Replace EntityType.SNIFFER with a custom Penny Van entity when the model/renderer is ready.
- */
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class PennyVanSpawner {
     private static final int PENNY_VAN_SPAWN_DELAY_TICKS = 20 * 10;
@@ -39,7 +35,7 @@ public final class PennyVanSpawner {
 
     private static UUID firstPlayerId;
     private static boolean pennyVanSpawned;
-    private static Sniffer activePennyVan;
+    private static PennyVanEntity activePennyVan;
     private static BlockPos activePennyVanLandingPos;
     private static final Set<UUID> REWARDED_PLAYERS = new HashSet<>();
 
@@ -89,7 +85,7 @@ public final class PennyVanSpawner {
         if (event.getLevel().isClientSide()) {
             return;
         }
-        if (!(event.getTarget() instanceof Sniffer sniffer) || activePennyVan == null || sniffer.getId() != activePennyVan.getId()) {
+        if (!(event.getTarget() instanceof PennyVanEntity pennyVan) || activePennyVan == null || pennyVan.getId() != activePennyVan.getId()) {
             return;
         }
 
@@ -116,14 +112,14 @@ public final class PennyVanSpawner {
         BlockPos landingPos = findGroundSpawnPos(level, player);
         BlockPos spawnPos = landingPos.above(PENNY_VAN_SPAWN_HEIGHT);
 
-        Sniffer pennyVan = EntityType.SNIFFER.create(level);
+        PennyVanEntity pennyVan = ModEntities.PENNY_VAN.get().create(level);
         if (pennyVan == null) {
             return;
         }
 
         pennyVan.setPos(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D);
         pennyVan.setCustomNameVisible(true);
-        pennyVan.setCustomName(net.minecraft.network.chat.Component.literal("Penny Van (Placeholder)"));
+        pennyVan.setCustomName(net.minecraft.network.chat.Component.literal("Penny Van"));
         pennyVan.setPersistenceRequired();
         pennyVan.setInvulnerable(true);
         pennyVan.setNoAi(true);

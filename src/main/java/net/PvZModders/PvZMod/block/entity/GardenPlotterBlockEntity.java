@@ -25,17 +25,22 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public class GardenPlotterBlockEntity extends BlockEntity {
     private static final int WIDTH = 15;
     private static final int LENGTH = 15;
+    private static final int AIR_CLEARANCE = 3;
     private static final int PREVIEW_REFRESH_TICKS = 20;
     private static final int STATUS_REFRESH_TICKS = 40;
 
-    private final List<UUID> previewDisplayIds = new ArrayList<>();
+    private final Map<PreviewMarker, UUID> previewDisplayIds = new HashMap<>();
     private UUID promptDisplayId;
 
     public GardenPlotterBlockEntity(BlockPos pos, BlockState state) {
@@ -56,21 +61,8 @@ public class GardenPlotterBlockEntity extends BlockEntity {
             return;
         }
 
-        clearValidationPreview(level);
-
         ValidationResult validation = validateGarden(level, origin);
-        int startX = origin.getX() - (WIDTH / 2);
-        int startZ = origin.getZ() - (LENGTH / 2);
-        int y = origin.getY();
-
-        for (int dx = 0; dx < WIDTH; dx++) {
-            for (int dz = 0; dz < LENGTH; dz++) {
-                BlockPos floorPos = new BlockPos(startX + dx, y - 1, startZ + dz);
-                BlockPos gardenPos = floorPos.above();
-
-                spawnPreviewDisplay(level, gardenPos, validation.validTiles().contains(gardenPos));
-            }
-        }
+        syncValidationPreview(level, validation.markers());
 
         if (validation.valid()) {
             showPromptDisplay(level, origin);
@@ -79,22 +71,48 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         }
     }
 
-    private void spawnPreviewDisplay(ServerLevel level, BlockPos pos, boolean valid) {
+    private void syncValidationPreview(ServerLevel level, Set<PreviewMarker> markers) {
+        List<PreviewMarker> staleMarkers = new ArrayList<>();
+        for (PreviewMarker marker : previewDisplayIds.keySet()) {
+            if (!markers.contains(marker)) {
+                staleMarkers.add(marker);
+            }
+        }
+
+        for (PreviewMarker marker : staleMarkers) {
+            Entity entity = level.getEntity(previewDisplayIds.remove(marker));
+            if (entity != null) {
+                entity.discard();
+            }
+        }
+
+        for (PreviewMarker marker : markers) {
+            if (!previewDisplayIds.containsKey(marker) || level.getEntity(previewDisplayIds.get(marker)) == null) {
+                spawnPreviewDisplay(level, marker);
+            }
+        }
+    }
+
+    private void spawnPreviewDisplay(ServerLevel level, PreviewMarker marker) {
         Display.BlockDisplay preview = EntityType.BLOCK_DISPLAY.create(level);
         if (preview == null) {
             return;
         }
 
-        BlockState previewState = valid ? Blocks.LIME_STAINED_GLASS.defaultBlockState() : Blocks.RED_STAINED_GLASS.defaultBlockState();
-        preview.load(createPreviewDisplayTag(previewState));
-        preview.setPos(pos.getX(), pos.getY(), pos.getZ());
+        BlockState previewState = marker.valid() ? Blocks.LIME_STAINED_GLASS.defaultBlockState() : Blocks.RED_STAINED_GLASS.defaultBlockState();
+        preview.load(marker.fullBlock() ? createObstructionDisplayTag(previewState) : createFloorPreviewDisplayTag(previewState));
+        preview.setPos(marker.pos().getX(), marker.pos().getY(), marker.pos().getZ());
         preview.setNoGravity(true);
         level.addFreshEntity(preview);
-        previewDisplayIds.add(preview.getUUID());
+        previewDisplayIds.put(marker, preview.getUUID());
     }
 
-    private CompoundTag createPreviewDisplayTag(BlockState previewState) {
+    private CompoundTag createFloorPreviewDisplayTag(BlockState previewState) {
         return createBlockDisplayTag(previewState, 0.0F, 0.03F, 0.0F, 1.0F, 0.04F, 1.0F);
+    }
+
+    private CompoundTag createObstructionDisplayTag(BlockState previewState) {
+        return createBlockDisplayTag(previewState, -0.015F, -0.015F, -0.015F, 1.03F, 1.03F, 1.03F);
     }
 
     private CompoundTag createBlockDisplayTag(BlockState previewState, float translateX, float translateY, float translateZ, float scaleX, float scaleY, float scaleZ) {
@@ -123,7 +141,7 @@ public class GardenPlotterBlockEntity extends BlockEntity {
     }
 
     private void clearValidationPreview(ServerLevel level) {
-        for (UUID displayId : previewDisplayIds) {
+        for (UUID displayId : previewDisplayIds.values()) {
             Entity entity = level.getEntity(displayId);
             if (entity != null) {
                 entity.discard();
@@ -217,7 +235,7 @@ public class GardenPlotterBlockEntity extends BlockEntity {
     }
 
     private ValidationResult validateGarden(ServerLevel level, BlockPos origin) {
-        List<BlockPos> validTiles = new ArrayList<>();
+        Set<PreviewMarker> markers = new HashSet<>();
         int startX = origin.getX() - (WIDTH / 2);
         int startZ = origin.getZ() - (LENGTH / 2);
         int y = origin.getY();
@@ -227,22 +245,30 @@ public class GardenPlotterBlockEntity extends BlockEntity {
             for (int dz = 0; dz < LENGTH; dz++) {
                 BlockPos floorPos = new BlockPos(startX + dx, y - 1, startZ + dz);
                 BlockPos gardenPos = floorPos.above();
-                BlockPos aboveGardenPos = gardenPos.above();
-
                 boolean validFloor = level.getBlockState(floorPos).is(BlockTags.DIRT) || level.getBlockState(floorPos).is(BlockTags.SAND);
-                boolean validGardenLevel = gardenPos.equals(origin) || level.getBlockState(gardenPos).isAir();
-                boolean validAboveGarden = level.getBlockState(aboveGardenPos).isAir();
-                boolean validTile = validFloor && validGardenLevel && validAboveGarden;
+                markers.add(new PreviewMarker(gardenPos, validFloor, false));
 
-                if (validTile) {
-                    validTiles.add(gardenPos);
-                } else {
+                boolean validGardenLevel = gardenPos.equals(origin) || level.getBlockState(gardenPos).isAir();
+                if (!validGardenLevel) {
+                    markers.add(new PreviewMarker(gardenPos, false, true));
+                }
+
+                boolean validAir = true;
+                for (int clearance = 1; clearance <= AIR_CLEARANCE; clearance++) {
+                    BlockPos airPos = gardenPos.above(clearance);
+                    if (!level.getBlockState(airPos).isAir()) {
+                        markers.add(new PreviewMarker(airPos, false, true));
+                        validAir = false;
+                    }
+                }
+
+                if (!validFloor || !validGardenLevel || !validAir) {
                     valid = false;
                 }
             }
         }
 
-        return new ValidationResult(valid, validTiles);
+        return new ValidationResult(valid, markers);
     }
 
     @Override
@@ -254,6 +280,9 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         super.setRemoved();
     }
 
-    private record ValidationResult(boolean valid, List<BlockPos> validTiles) {
+    private record ValidationResult(boolean valid, Set<PreviewMarker> markers) {
+    }
+
+    private record PreviewMarker(BlockPos pos, boolean valid, boolean fullBlock) {
     }
 }

@@ -3,14 +3,19 @@ package net.PvZModders.PvZMod;
 import com.mojang.logging.LogUtils;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
+import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
+import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
+import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -36,6 +41,7 @@ public class PvZ2Mod {
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
+        modEventBus.addListener(this::registerEntityAttributes);
         MinecraftForge.EVENT_BUS.register(this);
     }
 
@@ -51,6 +57,10 @@ public class PvZ2Mod {
         }
     }
 
+    private void registerEntityAttributes(EntityAttributeCreationEvent event) {
+        event.put(ModEntities.PENNY_VAN.get(), PennyVanEntity.createAttributes().build());
+    }
+
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
     }
@@ -59,6 +69,12 @@ public class PvZ2Mod {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            event.enqueueWork(() -> net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new));
+        }
+
+        @SubscribeEvent
+        public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+            event.registerLayerDefinition(pennytest.LAYER_LOCATION, pennytest::createBodyLayer);
         }
     }
 }

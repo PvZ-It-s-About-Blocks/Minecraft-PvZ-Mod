@@ -61,7 +61,54 @@ public class pennytest<T extends Entity> extends EntityModel<T> {
 
 	@Override
 	public void setupAnim(Entity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch) {
+		body.x = -14.0F;
+		body.y = 20.0F;
+		body.z = 16.0F;
+		body.xScale = 1.0F;
+		body.yScale = 1.0F;
+		body.zScale = 1.0F;
+		wheels.x = -14.0F;
+		wheels.y = 20.0F;
+		wheels.z = 16.0F;
+		wheels.xScale = 1.0F;
+		wheels.yScale = 1.0F;
+		wheels.zScale = 1.0F;
+		portal.x = 0.0F;
+		portal.y = 24.0F;
+		portal.z = 0.0F;
+		portal.xScale = 1.0F;
+		portal.yScale = 1.0F;
+		portal.zScale = 1.0F;
 
+		float seconds = Math.min(ageInTicks / 20.0F, 8.0F);
+		if (seconds < 3.9F) {
+			float portalPulse = 0.4F + (float) Math.sin(seconds * 14.0F) * 0.25F;
+			portal.x = 17.0F;
+			portal.xScale = 2.0F + portalPulse;
+			portal.yScale = 0.8F + portalPulse;
+			portal.zScale = 2.0F + portalPulse;
+
+			body.x = -25.0F + seconds * 3.6F;
+			body.xScale = 0.0F;
+			body.yScale = 0.0F;
+			body.zScale = 1.0F;
+			wheels.xScale = 0.0F;
+			wheels.yScale = 0.0F;
+			wheels.zScale = 1.0F;
+		} else if (seconds < 4.2F) {
+			float emerge = (seconds - 3.9F) / 0.3F;
+			body.xScale = emerge;
+			body.yScale = 0.8F * emerge;
+			wheels.xScale = emerge;
+			wheels.yScale = emerge;
+			portal.xScale = 8.5F - emerge * 7.5F;
+			portal.yScale = 1.15F - emerge * 0.15F;
+			portal.zScale = 3.1F - emerge * 2.1F;
+		} else {
+			portal.xScale = 0.1F;
+			portal.yScale = 0.1F;
+			portal.zScale = 0.1F;
+		}
 	}
 
 	@Override
