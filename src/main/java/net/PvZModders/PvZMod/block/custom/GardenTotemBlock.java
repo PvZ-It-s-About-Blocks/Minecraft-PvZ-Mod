@@ -1,6 +1,6 @@
 package net.PvZModders.PvZMod.block.custom;
 
-import net.PvZModders.PvZMod.block.entity.GardenPlotterBlockEntity;
+import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,7 +9,6 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
@@ -18,20 +17,20 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
-public class GardenPlotterBlock extends BaseEntityBlock {
-    public GardenPlotterBlock(Properties properties) {
+public class GardenTotemBlock extends BaseEntityBlock {
+    public GardenTotemBlock(Properties properties) {
         super(properties);
     }
 
     @Override
     public RenderShape getRenderShape(BlockState state) {
-        return RenderShape.MODEL;
+        return RenderShape.INVISIBLE;
     }
 
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return new GardenPlotterBlockEntity(pos, state);
+        return new GardenTotemBlockEntity(pos, state);
     }
 
     @Override
@@ -41,8 +40,9 @@ public class GardenPlotterBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
 
-        if (level.getBlockEntity(pos) instanceof GardenPlotterBlockEntity gardenPlotter && player instanceof ServerPlayer serverPlayer) {
-            return gardenPlotter.tryCreateGarden(serverPlayer) ? InteractionResult.CONSUME : InteractionResult.FAIL;
+        if (level.getBlockEntity(pos) instanceof GardenTotemBlockEntity gardenTotem && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.openGardenMenu(serverPlayer);
+            return InteractionResult.CONSUME;
         }
 
         return InteractionResult.PASS;
@@ -50,7 +50,7 @@ public class GardenPlotterBlock extends BaseEntityBlock {
 
     @Nullable
     @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level, BlockState state, BlockEntityType<T> type) {
-        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.GARDEN_PLOTTER_BE.get(), GardenPlotterBlockEntity::serverTick);
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        return level.isClientSide ? null : createTickerHelper(type, ModBlockEntities.GARDEN_TOTEM_BE.get(), GardenTotemBlockEntity::serverTick);
     }
 }
