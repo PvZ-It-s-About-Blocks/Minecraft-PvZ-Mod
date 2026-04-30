@@ -36,6 +36,10 @@ public class GardenWaveProgress {
         }
     }
 
+    public void failCurrentWave() {
+        waveActive = false;
+    }
+
     public boolean markRewardClaimed(int wave) {
         return claimedRewardWaves.add(wave);
     }

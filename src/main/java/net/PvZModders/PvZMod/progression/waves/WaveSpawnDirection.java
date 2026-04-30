@@ -25,6 +25,10 @@ public enum WaveSpawnDirection {
         return origin.offset(sideOffset, 0, zStep * distance);
     }
 
+    public BlockPos borderPosition(BlockPos origin, int radius, int sideOffset) {
+        return offsetFrom(origin, radius, sideOffset);
+    }
+
     public String displayName() {
         return displayName;
     }

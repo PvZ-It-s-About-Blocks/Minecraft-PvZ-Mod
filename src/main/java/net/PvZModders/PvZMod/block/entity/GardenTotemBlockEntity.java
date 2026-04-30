@@ -30,6 +30,7 @@ import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -48,6 +49,8 @@ import java.util.UUID;
 public class GardenTotemBlockEntity extends BlockEntity {
     private static final double TOTEM_RISE_SPEED = 0.08D;
     private static final double PLOTTER_SINK_SPEED = 0.08D;
+    private static final int GARDEN_RADIUS = 7;
+    private static final int TOTEM_MAX_HEALTH = 100;
 
     private UUID totemDisplayId;
     private UUID sinkingPlotterDisplayId;
@@ -56,6 +59,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private boolean initialized;
     private String gardenName = "Original Garden";
     private String biomeName = "unknown";
+    private int totemHealth = TOTEM_MAX_HEALTH;
     private final GardenWaveProgress waveProgress = new GardenWaveProgress();
     private final Set<UUID> activeWaveEntityIds = new HashSet<>();
 
@@ -73,6 +77,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.ensureInitialized(serverLevel, pos);
         be.tickSinkingPlotter(serverLevel, pos);
         be.tickGardenTotem(serverLevel, pos);
+        be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
     }
 
@@ -117,8 +122,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         waveProgress.startWave();
+        totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = spawnWave(player.serverLevel(), OriginalGardenWaves.get(waveProgress.currentWave()));
         showWaveDirectionTitle(player, directions);
+        player.displayClientMessage(Component.literal("Spawned " + activeWaveEntityIds.size() + " zombies on the garden border").withStyle(ChatFormatting.GRAY), true);
         setChanged();
     }
 
@@ -193,28 +200,61 @@ public class GardenTotemBlockEntity extends BlockEntity {
         int spawned = 0;
         for (WaveSpawnDirection direction : directions) {
             for (int i = 0; i < perDirection && spawned < group.count(); i++) {
-                BlockPos spawnPos = findSpawnPos(level, direction, i);
-                Entity entity = entityType.get().create(level);
+                BlockPos spawnPos = findSpawnPos(level, direction, spawned, group.count());
+                Entity entity = spawnWaveEntity(level, entityType.get(), spawnPos);
                 if (entity == null) {
                     continue;
                 }
 
-                entity.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D, 0.0F, 0.0F);
                 if (entity instanceof Mob mob) {
                     mob.setPersistenceRequired();
+                    mob.getNavigation().moveTo(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D, 1.0D);
                 }
-                level.addFreshEntity(entity);
                 activeWaveEntityIds.add(entity.getUUID());
                 spawned++;
             }
         }
     }
 
-    private BlockPos findSpawnPos(ServerLevel level, WaveSpawnDirection direction, int index) {
-        int distance = 18 + level.random.nextInt(6);
-        int sideOffset = (index % 2 == 0 ? 1 : -1) * (2 + (index / 2) * 2);
-        BlockPos base = direction.offsetFrom(worldPosition, distance, sideOffset);
+    private Entity spawnWaveEntity(ServerLevel level, EntityType<?> entityType, BlockPos spawnPos) {
+        Entity entity = entityType.spawn(level, spawnPos, MobSpawnType.EVENT);
+        if (entity != null) {
+            return entity;
+        }
+
+        entity = entityType.create(level);
+        if (entity == null) {
+            return null;
+        }
+
+        entity.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D, 0.0F, 0.0F);
+        level.addFreshEntity(entity);
+        return entity;
+    }
+
+    private BlockPos findSpawnPos(ServerLevel level, WaveSpawnDirection direction, int index, int totalCount) {
+        int sideOffset = spreadBorderOffset(index, totalCount);
+        BlockPos base = direction.borderPosition(worldPosition, GARDEN_RADIUS, sideOffset);
+        BlockPos spawnPos = new BlockPos(base.getX(), worldPosition.getY(), base.getZ());
+
+        if (isSpawnClear(level, spawnPos)) {
+            return spawnPos;
+        }
+
         return level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, base);
+    }
+
+    private int spreadBorderOffset(int index, int totalCount) {
+        if (totalCount <= 1) {
+            return 0;
+        }
+
+        double step = (GARDEN_RADIUS * 2.0D) / Math.max(1, totalCount - 1);
+        return (int) Math.round(-GARDEN_RADIUS + (index * step));
+    }
+
+    private boolean isSpawnClear(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir() && level.getBlockState(pos.above()).isAir();
     }
 
     private void showWaveDirectionTitle(ServerPlayer player, List<WaveSpawnDirection> directions) {
@@ -250,6 +290,45 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (activeWaveEntityIds.isEmpty()) {
             completeCurrentWaveForNearbyPlayers(level);
         }
+    }
+
+    private void tickActiveWaveZombies(ServerLevel level) {
+        if (!waveProgress.waveActive()) {
+            return;
+        }
+
+        for (UUID entityId : activeWaveEntityIds) {
+            Entity entity = level.getEntity(entityId);
+            if (!(entity instanceof Mob mob) || !mob.isAlive()) {
+                continue;
+            }
+
+            if (mob.getTarget() == null && (level.getGameTime() + entity.getId()) % 20 == 0) {
+                mob.getNavigation().moveTo(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D, 1.0D);
+            }
+
+            if (mob.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D) <= 3.0D
+                    && level.getGameTime() % 20 == 0) {
+                damageTotem(level, 1);
+            }
+        }
+    }
+
+    private void damageTotem(ServerLevel level, int amount) {
+        totemHealth = Math.max(0, totemHealth - amount);
+        if (totemHealth > 0) {
+            setChanged();
+            return;
+        }
+
+        waveProgress.failCurrentWave();
+        activeWaveEntityIds.clear();
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("The Totem was overwhelmed. Wave failed.").withStyle(ChatFormatting.RED), false);
+            }
+        }
+        setChanged();
     }
 
     private void completeCurrentWaveForNearbyPlayers(ServerLevel level) {
@@ -386,6 +465,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         initialized = tag.getBoolean("Initialized");
         gardenName = tag.getString("GardenName");
         biomeName = tag.getString("BiomeName");
+        totemHealth = tag.contains("TotemHealth") ? tag.getInt("TotemHealth") : TOTEM_MAX_HEALTH;
         totemY = tag.contains("TotemY") ? tag.getDouble("TotemY") : worldPosition.getY();
         sinkingPlotterY = tag.contains("SinkingPlotterY") ? tag.getDouble("SinkingPlotterY") : worldPosition.getY();
         if (tag.contains("WaveProgress")) {
@@ -404,6 +484,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         tag.putBoolean("Initialized", initialized);
         tag.putString("GardenName", gardenName);
         tag.putString("BiomeName", biomeName);
+        tag.putInt("TotemHealth", totemHealth);
         tag.putDouble("TotemY", totemY);
         tag.putDouble("SinkingPlotterY", sinkingPlotterY);
         CompoundTag waveTag = new CompoundTag();
