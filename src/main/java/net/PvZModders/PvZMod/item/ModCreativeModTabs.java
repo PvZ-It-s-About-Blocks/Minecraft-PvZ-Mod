@@ -1,6 +1,6 @@
 package net.PvZModders.PvZMod.item;
 
-import net.PvZModders.PvZMod.TutorialMod;
+import net.PvZModders.PvZMod.PvZ2Mod;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -11,7 +11,7 @@ import net.minecraftforge.registries.RegistryObject;
 
 public class ModCreativeModTabs {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
-            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, TutorialMod.MOD_ID);
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, PvZ2Mod.MOD_ID);
 
     public static final RegistryObject<CreativeModeTab> PVZ_TAB = CREATIVE_MODE_TABS.register("pvz_tab",
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.SUNFLOWER_SEED_PACKET.get()))
@@ -19,6 +19,7 @@ public class ModCreativeModTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.SUNFLOWER_SEED_PACKET.get());
                         output.accept(ModItems.PEASHOOTER_SEED_PACKET.get());
+                        output.accept(ModItems.GARDEN_PLOTTER.get());
                     })
                     .build());
 
