@@ -23,8 +23,14 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private static final int TAB_SPACING = 4;
     private static final int TAB_COUNT = 3;
     private static final int START_WAVE_BUTTON = 0;
+    private static final int WAVE_CANVAS_WIDTH = 940;
+    private static final int WAVE_CANVAS_HEIGHT = 330;
+    private static final int WAVE_NODE_SIZE = 24;
     private int selectedTab = TAB_PROGRESS;
     private int selectedWave = 1;
+    private double waveCanvasX;
+    private double waveCanvasY;
+    private boolean draggingWaveCanvas;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -52,6 +58,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             for (int tab = 0; tab < 3; tab++) {
                 if (isMouseOverTab(tab, mouseX, mouseY)) {
                     selectedTab = tab;
+                    draggingWaveCanvas = false;
                     return true;
                 }
             }
@@ -70,9 +77,32 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                     selectedWave = hoveredWave;
                     return true;
                 }
+
+                if (isMouseOverWaveCanvas(mouseX, mouseY)) {
+                    draggingWaveCanvas = true;
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        if (button == 0 && selectedTab == TAB_PROGRESS && draggingWaveCanvas) {
+            waveCanvasX = clampWaveCanvasX(waveCanvasX + dragX);
+            waveCanvasY = clampWaveCanvasY(waveCanvasY + dragY);
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            draggingWaveCanvas = false;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     private void renderFrame(GuiGraphics guiGraphics, int x, int y) {
@@ -129,25 +159,30 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         guiGraphics.drawString(font, Component.literal("Waves").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
         guiGraphics.drawString(font, Component.literal("Current: " + menu.currentWave() + "/30" + (menu.waveActive() ? " Active" : " Ready")).withStyle(ChatFormatting.DARK_GREEN), x + 176, y + 48, 0x2F6F2F, false);
 
-        int startX = x + 24;
-        int startY = y + 78;
-        int spacing = 18;
-        int columns = 15;
+        int canvasX = getWaveCanvasScreenX();
+        int canvasY = getWaveCanvasScreenY();
+        int canvasW = getWaveCanvasScreenWidth();
+        int canvasH = getWaveCanvasScreenHeight();
+
+        guiGraphics.enableScissor(canvasX, canvasY, canvasX + canvasW, canvasY + canvasH);
+        drawPanelNoise(guiGraphics, canvasX + (int) waveCanvasX, canvasY + (int) waveCanvasY, WAVE_CANVAS_WIDTH, WAVE_CANVAS_HEIGHT);
 
         for (GardenWaveDefinition wave : OriginalGardenWaves.all()) {
-            int index = wave.wave() - 1;
-            int nodeX = startX + (index % columns) * spacing;
-            int nodeY = startY + (index / columns) * 40;
-            if (index % columns != 0) {
-                drawWaveLine(guiGraphics, nodeX - 10, nodeY + 9, nodeX - 1, nodeY + 9, wave.wave());
+            int nodeX = canvasX + getWaveVirtualX(wave.wave()) + (int) waveCanvasX;
+            int nodeY = canvasY + getWaveVirtualY(wave.wave()) + (int) waveCanvasY;
+            if (wave.wave() > 1) {
+                int previousX = canvasX + getWaveVirtualX(wave.wave() - 1) + (int) waveCanvasX;
+                int previousY = canvasY + getWaveVirtualY(wave.wave() - 1) + (int) waveCanvasY;
+                drawWaveLine(guiGraphics, previousX + WAVE_NODE_SIZE / 2, previousY + WAVE_NODE_SIZE / 2, nodeX + WAVE_NODE_SIZE / 2, nodeY + WAVE_NODE_SIZE / 2, wave.wave());
             }
 
-            guiGraphics.drawString(font, String.valueOf(wave.wave()), nodeX + 3, nodeY - 12, 0x3F3F3F, false);
+            guiGraphics.drawString(font, String.valueOf(wave.wave()), nodeX + 8, nodeY - 12, 0x3F3F3F, false);
             if (!wave.rewards().isEmpty()) {
-                renderRewardIcons(guiGraphics, wave, nodeX, nodeY - 30);
+                renderRewardIcons(guiGraphics, wave, nodeX + 4, nodeY - 32);
             }
             drawWaveNode(guiGraphics, nodeX, nodeY, wave.wave());
         }
+        guiGraphics.disableScissor();
 
         GardenWaveDefinition selected = OriginalGardenWaves.get(selectedWave);
         renderSelectedWaveBox(guiGraphics, x, y, selected);
@@ -167,13 +202,19 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         boolean selected = wave == selectedWave;
         int border = selected ? 0xFFFFFFFF : 0xFF1F1F1F;
         int fill = completed ? 0xFF3F9F3F : current ? 0xFF3366CC : 0xFF363636;
-        guiGraphics.fill(x, y, x + 18, y + 18, border);
-        guiGraphics.fill(x + 3, y + 3, x + 15, y + 15, fill);
+        guiGraphics.fill(x, y, x + WAVE_NODE_SIZE, y + WAVE_NODE_SIZE, border);
+        guiGraphics.fill(x + 4, y + 4, x + WAVE_NODE_SIZE - 4, y + WAVE_NODE_SIZE - 4, fill);
     }
 
     private void drawWaveLine(GuiGraphics guiGraphics, int x1, int y1, int x2, int y2, int wave) {
         int color = wave <= menu.currentWave() ? 0xFFBFBFBF : 0xFF050505;
-        guiGraphics.fill(x1, y1 - 1, x2, y2 + 1, color);
+        if (x1 == x2 || y1 == y2) {
+            guiGraphics.fill(Math.min(x1, x2), Math.min(y1, y2) - 1, Math.max(x1, x2) + 1, Math.max(y1, y2) + 1, color);
+            return;
+        }
+
+        guiGraphics.fill(Math.min(x1, x2), y1 - 1, Math.max(x1, x2) + 1, y1 + 1, color);
+        guiGraphics.fill(x2 - 1, Math.min(y1, y2), x2 + 1, Math.max(y1, y2) + 1, color);
     }
 
     private void renderSelectedWaveBox(GuiGraphics guiGraphics, int x, int y, GardenWaveDefinition selected) {
@@ -200,16 +241,14 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getHoveredWave(double mouseX, double mouseY) {
-        int startX = leftPos + 24;
-        int startY = topPos + 78;
-        int spacing = 18;
-        int columns = 15;
+        if (!isMouseOverWaveCanvas(mouseX, mouseY)) {
+            return -1;
+        }
 
         for (int wave = 1; wave <= OriginalGardenWaves.MAX_WAVE; wave++) {
-            int index = wave - 1;
-            int nodeX = startX + (index % columns) * spacing;
-            int nodeY = startY + (index / columns) * 40;
-            if (mouseX >= nodeX && mouseX < nodeX + 18 && mouseY >= nodeY && mouseY < nodeY + 18) {
+            int nodeX = getWaveCanvasScreenX() + getWaveVirtualX(wave) + (int) waveCanvasX;
+            int nodeY = getWaveCanvasScreenY() + getWaveVirtualY(wave) + (int) waveCanvasY;
+            if (mouseX >= nodeX && mouseX < nodeX + WAVE_NODE_SIZE && mouseY >= nodeY && mouseY < nodeY + WAVE_NODE_SIZE) {
                 return wave;
             }
         }
@@ -231,6 +270,52 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int buttonX = boxX + imageWidth - 40 - 82;
         int buttonY = boxY + 8;
         return mouseX >= buttonX && mouseX < buttonX + 76 && mouseY >= buttonY && mouseY < buttonY + 16;
+    }
+
+    private boolean isMouseOverWaveCanvas(double mouseX, double mouseY) {
+        int canvasX = getWaveCanvasScreenX();
+        int canvasY = getWaveCanvasScreenY();
+        return mouseX >= canvasX && mouseX < canvasX + getWaveCanvasScreenWidth()
+                && mouseY >= canvasY && mouseY < canvasY + getWaveCanvasScreenHeight();
+    }
+
+    private int getWaveCanvasScreenX() {
+        return leftPos + 14;
+    }
+
+    private int getWaveCanvasScreenY() {
+        return topPos + 62;
+    }
+
+    private int getWaveCanvasScreenWidth() {
+        return imageWidth - 28;
+    }
+
+    private int getWaveCanvasScreenHeight() {
+        return 74;
+    }
+
+    private int getWaveVirtualX(int wave) {
+        int index = wave - 1;
+        int row = index / 10;
+        int column = index % 10;
+        if (row % 2 == 1) {
+            column = 9 - column;
+        }
+        return 34 + column * 88;
+    }
+
+    private int getWaveVirtualY(int wave) {
+        int row = (wave - 1) / 10;
+        return 50 + row * 92;
+    }
+
+    private double clampWaveCanvasX(double value) {
+        return Math.max(getWaveCanvasScreenWidth() - WAVE_CANVAS_WIDTH, Math.min(0.0D, value));
+    }
+
+    private double clampWaveCanvasY(double value) {
+        return Math.max(getWaveCanvasScreenHeight() - WAVE_CANVAS_HEIGHT, Math.min(0.0D, value));
     }
 
     private void renderPortalTab(GuiGraphics guiGraphics, int x, int y) {

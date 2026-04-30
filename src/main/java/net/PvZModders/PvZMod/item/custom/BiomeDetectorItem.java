@@ -64,6 +64,13 @@ public class BiomeDetectorItem extends CompassItem {
         );
     }
 
+    @Override
+    public Component getName(ItemStack stack) {
+        return getTarget(stack)
+                .map(target -> colored("Detecting " + target.displayName(), target.color()))
+                .orElse(Component.literal("Biome Detector"));
+    }
+
     public static boolean selectTarget(ItemStack stack, ServerPlayer player, int buttonId) {
         GardenBiomeCategory[] categories = GardenBiomeCategory.values();
         if (buttonId < 0 || buttonId >= categories.length) {

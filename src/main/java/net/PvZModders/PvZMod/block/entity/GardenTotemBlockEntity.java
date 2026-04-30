@@ -19,6 +19,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -132,6 +133,27 @@ public class GardenTotemBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    public void devClearCurrentWave(ServerPlayer player) {
+        if (!waveProgress.waveActive()) {
+            if (waveProgress.currentWave() == 1) {
+                grantStarterPlants(player);
+            }
+            waveProgress.startWave();
+        }
+
+        if (level instanceof ServerLevel serverLevel) {
+            for (UUID entityId : activeWaveEntityIds) {
+                Entity entity = serverLevel.getEntity(entityId);
+                if (entity != null) {
+                    entity.discard();
+                }
+            }
+        }
+        activeWaveEntityIds.clear();
+        completeCurrentWave(player);
+        player.displayClientMessage(Component.literal("Dev cleared current wave").withStyle(ChatFormatting.LIGHT_PURPLE), true);
+    }
+
     private void grantStarterPlants(ServerPlayer player) {
         player.sendSystemMessage(Component.literal("Tutorial unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
     }
@@ -198,8 +220,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private void showWaveDirectionTitle(ServerPlayer player, List<WaveSpawnDirection> directions) {
         String directionText = formatDirections(directions);
         Component message = Component.literal("The Zombies are coming from the " + directionText + "!").withStyle(ChatFormatting.LIGHT_PURPLE);
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 10));
-        player.connection.send(new ClientboundSetTitleTextPacket(message));
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 50, 10));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.empty()));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(message));
     }
 
     private String formatDirections(List<WaveSpawnDirection> directions) {
