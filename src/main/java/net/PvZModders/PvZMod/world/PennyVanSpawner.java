@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3f;
 
@@ -32,7 +33,7 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class PennyVanSpawner {
-    private static final int PENNY_VAN_SPAWN_DELAY_TICKS = 20 * 30;
+    private static final int PENNY_VAN_SPAWN_DELAY_TICKS = 20 * 10;
     private static final int PENNY_VAN_SPAWN_HEIGHT = 20;
     private static final double PENNY_VAN_DESCENT_SPEED = 0.35D;
 
@@ -43,6 +44,11 @@ public final class PennyVanSpawner {
     private static final Set<UUID> REWARDED_PLAYERS = new HashSet<>();
 
     private PennyVanSpawner() {
+    }
+
+    @SubscribeEvent
+    public static void onServerStarting(ServerStartingEvent event) {
+        resetSpawnerState();
     }
 
     @SubscribeEvent
@@ -206,5 +212,13 @@ public final class PennyVanSpawner {
         for (int i = 0; i < 10; i++) {
             level.sendParticles(greenDust, x, y + i, z, 1, 0.0D, 0.02D, 0.0D, 0.0D);
         }
+    }
+
+    private static void resetSpawnerState() {
+        firstPlayerId = null;
+        pennyVanSpawned = false;
+        activePennyVan = null;
+        activePennyVanLandingPos = null;
+        REWARDED_PLAYERS.clear();
     }
 }
