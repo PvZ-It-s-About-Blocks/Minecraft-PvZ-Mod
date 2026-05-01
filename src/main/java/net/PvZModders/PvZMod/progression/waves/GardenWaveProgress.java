@@ -40,6 +40,17 @@ public class GardenWaveProgress {
         waveActive = false;
     }
 
+    public boolean isDefaultProgress() {
+        return currentWave == 1 && !waveActive && claimedRewardWaves.isEmpty();
+    }
+
+    public void copyFrom(GardenWaveProgress other) {
+        currentWave = other.currentWave;
+        waveActive = other.waveActive;
+        claimedRewardWaves.clear();
+        claimedRewardWaves.addAll(other.claimedRewardWaves);
+    }
+
     public boolean markRewardClaimed(int wave) {
         return claimedRewardWaves.add(wave);
     }

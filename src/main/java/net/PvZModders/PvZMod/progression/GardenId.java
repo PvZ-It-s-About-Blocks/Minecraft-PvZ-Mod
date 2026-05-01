@@ -12,5 +12,6 @@ public enum GardenId {
     NEON_MIXTAPE,
     JURASSIC_MARSH,
     BIG_WAVE_BEACH,
-    MODERN_DAY
+    MODERN_DAY,
+    GREENHOUSE
 }

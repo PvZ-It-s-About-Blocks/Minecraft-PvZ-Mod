@@ -14,6 +14,10 @@ import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.menu.ModMenuTypes;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
@@ -79,6 +83,9 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
                 MenuScreens.register(ModMenuTypes.GARDEN_TOTEM.get(), GardenTotemScreen::new);
                 MenuScreens.register(ModMenuTypes.BIOME_DETECTOR.get(), BiomeDetectorScreen::new);
+                ItemProperties.register(ModItems.BIOME_DETECTOR.get(), new ResourceLocation("angle"), new CompassItemPropertyFunction((level, stack, entity) ->
+                        CompassItem.isLodestoneCompass(stack) ? CompassItem.getLodestonePosition(stack.getOrCreateTag()) : CompassItem.getSpawnPosition(level)
+                ));
             });
         }
 

@@ -5,6 +5,9 @@ import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.GardenPortalOption;
+import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
+import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -13,6 +16,8 @@ import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnGroup;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.FloatTag;
@@ -27,6 +32,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Display;
@@ -62,10 +68,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private double totemY;
     private double sinkingPlotterY;
     private boolean initialized;
+    private GardenId gardenId = GardenId.INITIAL_PLAINS;
     private String gardenName = "Original Garden";
     private String biomeName = "unknown";
     private int totemHealth = TOTEM_MAX_HEALTH;
-    private final GardenWaveProgress waveProgress = new GardenWaveProgress();
+    private final GardenWaveProgress legacyWaveProgress = new GardenWaveProgress();
     private final Set<UUID> activeWaveEntityIds = new HashSet<>();
 
     public GardenTotemBlockEntity(BlockPos pos, BlockState state) {
@@ -91,12 +98,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
         GardenDefinition garden = biomeKey
                 .flatMap(GardenDefinitions::forBiome)
                 .orElse(GardenDefinitions.get(GardenId.INITIAL_PLAINS));
+        this.gardenId = garden.id();
         this.gardenName = garden.displayName();
         this.biomeName = biomeKey.map(key -> key.location().toString()).orElse("unknown");
         this.initialized = true;
         this.totemY = pos.getY() - 1.0D;
         this.sinkingPlotterY = pos.getY();
         placeTotemColumn(level, pos);
+        registerPortal(level, pos);
         spawnSinkingPlotter(level, pos);
         syncHealthBar(level, pos);
         setChanged();
@@ -110,14 +119,56 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public int getCurrentWave() {
-        return waveProgress.currentWave();
+        return getWaveProgress().currentWave();
     }
 
     public boolean isWaveActive() {
-        return waveProgress.waveActive();
+        return getWaveProgress().waveActive();
+    }
+
+    public int getPortalDiscoveryMask() {
+        if (level instanceof ServerLevel serverLevel) {
+            return GardenPortalSavedData.get(serverLevel).discoveredMask();
+        }
+        return GardenPortalOption.values()[GardenPortalOption.indexOf(gardenId)].mask();
+    }
+
+    public int getCurrentPortalIndex() {
+        return GardenPortalOption.indexOf(gardenId);
+    }
+
+    public void teleportToGarden(ServerPlayer player, int portalIndex) {
+        Optional<GardenPortalOption> option = GardenPortalOption.byIndex(portalIndex);
+        if (option.isEmpty()) {
+            return;
+        }
+
+        if (option.get().gardenId() == gardenId) {
+            player.displayClientMessage(Component.literal("Already in this garden").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+
+        GardenPortalSavedData portalData = GardenPortalSavedData.get(player.serverLevel());
+        Optional<GlobalPos> target = portalData.getPortal(option.get().gardenId());
+        if (target.isEmpty()) {
+            player.displayClientMessage(Component.literal("That garden has not been discovered yet").withStyle(ChatFormatting.GRAY), true);
+            return;
+        }
+
+        ServerLevel targetLevel = player.server.getLevel(target.get().dimension());
+        if (targetLevel == null || !targetLevel.getBlockState(target.get().pos()).is(ModBlocks.GARDEN_TOTEM.get())) {
+            portalData.removePortal(option.get().gardenId(), target.get());
+            player.displayClientMessage(Component.literal("That garden totem no longer exists").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        BlockPos arrival = findTeleportArrival(targetLevel, target.get().pos());
+        player.closeContainer();
+        player.teleportTo(targetLevel, arrival.getX() + 0.5D, arrival.getY(), arrival.getZ() + 0.5D, Set.of(), player.getYRot(), player.getXRot());
     }
 
     public void startTotemDefense(ServerPlayer player) {
+        GardenWaveProgress waveProgress = getWaveProgress();
         if (waveProgress.waveActive()) {
             player.displayClientMessage(Component.literal("Totem defense already active").withStyle(ChatFormatting.YELLOW), true);
             return;
@@ -128,6 +179,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         waveProgress.startWave();
+        markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = spawnWave(player.serverLevel(), OriginalGardenWaves.get(waveProgress.currentWave()));
         showWaveDirectionTitle(player, directions);
@@ -136,22 +188,30 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public void completeCurrentWave(ServerPlayer player) {
+        completeCurrentWave(player.serverLevel());
+    }
+
+    private void completeCurrentWave(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
         if (!waveProgress.waveActive()) {
             return;
         }
 
         int completedWave = waveProgress.currentWave();
         waveProgress.completeCurrentWave();
-        grantMilestoneRewards(player, completedWave);
+        markWaveProgressDirty(level);
+        grantMilestoneRewards(level, completedWave);
         setChanged();
     }
 
     public void devClearCurrentWave(ServerPlayer player) {
+        GardenWaveProgress waveProgress = getWaveProgress();
         if (!waveProgress.waveActive()) {
             if (waveProgress.currentWave() == 1) {
                 grantStarterPlants(player);
             }
             waveProgress.startWave();
+            markWaveProgressDirty(player.serverLevel());
         }
 
         if (level instanceof ServerLevel serverLevel) {
@@ -278,7 +338,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void tickWaveObjective(ServerLevel level) {
-        if (!waveProgress.waveActive()) {
+        if (!getWaveProgress(level).waveActive()) {
             return;
         }
 
@@ -293,7 +353,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void tickActiveWaveZombies(ServerLevel level) {
-        if (!waveProgress.waveActive()) {
+        if (!getWaveProgress(level).waveActive()) {
             return;
         }
 
@@ -349,7 +409,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
-        waveProgress.failCurrentWave();
+        getWaveProgress(level).failCurrentWave();
+        markWaveProgressDirty(level);
         discardActiveWaveEntities(level);
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
@@ -373,22 +434,28 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (nearestPlayer != null) {
             completeCurrentWave(nearestPlayer);
         } else {
+            GardenWaveProgress waveProgress = getWaveProgress(level);
             int completedWave = waveProgress.currentWave();
             waveProgress.completeCurrentWave();
-            waveProgress.markRewardClaimed(completedWave);
+            markWaveProgressDirty(level);
+            grantMilestoneRewards(level, completedWave);
             setChanged();
         }
     }
 
-    private void grantMilestoneRewards(ServerPlayer player, int wave) {
+    private void grantMilestoneRewards(ServerLevel level, int wave) {
         GardenWaveDefinition definition = OriginalGardenWaves.get(wave);
+        GardenWaveProgress waveProgress = getWaveProgress(level);
         if (definition.rewards().isEmpty() || waveProgress.isRewardClaimed(wave)) {
             return;
         }
 
         waveProgress.markRewardClaimed(wave);
+        markWaveProgressDirty(level);
         for (WaveReward reward : definition.rewards()) {
-            player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
+            for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
+                player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
+            }
         }
         // TODO: Apply plant unlocks, item unlocks, upgrades, and completion flags to real player/garden progression.
     }
@@ -397,8 +464,31 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (!initialized) {
             initializeFromPlotter(level, pos);
         }
+        migrateLegacyWaveProgress(level);
         placeTotemColumn(level, pos);
+        registerPortal(level, pos);
         syncHealthBar(level, pos);
+    }
+
+    private GardenWaveProgress getWaveProgress() {
+        if (level instanceof ServerLevel serverLevel) {
+            return getWaveProgress(serverLevel);
+        }
+        return legacyWaveProgress;
+    }
+
+    private GardenWaveProgress getWaveProgress(ServerLevel level) {
+        GardenProgressSavedData progressData = GardenProgressSavedData.get(level);
+        progressData.adoptLegacyProgressIfUnset(gardenId, legacyWaveProgress);
+        return progressData.getWaveProgress(gardenId);
+    }
+
+    private void markWaveProgressDirty(ServerLevel level) {
+        GardenProgressSavedData.get(level).setDirty();
+    }
+
+    private void migrateLegacyWaveProgress(ServerLevel level) {
+        GardenProgressSavedData.get(level).adoptLegacyProgressIfUnset(gardenId, legacyWaveProgress);
     }
 
     private void placeTotemColumn(ServerLevel level, BlockPos pos) {
@@ -410,6 +500,27 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 level.setBlock(partPos, expected, 3);
             }
         }
+    }
+
+    private void registerPortal(ServerLevel level, BlockPos pos) {
+        GardenPortalSavedData.get(level).setPortal(gardenId, level, pos);
+    }
+
+    private BlockPos findTeleportArrival(ServerLevel level, BlockPos targetTotemPos) {
+        for (Direction direction : Direction.Plane.HORIZONTAL) {
+            BlockPos candidate = targetTotemPos.relative(direction, 2);
+            if (isSafeTeleportSpot(level, candidate)) {
+                return candidate;
+            }
+        }
+
+        return targetTotemPos.above(3);
+    }
+
+    private boolean isSafeTeleportSpot(ServerLevel level, BlockPos pos) {
+        return !level.getBlockState(pos.below()).isAir()
+                && level.getBlockState(pos).isAir()
+                && level.getBlockState(pos.above()).isAir();
     }
 
     private void syncHealthBar(ServerLevel level, BlockPos pos) {
@@ -527,13 +638,20 @@ public class GardenTotemBlockEntity extends BlockEntity {
     public void load(CompoundTag tag) {
         super.load(tag);
         initialized = tag.getBoolean("Initialized");
+        if (tag.contains("GardenId")) {
+            try {
+                gardenId = GardenId.valueOf(tag.getString("GardenId"));
+            } catch (IllegalArgumentException ignored) {
+                gardenId = GardenId.INITIAL_PLAINS;
+            }
+        }
         gardenName = tag.getString("GardenName");
         biomeName = tag.getString("BiomeName");
         totemHealth = tag.contains("TotemHealth") ? tag.getInt("TotemHealth") : TOTEM_MAX_HEALTH;
         totemY = tag.contains("TotemY") ? tag.getDouble("TotemY") : worldPosition.getY();
         sinkingPlotterY = tag.contains("SinkingPlotterY") ? tag.getDouble("SinkingPlotterY") : worldPosition.getY();
         if (tag.contains("WaveProgress")) {
-            waveProgress.load(tag.getCompound("WaveProgress"));
+            legacyWaveProgress.load(tag.getCompound("WaveProgress"));
         }
         activeWaveEntityIds.clear();
         ListTag activeEntities = tag.getList("ActiveWaveEntities", net.minecraft.nbt.Tag.TAG_STRING);
@@ -546,13 +664,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
     protected void saveAdditional(CompoundTag tag) {
         super.saveAdditional(tag);
         tag.putBoolean("Initialized", initialized);
+        tag.putString("GardenId", gardenId.name());
         tag.putString("GardenName", gardenName);
         tag.putString("BiomeName", biomeName);
         tag.putInt("TotemHealth", totemHealth);
         tag.putDouble("TotemY", totemY);
         tag.putDouble("SinkingPlotterY", sinkingPlotterY);
         CompoundTag waveTag = new CompoundTag();
-        waveProgress.save(waveTag);
+        getWaveProgress().save(waveTag);
         tag.put("WaveProgress", waveTag);
         ListTag activeEntities = new ListTag();
         for (UUID entityId : activeWaveEntityIds) {

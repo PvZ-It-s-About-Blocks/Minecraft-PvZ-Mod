@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
+import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
@@ -23,13 +24,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private static final int TAB_SPACING = 4;
     private static final int TAB_COUNT = 3;
     private static final int START_WAVE_BUTTON = 0;
-    private static final int WAVE_CANVAS_WIDTH = 940;
-    private static final int WAVE_CANVAS_HEIGHT = 330;
+    private static final int WAVE_SPACING = 72;
+    private static final int WAVE_CANVAS_WIDTH = 34 + (OriginalGardenWaves.MAX_WAVE - 1) * WAVE_SPACING + 80;
+    private static final int WAVE_CANVAS_HEIGHT = 74;
     private static final int WAVE_NODE_SIZE = 24;
     private int selectedTab = TAB_PROGRESS;
     private int selectedWave = 1;
     private double waveCanvasX;
-    private double waveCanvasY;
     private boolean draggingWaveCanvas;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
@@ -82,6 +83,15 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                     draggingWaveCanvas = true;
                     return true;
                 }
+            } else if (selectedTab == TAB_PORTAL) {
+                int hoveredPortal = getHoveredPortal(mouseX, mouseY);
+                if (hoveredPortal >= 0) {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if (minecraft.gameMode != null) {
+                        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.PORTAL_BUTTON_OFFSET + hoveredPortal);
+                    }
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -91,7 +101,6 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
         if (button == 0 && selectedTab == TAB_PROGRESS && draggingWaveCanvas) {
             waveCanvasX = clampWaveCanvasX(waveCanvasX + dragX);
-            waveCanvasY = clampWaveCanvasY(waveCanvasY + dragY);
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
@@ -165,14 +174,14 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int canvasH = getWaveCanvasScreenHeight();
 
         guiGraphics.enableScissor(canvasX, canvasY, canvasX + canvasW, canvasY + canvasH);
-        drawPanelNoise(guiGraphics, canvasX + (int) waveCanvasX, canvasY + (int) waveCanvasY, WAVE_CANVAS_WIDTH, WAVE_CANVAS_HEIGHT);
+        drawPanelNoise(guiGraphics, canvasX + (int) waveCanvasX, canvasY, WAVE_CANVAS_WIDTH, WAVE_CANVAS_HEIGHT);
 
         for (GardenWaveDefinition wave : OriginalGardenWaves.all()) {
             int nodeX = canvasX + getWaveVirtualX(wave.wave()) + (int) waveCanvasX;
-            int nodeY = canvasY + getWaveVirtualY(wave.wave()) + (int) waveCanvasY;
+            int nodeY = canvasY + getWaveVirtualY();
             if (wave.wave() > 1) {
                 int previousX = canvasX + getWaveVirtualX(wave.wave() - 1) + (int) waveCanvasX;
-                int previousY = canvasY + getWaveVirtualY(wave.wave() - 1) + (int) waveCanvasY;
+                int previousY = canvasY + getWaveVirtualY();
                 drawWaveLine(guiGraphics, previousX + WAVE_NODE_SIZE / 2, previousY + WAVE_NODE_SIZE / 2, nodeX + WAVE_NODE_SIZE / 2, nodeY + WAVE_NODE_SIZE / 2, wave.wave());
             }
 
@@ -247,7 +256,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
         for (int wave = 1; wave <= OriginalGardenWaves.MAX_WAVE; wave++) {
             int nodeX = getWaveCanvasScreenX() + getWaveVirtualX(wave) + (int) waveCanvasX;
-            int nodeY = getWaveCanvasScreenY() + getWaveVirtualY(wave) + (int) waveCanvasY;
+            int nodeY = getWaveCanvasScreenY() + getWaveVirtualY();
             if (mouseX >= nodeX && mouseX < nodeX + WAVE_NODE_SIZE && mouseY >= nodeY && mouseY < nodeY + WAVE_NODE_SIZE) {
                 return wave;
             }
@@ -296,32 +305,67 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getWaveVirtualX(int wave) {
-        int index = wave - 1;
-        int row = index / 10;
-        int column = index % 10;
-        if (row % 2 == 1) {
-            column = 9 - column;
-        }
-        return 34 + column * 88;
+        return 34 + (wave - 1) * WAVE_SPACING;
     }
 
-    private int getWaveVirtualY(int wave) {
-        int row = (wave - 1) / 10;
-        return 50 + row * 92;
+    private int getWaveVirtualY() {
+        return 48;
     }
 
     private double clampWaveCanvasX(double value) {
         return Math.max(getWaveCanvasScreenWidth() - WAVE_CANVAS_WIDTH, Math.min(0.0D, value));
     }
 
-    private double clampWaveCanvasY(double value) {
-        return Math.max(getWaveCanvasScreenHeight() - WAVE_CANVAS_HEIGHT, Math.min(0.0D, value));
-    }
-
     private void renderPortalTab(GuiGraphics guiGraphics, int x, int y) {
         guiGraphics.drawString(font, Component.literal("Portal").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        guiGraphics.drawString(font, Component.literal("Current garden").withStyle(ChatFormatting.DARK_GREEN), x + 70, y + 96, 0x2F6F2F, false);
-        drawNode(guiGraphics, x + 34, y + 84, new ItemStack(Items.ENDER_PEARL), true);
+        GardenPortalOption current = GardenPortalOption.values()[menu.currentPortalIndex()];
+        guiGraphics.drawString(font, current.displayName() + " (Current Garden)", x + 90, y + 48, 0x2F6F2F, false);
+        GardenPortalOption[] options = GardenPortalOption.values();
+        for (int i = 0; i < options.length; i++) {
+            renderPortalOption(guiGraphics, options[i], i, x, y);
+        }
+    }
+
+    private void renderPortalOption(GuiGraphics guiGraphics, GardenPortalOption option, int index, int x, int y) {
+        int optionX = getPortalOptionX(x, index);
+        int optionY = getPortalOptionY(y, index);
+        boolean discovered = menu.isPortalDiscovered(index);
+        boolean current = menu.currentPortalIndex() == index;
+        int color = option.color();
+        int border = current ? 0xFFFFFFFF : 0xFF1F1F1F;
+        int fill = discovered ? color : darken(color);
+        String label = discovered ? option.displayName() : "??????";
+        label = font.plainSubstrByWidth(label, 104);
+
+        guiGraphics.fill(optionX, optionY, optionX + 14, optionY + 14, border);
+        guiGraphics.fill(optionX + 3, optionY + 3, optionX + 11, optionY + 11, 0xFF000000 | fill);
+        guiGraphics.drawString(font, label, optionX + 20, optionY + 3, discovered ? (0xFF000000 | color) : 0x5F5F5F, false);
+    }
+
+    private int getHoveredPortal(double mouseX, double mouseY) {
+        for (int i = 0; i < GardenPortalOption.values().length; i++) {
+            int optionX = getPortalOptionX(leftPos, i);
+            int optionY = getPortalOptionY(topPos, i);
+            if (mouseX >= optionX && mouseX < optionX + 128 && mouseY >= optionY && mouseY < optionY + 14) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getPortalOptionX(int x, int index) {
+        return x + 20 + (index % 2) * 132;
+    }
+
+    private int getPortalOptionY(int y, int index) {
+        return y + 56 + (index / 2) * 16;
+    }
+
+    private int darken(int color) {
+        int r = ((color >> 16) & 255) / 3;
+        int g = ((color >> 8) & 255) / 3;
+        int b = (color & 255) / 3;
+        return (r << 16) | (g << 8) | b;
     }
 
     private void renderPlanterTab(GuiGraphics guiGraphics, int x, int y) {

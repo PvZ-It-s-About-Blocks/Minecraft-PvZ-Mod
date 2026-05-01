@@ -9,11 +9,14 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.item.ItemStack;
 
 public class GardenTotemMenu extends AbstractContainerMenu {
-    private static final int START_WAVE_BUTTON = 0;
+    public static final int START_WAVE_BUTTON = 0;
+    public static final int PORTAL_BUTTON_OFFSET = 100;
 
     private final GardenTotemBlockEntity gardenTotem;
     private int currentWave;
     private int waveActive;
+    private int portalDiscoveryMask;
+    private int currentPortalIndex;
 
     public GardenTotemMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, 1, false);
@@ -24,7 +27,9 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.gardenTotem = null;
         this.currentWave = currentWave;
         this.waveActive = waveActive ? 1 : 0;
-        addWaveDataSlots();
+        this.portalDiscoveryMask = 1;
+        this.currentPortalIndex = 0;
+        addDataSlots();
     }
 
     public GardenTotemMenu(int containerId, Inventory playerInventory, GardenTotemBlockEntity gardenTotem) {
@@ -32,10 +37,12 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.gardenTotem = gardenTotem;
         this.currentWave = gardenTotem.getCurrentWave();
         this.waveActive = gardenTotem.isWaveActive() ? 1 : 0;
-        addWaveDataSlots();
+        this.portalDiscoveryMask = gardenTotem.getPortalDiscoveryMask();
+        this.currentPortalIndex = gardenTotem.getCurrentPortalIndex();
+        addDataSlots();
     }
 
-    private void addWaveDataSlots() {
+    private void addDataSlots() {
         addDataSlot(new DataSlot() {
             @Override
             public int get() {
@@ -58,6 +65,28 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                 GardenTotemMenu.this.waveActive = value;
             }
         });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.portalDiscoveryMask : gardenTotem.getPortalDiscoveryMask();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.portalDiscoveryMask = value;
+            }
+        });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.currentPortalIndex : gardenTotem.getCurrentPortalIndex();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.currentPortalIndex = value;
+            }
+        });
     }
 
     public int currentWave() {
@@ -66,6 +95,14 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
     public boolean waveActive() {
         return waveActive != 0;
+    }
+
+    public boolean isPortalDiscovered(int index) {
+        return (portalDiscoveryMask & (1 << index)) != 0;
+    }
+
+    public int currentPortalIndex() {
+        return currentPortalIndex;
     }
 
     @Override
@@ -77,6 +114,11 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public boolean clickMenuButton(Player player, int id) {
         if (id == START_WAVE_BUTTON && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
             gardenTotem.startTotemDefense(serverPlayer);
+            return true;
+        }
+
+        if (id >= PORTAL_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.teleportToGarden(serverPlayer, id - PORTAL_BUTTON_OFFSET);
             return true;
         }
 

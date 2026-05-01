@@ -2,8 +2,6 @@ package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.BiomeDetectorMenu;
 import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
-import net.PvZModders.PvZMod.progression.GardenDefinition;
-import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -61,15 +59,10 @@ public class BiomeDetectorScreen extends AbstractContainerScreen<BiomeDetectorMe
         int optionY = getOptionY(index);
         boolean hovered = isMouseOverOption(index, mouseX, mouseY);
         int fill = hovered ? lighten(category.color()) : category.color();
-        GardenDefinition garden = GardenDefinitions.get(category.gardenId());
 
         guiGraphics.fill(optionX, optionY, optionX + OPTION_WIDTH, optionY + OPTION_HEIGHT, 0xFF1F1F1F);
         guiGraphics.fill(optionX + 2, optionY + 2, optionX + OPTION_WIDTH - 2, optionY + OPTION_HEIGHT - 2, 0xFF000000 | fill);
         guiGraphics.drawString(font, category.displayName(), optionX + 6, optionY + 6, 0xFFFFFF, true);
-
-        if (hovered) {
-            guiGraphics.renderTooltip(font, Component.literal(garden.displayName()), mouseX, mouseY);
-        }
     }
 
     private int getOptionX(int index) {
