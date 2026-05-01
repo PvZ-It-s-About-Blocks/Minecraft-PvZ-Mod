@@ -25,11 +25,9 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> GARDEN_TOTEM = BLOCKS.register("garden_totem",
             () -> new GardenTotemBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.PLANT)
-                    .strength(0.2F)
-                    .noCollission()
-                    .noOcclusion()
-                    .sound(SoundType.GRASS)));
+                    .mapColor(MapColor.STONE)
+                    .strength(2.0F)
+                    .sound(SoundType.STONE)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.block.ModBlocks;
+import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -233,7 +234,9 @@ public class GardenPlotterBlockEntity extends BlockEntity {
 
         clearValidationPreview(serverLevel);
         clearPromptDisplay(serverLevel);
-        serverLevel.setBlock(worldPosition, ModBlocks.GARDEN_TOTEM.get().defaultBlockState(), 3);
+        serverLevel.setBlock(worldPosition, ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, 0), 3);
+        serverLevel.setBlock(worldPosition.above(), ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, 1), 3);
+        serverLevel.setBlock(worldPosition.above(2), ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, 2), 3);
         if (serverLevel.getBlockEntity(worldPosition) instanceof GardenTotemBlockEntity gardenTotem) {
             gardenTotem.initializeFromPlotter(serverLevel, worldPosition);
         }

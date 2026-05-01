@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.block.entity;
 
 import net.PvZModders.PvZMod.block.ModBlocks;
+import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
@@ -18,6 +19,7 @@ import net.minecraft.nbt.FloatTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
@@ -25,6 +27,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Entity;
@@ -51,9 +54,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final double PLOTTER_SINK_SPEED = 0.08D;
     private static final int GARDEN_RADIUS = 7;
     private static final int TOTEM_MAX_HEALTH = 100;
+    private static final int ZOMBIE_TOTEM_DAMAGE = 4;
 
     private UUID totemDisplayId;
     private UUID sinkingPlotterDisplayId;
+    private UUID healthBarDisplayId;
     private double totemY;
     private double sinkingPlotterY;
     private boolean initialized;
@@ -76,7 +81,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         be.ensureInitialized(serverLevel, pos);
         be.tickSinkingPlotter(serverLevel, pos);
-        be.tickGardenTotem(serverLevel, pos);
+        be.syncHealthBar(serverLevel, pos);
         be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
     }
@@ -91,8 +96,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         this.initialized = true;
         this.totemY = pos.getY() - 1.0D;
         this.sinkingPlotterY = pos.getY();
+        placeTotemColumn(level, pos);
         spawnSinkingPlotter(level, pos);
-        spawnGardenTotem(level, pos);
+        syncHealthBar(level, pos);
         setChanged();
     }
 
@@ -149,14 +155,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         if (level instanceof ServerLevel serverLevel) {
-            for (UUID entityId : activeWaveEntityIds) {
-                Entity entity = serverLevel.getEntity(entityId);
-                if (entity != null) {
-                    entity.discard();
-                }
-            }
+            discardActiveWaveEntities(serverLevel);
         }
-        activeWaveEntityIds.clear();
         completeCurrentWave(player);
         player.displayClientMessage(Component.literal("Dev cleared current wave").withStyle(ChatFormatting.LIGHT_PURPLE), true);
     }
@@ -208,7 +208,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
                 if (entity instanceof Mob mob) {
                     mob.setPersistenceRequired();
-                    mob.getNavigation().moveTo(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D, 1.0D);
+                    moveMobTowardTotem(mob);
                 }
                 activeWaveEntityIds.add(entity.getUUID());
                 spawned++;
@@ -297,21 +297,49 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
-        for (UUID entityId : activeWaveEntityIds) {
+        for (UUID entityId : List.copyOf(activeWaveEntityIds)) {
             Entity entity = level.getEntity(entityId);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) {
                 continue;
             }
 
-            if (mob.getTarget() == null && (level.getGameTime() + entity.getId()) % 20 == 0) {
-                mob.getNavigation().moveTo(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D, 1.0D);
+            if (isMobInTotemAttackRange(mob)) {
+                mob.getNavigation().stop();
+                mob.getLookControl().setLookAt(worldPosition.getX() + 0.5D, worldPosition.getY() + 1.5D, worldPosition.getZ() + 0.5D);
+                if ((level.getGameTime() + entity.getId()) % 20 == 0) {
+                    mob.swing(InteractionHand.MAIN_HAND);
+                    damageTotem(level, ZOMBIE_TOTEM_DAMAGE);
+                }
+                continue;
             }
 
-            if (mob.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY(), worldPosition.getZ() + 0.5D) <= 3.0D
-                    && level.getGameTime() % 20 == 0) {
-                damageTotem(level, 1);
+            if (mob.getTarget() == null && (level.getGameTime() + entity.getId()) % 10 == 0) {
+                moveMobTowardTotem(mob);
             }
         }
+    }
+
+    private void moveMobTowardTotem(Mob mob) {
+        BlockPos approachPos = getTotemApproachPos(mob);
+        mob.getNavigation().moveTo(approachPos.getX() + 0.5D, approachPos.getY(), approachPos.getZ() + 0.5D, 1.1D);
+    }
+
+    private BlockPos getTotemApproachPos(Mob mob) {
+        double dx = mob.getX() - (worldPosition.getX() + 0.5D);
+        double dz = mob.getZ() - (worldPosition.getZ() + 0.5D);
+        if (Math.abs(dx) > Math.abs(dz)) {
+            return worldPosition.offset(dx >= 0.0D ? 1 : -1, 0, 0);
+        }
+        return worldPosition.offset(0, 0, dz >= 0.0D ? 1 : -1);
+    }
+
+    private boolean isMobInTotemAttackRange(Mob mob) {
+        double dx = Math.abs(mob.getX() - (worldPosition.getX() + 0.5D));
+        double dz = Math.abs(mob.getZ() - (worldPosition.getZ() + 0.5D));
+        return dx <= 1.85D
+                && dz <= 1.85D
+                && mob.getY() <= worldPosition.getY() + 3.25D
+                && mob.getY() + mob.getBbHeight() >= worldPosition.getY() - 0.25D;
     }
 
     private void damageTotem(ServerLevel level, int amount) {
@@ -322,7 +350,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         waveProgress.failCurrentWave();
-        activeWaveEntityIds.clear();
+        discardActiveWaveEntities(level);
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
                 player.displayClientMessage(Component.literal("The Totem was overwhelmed. Wave failed.").withStyle(ChatFormatting.RED), false);
@@ -369,35 +397,71 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (!initialized) {
             initializeFromPlotter(level, pos);
         }
-        if (totemDisplayId == null || level.getEntity(totemDisplayId) == null) {
-            spawnGardenTotem(level, pos);
+        placeTotemColumn(level, pos);
+        syncHealthBar(level, pos);
+    }
+
+    private void placeTotemColumn(ServerLevel level, BlockPos pos) {
+        for (int part = 0; part < 3; part++) {
+            BlockPos partPos = pos.above(part);
+            BlockState expected = ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, part);
+            if (!level.getBlockState(partPos).is(ModBlocks.GARDEN_TOTEM.get())
+                    || level.getBlockState(partPos).getValue(GardenTotemBlock.PART) != part) {
+                level.setBlock(partPos, expected, 3);
+            }
         }
     }
 
-    private void spawnGardenTotem(ServerLevel level, BlockPos pos) {
-        Display.BlockDisplay totem = EntityType.BLOCK_DISPLAY.create(level);
-        if (totem == null) {
+    private void syncHealthBar(ServerLevel level, BlockPos pos) {
+        if (level.getGameTime() % 5 != 0 && healthBarDisplayId != null && level.getEntity(healthBarDisplayId) != null) {
             return;
         }
 
-        totem.load(createBlockDisplayTag(Blocks.TALL_GRASS.defaultBlockState(), 0.0F, 0.0F, 0.0F, 1.0F, 2.0F, 1.0F));
-        totem.setPos(pos.getX(), totemY, pos.getZ());
-        totem.setNoGravity(true);
-        level.addFreshEntity(totem);
-        totemDisplayId = totem.getUUID();
+        Entity entity = healthBarDisplayId == null ? null : level.getEntity(healthBarDisplayId);
+        Display.TextDisplay healthBar = entity instanceof Display.TextDisplay textDisplay ? textDisplay : null;
+        if (healthBar == null) {
+            healthBar = EntityType.TEXT_DISPLAY.create(level);
+            if (healthBar == null) {
+                return;
+            }
+            healthBar.setNoGravity(true);
+            level.addFreshEntity(healthBar);
+            healthBarDisplayId = healthBar.getUUID();
+        }
+
+        healthBar.load(createHealthBarDisplayTag());
+        healthBar.setPos(pos.getX() + 0.5D, pos.getY() + 3.4D, pos.getZ() + 0.5D);
     }
 
-    private void tickGardenTotem(ServerLevel level, BlockPos pos) {
-        Entity entity = totemDisplayId == null ? null : level.getEntity(totemDisplayId);
-        if (entity == null) {
-            return;
-        }
+    private CompoundTag createHealthBarDisplayTag() {
+        CompoundTag tag = new CompoundTag();
+        Component text = Component.literal("Totem " + healthBarText() + " " + totemHealth + "/" + TOTEM_MAX_HEALTH)
+                .withStyle(style -> style.withColor(TextColor.fromRgb(healthBarColor())));
+        tag.putString("text", Component.Serializer.toJson(text));
+        tag.putInt("line_width", 260);
+        tag.putByte("text_opacity", (byte) 255);
+        tag.putInt("background", 0x66000000);
+        tag.putBoolean("see_through", true);
+        tag.putString("billboard", "center");
+        tag.putFloat("view_range", 48.0F);
+        tag.putFloat("shadow_radius", 0.0F);
+        tag.putFloat("shadow_strength", 0.0F);
+        return tag;
+    }
 
-        if (totemY < pos.getY()) {
-            totemY = Math.min(pos.getY(), totemY + TOTEM_RISE_SPEED);
-            entity.setPos(pos.getX(), totemY, pos.getZ());
-            setChanged();
+    private String healthBarText() {
+        int filled = Math.round((totemHealth / (float) TOTEM_MAX_HEALTH) * 20.0F);
+        return "[" + "|".repeat(Math.max(0, filled)) + ".".repeat(Math.max(0, 20 - filled)) + "]";
+    }
+
+    private int healthBarColor() {
+        if (totemHealth > 60) {
+            return 0x44FF44;
         }
+        if (totemHealth > 25) {
+            return 0xFFD44A;
+        }
+        return 0xFF4444;
     }
 
     private void spawnSinkingPlotter(ServerLevel level, BlockPos pos) {
@@ -502,8 +566,19 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (level instanceof ServerLevel serverLevel) {
             discardDisplay(serverLevel, totemDisplayId);
             discardDisplay(serverLevel, sinkingPlotterDisplayId);
+            discardDisplay(serverLevel, healthBarDisplayId);
         }
         super.setRemoved();
+    }
+
+    private void discardActiveWaveEntities(ServerLevel level) {
+        for (UUID entityId : activeWaveEntityIds) {
+            Entity entity = level.getEntity(entityId);
+            if (entity != null) {
+                entity.discard();
+            }
+        }
+        activeWaveEntityIds.clear();
     }
 
     private void discardDisplay(ServerLevel level, UUID displayId) {

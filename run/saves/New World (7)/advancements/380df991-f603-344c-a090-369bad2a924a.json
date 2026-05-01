@@ -1,0 +1,41 @@
+{
+  "minecraft:recipes/transportation/carrot_on_a_stick": {
+    "criteria": {
+      "has_carrot": "2026-04-30 19:08:05 -0400"
+    },
+    "done": true
+  },
+  "minecraft:recipes/decorations/crafting_table": {
+    "criteria": {
+      "unlock_right_away": "2026-04-30 19:03:57 -0400"
+    },
+    "done": true
+  },
+  "minecraft:adventure/root": {
+    "criteria": {
+      "killed_something": "2026-04-30 19:07:06 -0400"
+    },
+    "done": true
+  },
+  "minecraft:adventure/kill_all_mobs": {
+    "criteria": {
+      "minecraft:zombie": "2026-04-30 19:07:06 -0400"
+    },
+    "done": false
+  },
+  "minecraft:adventure/kill_a_mob": {
+    "criteria": {
+      "minecraft:zombie": "2026-04-30 19:07:06 -0400"
+    },
+    "done": true
+  },
+  "minecraft:adventure/adventuring_time": {
+    "criteria": {
+      "minecraft:windswept_hills": "2026-04-30 19:05:29 -0400",
+      "minecraft:dark_forest": "2026-04-30 19:03:59 -0400",
+      "minecraft:plains": "2026-04-30 19:05:19 -0400"
+    },
+    "done": false
+  },
+  "DataVersion": 3465
+}
