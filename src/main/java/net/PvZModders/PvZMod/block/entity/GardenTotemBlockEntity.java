@@ -8,6 +8,7 @@ import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
+import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -176,6 +177,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         if (waveProgress.currentWave() == 1) {
             grantStarterPlants(player);
+            SunManager.unlockSunDrops(player.serverLevel(), player);
         }
 
         waveProgress.startWave();
@@ -465,6 +467,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             initializeFromPlotter(level, pos);
         }
         migrateLegacyWaveProgress(level);
+        unlockSunForExistingOriginalProgress(level);
         placeTotemColumn(level, pos);
         registerPortal(level, pos);
         syncHealthBar(level, pos);
@@ -489,6 +492,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private void migrateLegacyWaveProgress(ServerLevel level) {
         GardenProgressSavedData.get(level).adoptLegacyProgressIfUnset(gardenId, legacyWaveProgress);
+    }
+
+    private void unlockSunForExistingOriginalProgress(ServerLevel level) {
+        if (gardenId == GardenId.INITIAL_PLAINS && getWaveProgress(level).currentWave() > 1 && !level.players().isEmpty()) {
+            SunManager.unlockSunDrops(level, level.players().get(0));
+        }
     }
 
     private void placeTotemColumn(ServerLevel level, BlockPos pos) {

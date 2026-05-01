@@ -1,0 +1,222 @@
+package net.PvZModders.PvZMod.progression.sun;
+
+import net.PvZModders.PvZMod.PvZ2Mod;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerXpEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
+@Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
+public final class SunManager {
+    public static final int DEFAULT_SUN_VALUE = 25;
+    public static final int DEFAULT_SUN_CAP = 300;
+
+    private static final String PLAYER_SUN_TAG = "PvZSun";
+    private static final String PLAYER_SUN_CAP_TAG = "PvZSunCap";
+    private static final String NEXT_SUN_DROP_TICK_TAG = "PvZNextSunDropTick";
+    private static final String SUN_ORB_TAG = "PvZSunOrb";
+    private static final String SUN_VALUE_TAG = "PvZSunValue";
+    private static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
+    private static final int SUN_LIFETIME_TICKS = 25 * 20;
+    private static final int SUN_BLINK_START_TICKS = 20 * 20;
+    private static final int SUN_DROP_RADIUS = 32;
+    private static final int SUN_DROP_HEIGHT = 15;
+    private static final int MIN_DROP_DELAY_TICKS = 7 * 20;
+    private static final int RANDOM_DROP_DELAY_TICKS = 4 * 20;
+
+    private SunManager() {
+    }
+
+    public static void unlockSunDrops(ServerLevel level, ServerPlayer player) {
+        SunSavedData sunData = SunSavedData.get(level);
+        boolean wasUnlocked = sunData.sunUnlocked();
+        sunData.unlockSun();
+        syncSunBar(player);
+
+        if (!wasUnlocked) {
+            player.sendSystemMessage(Component.literal("Penny: Sun is your main currency. Pick it up before it fades!").withStyle(ChatFormatting.YELLOW));
+            spawnTutorialSun(level, player);
+        }
+        scheduleNextSunDrop(player, level.getGameTime() + MIN_DROP_DELAY_TICKS);
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) {
+            return;
+        }
+
+        ServerLevel overworld = event.getServer().overworld();
+        boolean sunUnlocked = SunSavedData.get(overworld).sunUnlocked();
+        Set<UUID> updatedSunOrbs = new HashSet<>();
+
+        for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+            syncSunBar(player);
+            tickNearbySunOrbs(player.serverLevel(), player, updatedSunOrbs);
+            if (sunUnlocked) {
+                tickSunDrops(player);
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onExperienceDrop(LivingExperienceDropEvent event) {
+        event.setDroppedExperience(0);
+    }
+
+    @SubscribeEvent
+    public static void onExperiencePickup(PlayerXpEvent.PickupXp event) {
+        event.setCanceled(true);
+        ExperienceOrb orb = event.getOrb();
+        if (isSunOrb(orb)) {
+            Player player = event.getEntity();
+            addSun(player, getSunValue(orb));
+            player.take(orb, 1);
+            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.25F, 1.4F);
+        }
+        orb.discard();
+    }
+
+    @SubscribeEvent
+    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        syncSunBar(event.getEntity());
+    }
+
+    @SubscribeEvent
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        setSun(event.getEntity(), getSun(event.getOriginal()));
+        setSunCap(event.getEntity(), getSunCap(event.getOriginal()));
+        syncSunBar(event.getEntity());
+    }
+
+    public static int getSun(Player player) {
+        return player.getPersistentData().getInt(PLAYER_SUN_TAG);
+    }
+
+    public static int getSunCap(Player player) {
+        CompoundTag tag = player.getPersistentData();
+        if (!tag.contains(PLAYER_SUN_CAP_TAG)) {
+            tag.putInt(PLAYER_SUN_CAP_TAG, DEFAULT_SUN_CAP);
+        }
+        return tag.getInt(PLAYER_SUN_CAP_TAG);
+    }
+
+    public static void addSun(Player player, int amount) {
+        setSun(player, Math.min(getSunCap(player), getSun(player) + amount));
+        syncSunBar(player);
+    }
+
+    public static void setSun(Player player, int amount) {
+        int cap = getSunCap(player);
+        player.getPersistentData().putInt(PLAYER_SUN_TAG, Math.max(0, Math.min(cap, amount)));
+    }
+
+    public static void setSunCap(Player player, int cap) {
+        int safeCap = Math.max(DEFAULT_SUN_VALUE, cap);
+        player.getPersistentData().putInt(PLAYER_SUN_CAP_TAG, safeCap);
+        if (getSun(player) > safeCap) {
+            setSun(player, safeCap);
+        }
+    }
+
+    public static void syncSunBar(Player player) {
+        int sun = getSun(player);
+        int cap = getSunCap(player);
+        player.experienceProgress = cap <= 0 ? 0.0F : sun / (float) cap;
+        player.experienceLevel = sun;
+        player.totalExperience = sun;
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.connection.send(new ClientboundSetExperiencePacket(player.experienceProgress, player.totalExperience, player.experienceLevel));
+        }
+    }
+
+    private static void tickSunDrops(ServerPlayer player) {
+        long gameTime = player.serverLevel().getGameTime();
+        CompoundTag tag = player.getPersistentData();
+        if (!tag.contains(NEXT_SUN_DROP_TICK_TAG) || gameTime >= tag.getLong(NEXT_SUN_DROP_TICK_TAG)) {
+            spawnRandomSun(player.serverLevel(), player);
+            scheduleNextSunDrop(player, gameTime + MIN_DROP_DELAY_TICKS + player.getRandom().nextInt(RANDOM_DROP_DELAY_TICKS + 1));
+        }
+    }
+
+    private static void scheduleNextSunDrop(ServerPlayer player, long gameTime) {
+        player.getPersistentData().putLong(NEXT_SUN_DROP_TICK_TAG, gameTime);
+    }
+
+    private static void spawnTutorialSun(ServerLevel level, ServerPlayer player) {
+        BlockPos front = player.blockPosition().relative(player.getDirection(), 3);
+        BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, front);
+        spawnSun(level, ground.above(SUN_DROP_HEIGHT));
+    }
+
+    private static void spawnRandomSun(ServerLevel level, ServerPlayer player) {
+        int dx = level.random.nextInt(SUN_DROP_RADIUS * 2 + 1) - SUN_DROP_RADIUS;
+        int dz = level.random.nextInt(SUN_DROP_RADIUS * 2 + 1) - SUN_DROP_RADIUS;
+        BlockPos xz = player.blockPosition().offset(dx, 0, dz);
+        BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, xz);
+        spawnSun(level, ground.above(SUN_DROP_HEIGHT));
+    }
+
+    private static void spawnSun(ServerLevel level, BlockPos pos) {
+        ExperienceOrb sun = new ExperienceOrb(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, DEFAULT_SUN_VALUE);
+        sun.setCustomName(Component.literal("Sun").withStyle(ChatFormatting.YELLOW));
+        sun.getPersistentData().putBoolean(SUN_ORB_TAG, true);
+        sun.getPersistentData().putInt(SUN_VALUE_TAG, DEFAULT_SUN_VALUE);
+        sun.getPersistentData().putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
+        level.addFreshEntity(sun);
+    }
+
+    private static void tickNearbySunOrbs(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunOrbs) {
+        AABB searchArea = player.getBoundingBox().inflate(SUN_DROP_RADIUS + SUN_DROP_HEIGHT + 16);
+        for (Entity entity : level.getEntities(player, searchArea, entity -> entity instanceof ExperienceOrb orb && isSunOrb(orb))) {
+            if (updatedSunOrbs.add(entity.getUUID()) && entity instanceof ExperienceOrb orb) {
+                tickSunOrb(level, orb);
+            }
+        }
+    }
+
+    private static void tickSunOrb(ServerLevel level, ExperienceOrb sun) {
+        long spawnTick = sun.getPersistentData().getLong(SUN_SPAWN_TICK_TAG);
+        int age = (int) (level.getGameTime() - spawnTick);
+        if (age >= SUN_LIFETIME_TICKS) {
+            sun.discard();
+            return;
+        }
+
+        if (age >= SUN_BLINK_START_TICKS) {
+            sun.setInvisible((age / 5) % 2 == 0);
+        }
+    }
+
+    private static boolean isSunOrb(ExperienceOrb orb) {
+        return orb.getPersistentData().getBoolean(SUN_ORB_TAG);
+    }
+
+    private static int getSunValue(ExperienceOrb orb) {
+        if (orb.getPersistentData().contains(SUN_VALUE_TAG)) {
+            return orb.getPersistentData().getInt(SUN_VALUE_TAG);
+        }
+        return DEFAULT_SUN_VALUE;
+    }
+}
