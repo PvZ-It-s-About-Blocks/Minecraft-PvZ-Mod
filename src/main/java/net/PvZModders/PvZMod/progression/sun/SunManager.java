@@ -15,6 +15,7 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -37,12 +38,15 @@ public final class SunManager {
     private static final String SUN_ORB_TAG = "PvZSunOrb";
     private static final String SUN_VALUE_TAG = "PvZSunValue";
     private static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
+    private static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
+    private static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
     private static final int SUN_LIFETIME_TICKS = 25 * 20;
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
     private static final int SUN_DROP_RADIUS = 32;
     private static final int SUN_DROP_HEIGHT = 15;
     private static final int MIN_DROP_DELAY_TICKS = 7 * 20;
     private static final int RANDOM_DROP_DELAY_TICKS = 4 * 20;
+    private static final double SUN_PICKUP_RADIUS = 1.25D;
 
     private SunManager() {
     }
@@ -184,6 +188,9 @@ public final class SunManager {
         sun.getPersistentData().putBoolean(SUN_ORB_TAG, true);
         sun.getPersistentData().putInt(SUN_VALUE_TAG, DEFAULT_SUN_VALUE);
         sun.getPersistentData().putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
+        sun.getPersistentData().putDouble(SUN_ANCHOR_X_TAG, sun.getX());
+        sun.getPersistentData().putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
+        sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
         level.addFreshEntity(sun);
     }
 
@@ -207,6 +214,27 @@ public final class SunManager {
         if (age >= SUN_BLINK_START_TICKS) {
             sun.setInvisible((age / 5) % 2 == 0);
         }
+
+        keepSunAnchoredUntilClose(level, sun);
+    }
+
+    private static void keepSunAnchoredUntilClose(ServerLevel level, ExperienceOrb sun) {
+        Player nearestPlayer = level.getNearestPlayer(sun, SUN_PICKUP_RADIUS);
+        if (nearestPlayer != null) {
+            return;
+        }
+
+        CompoundTag tag = sun.getPersistentData();
+        if (!tag.contains(SUN_ANCHOR_X_TAG) || !tag.contains(SUN_ANCHOR_Z_TAG)) {
+            tag.putDouble(SUN_ANCHOR_X_TAG, sun.getX());
+            tag.putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
+        }
+
+        double anchorX = tag.getDouble(SUN_ANCHOR_X_TAG);
+        double anchorZ = tag.getDouble(SUN_ANCHOR_Z_TAG);
+        Vec3 movement = sun.getDeltaMovement();
+        sun.setPos(anchorX, sun.getY(), anchorZ);
+        sun.setDeltaMovement(0.0D, Math.min(movement.y, 0.0D), 0.0D);
     }
 
     public static boolean isSunOrb(ExperienceOrb orb) {
