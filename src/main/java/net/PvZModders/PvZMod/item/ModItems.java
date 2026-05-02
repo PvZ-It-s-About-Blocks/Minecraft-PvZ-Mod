@@ -18,6 +18,10 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PEASHOOTER_SEED_PACKET = ITEMS.register("peashooter_seed_packet",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GARDEN_PLOTTER = ITEMS.register("garden_plotter",
             () -> new GardenPlotterItem(ModBlocks.GARDEN_PLOTTER.get(), new Item.Properties()));
     public static final RegistryObject<Item> BIOME_DETECTOR = ITEMS.register("biome_detector",

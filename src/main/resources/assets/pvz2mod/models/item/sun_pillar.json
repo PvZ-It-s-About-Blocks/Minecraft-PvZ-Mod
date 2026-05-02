@@ -1,0 +1,9 @@
+{
+  "parent": "pvz2mod:block/sun_pillar",
+  "display": {
+    "ground": {
+      "translation": [0, -6, 0],
+      "scale": [1.0, 1.0, 1.0]
+    }
+  }
+}

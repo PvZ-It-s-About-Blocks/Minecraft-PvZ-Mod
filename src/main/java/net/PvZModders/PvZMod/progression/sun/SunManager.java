@@ -209,7 +209,7 @@ public final class SunManager {
         }
     }
 
-    private static boolean isSunOrb(ExperienceOrb orb) {
+    public static boolean isSunOrb(ExperienceOrb orb) {
         return orb.getPersistentData().getBoolean(SUN_ORB_TAG);
     }
 

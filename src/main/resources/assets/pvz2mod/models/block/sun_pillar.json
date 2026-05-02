@@ -1,0 +1,41 @@
+{
+  "texture_size": [32, 32],
+  "textures": {
+    "0": "pvz2mod:block/sunpillar",
+    "particle": "pvz2mod:block/sunpillar"
+  },
+  "elements": [
+    {
+      "from": [7.9, 0, 8],
+      "to": [8.1, 22, 9],
+      "faces": {
+        "east": {"uv": [2, 0, 3, 22], "texture": "#0"},
+        "west": {"uv": [3, 0, 4, 22], "texture": "#0"}
+      }
+    },
+    {
+      "from": [7.9, 0, 8],
+      "to": [8.1, 22, 9],
+      "faces": {
+        "east": {"uv": [0, 0, 1, 22], "texture": "#0"},
+        "west": {"uv": [1, 0, 2, 22], "texture": "#0"}
+      }
+    },
+    {
+      "from": [8, 0, 8.9],
+      "to": [9, 22, 9.1],
+      "faces": {
+        "north": {"uv": [4, 0, 5, 22], "texture": "#0"},
+        "south": {"uv": [5, 0, 6, 22], "texture": "#0"}
+      }
+    },
+    {
+      "from": [8, 0, 7.9],
+      "to": [9, 22, 8.1],
+      "faces": {
+        "north": {"uv": [6, 0, 7, 22], "texture": "#0"},
+        "south": {"uv": [7, 0, 8, 22], "texture": "#0"}
+      }
+    }
+  ]
+}
