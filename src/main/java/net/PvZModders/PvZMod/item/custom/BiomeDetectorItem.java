@@ -80,6 +80,7 @@ public class BiomeDetectorItem extends CompassItem {
         GardenBiomeCategory target = categories[buttonId];
         stack.getOrCreateTag().putString(TARGET_TAG, target.name());
         refreshDetection(stack, player, target);
+        player.getInventory().setChanged();
         return true;
     }
 

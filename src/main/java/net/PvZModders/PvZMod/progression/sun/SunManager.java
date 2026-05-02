@@ -13,6 +13,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -44,8 +45,8 @@ public final class SunManager {
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
     private static final int SUN_DROP_RADIUS = 32;
     private static final int SUN_DROP_HEIGHT = 15;
-    private static final int MIN_DROP_DELAY_TICKS = 7 * 20;
-    private static final int RANDOM_DROP_DELAY_TICKS = 4 * 20;
+    private static final int MIN_DROP_DELAY_TICKS = 4 * 20;
+    private static final int RANDOM_DROP_DELAY_TICKS = 3 * 20;
     private static final double SUN_PICKUP_RADIUS = 1.25D;
 
     private SunManager() {
@@ -156,12 +157,22 @@ public final class SunManager {
     }
 
     private static void tickSunDrops(ServerPlayer player) {
-        long gameTime = player.serverLevel().getGameTime();
+        ServerLevel level = player.serverLevel();
+        if (!canSpawnNaturalSun(level)) {
+            scheduleNextSunDrop(player, level.getGameTime() + MIN_DROP_DELAY_TICKS);
+            return;
+        }
+
+        long gameTime = level.getGameTime();
         CompoundTag tag = player.getPersistentData();
         if (!tag.contains(NEXT_SUN_DROP_TICK_TAG) || gameTime >= tag.getLong(NEXT_SUN_DROP_TICK_TAG)) {
-            spawnRandomSun(player.serverLevel(), player);
+            spawnRandomSun(level, player);
             scheduleNextSunDrop(player, gameTime + MIN_DROP_DELAY_TICKS + player.getRandom().nextInt(RANDOM_DROP_DELAY_TICKS + 1));
         }
+    }
+
+    private static boolean canSpawnNaturalSun(ServerLevel level) {
+        return level.dimension() == Level.OVERWORLD && level.isDay();
     }
 
     private static void scheduleNextSunDrop(ServerPlayer player, long gameTime) {

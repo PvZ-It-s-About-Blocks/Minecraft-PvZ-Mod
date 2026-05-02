@@ -64,7 +64,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int GARDEN_RADIUS = 7;
     private static final int TOTEM_MAX_HEALTH = 100;
     private static final int ZOMBIE_TOTEM_DAMAGE = 4;
-    private static final int DEFAULT_WAVE_DURATION_TICKS = 20 * 120;
+    private static final int DEFAULT_WAVE_DURATION_TICKS = 20 * 60;
+    private static final int FIRST_SPAWN_DELAY_TICKS = 20;
+    private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
+    private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
+    private static final double FINAL_PUSH_PROGRESS = 0.78D;
 
     private UUID totemDisplayId;
     private UUID sinkingPlotterDisplayId;
@@ -85,8 +89,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
             BossEvent.BossBarOverlay.PROGRESS
     );
     private long activeWaveStartTick = -1L;
+    private long activeWaveNextSpawnTick = -1L;
     private int activeWaveTotalZombies;
     private int activeWaveSpawned;
+    private boolean activeWaveFinalPushStarted;
 
     public GardenTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GARDEN_TOTEM_BE.get(), pos, state);
@@ -199,7 +205,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), OriginalGardenWaves.get(waveProgress.currentWave()));
         showWaveDirectionTitle(player, directions);
-        player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started: " + activeWaveTotalZombies + " zombies over 2 minutes").withStyle(ChatFormatting.GRAY), true);
+        player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
         setChanged();
     }
 
@@ -246,8 +252,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveEntityIds.clear();
         activeWaveDirections.clear();
         activeWaveStartTick = level.getGameTime();
+        activeWaveNextSpawnTick = activeWaveStartTick + FIRST_SPAWN_DELAY_TICKS;
         activeWaveTotalZombies = totalSpawnCount(definition);
         activeWaveSpawned = 0;
+        activeWaveFinalPushStarted = false;
         List<WaveSpawnDirection> waveDirections = new ArrayList<>();
 
         for (WaveSpawnGroup group : definition.spawnGroups()) {
@@ -290,27 +298,60 @@ public class GardenTotemBlockEntity extends BlockEntity {
             prepareWaveSpawnSchedule(level, OriginalGardenWaves.get(waveProgress.currentWave()));
         }
 
-        int targetSpawned = targetSpawnedByNow(level);
         GardenWaveDefinition definition = OriginalGardenWaves.get(waveProgress.currentWave());
-        while (activeWaveSpawned < targetSpawned && activeWaveSpawned < activeWaveTotalZombies) {
+        long gameTime = level.getGameTime();
+        long elapsed = Math.max(0L, gameTime - activeWaveStartTick);
+        if (!activeWaveFinalPushStarted && elapsed >= (long) (DEFAULT_WAVE_DURATION_TICKS * FINAL_PUSH_PROGRESS)) {
+            spawnFinalWavePush(level, definition);
+            activeWaveFinalPushStarted = true;
+            return;
+        }
+
+        if (gameTime >= activeWaveNextSpawnTick && activeWaveSpawned < activeWaveTotalZombies) {
             if (spawnScheduledZombie(level, definition, activeWaveSpawned)) {
                 activeWaveSpawned++;
-            } else {
-                break;
+                scheduleNormalNextSpawn(level);
             }
         }
     }
 
-    private int targetSpawnedByNow(ServerLevel level) {
-        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
-        if (elapsed >= DEFAULT_WAVE_DURATION_TICKS) {
-            return activeWaveTotalZombies;
+    private void spawnFinalWavePush(ServerLevel level, GardenWaveDefinition definition) {
+        int remaining = activeWaveTotalZombies - activeWaveSpawned;
+        if (remaining <= 0) {
+            return;
         }
 
-        double progress = elapsed / (double) DEFAULT_WAVE_DURATION_TICKS;
-        double lateHeavyProgress = Math.pow(progress, 1.7D);
-        int target = (int) Math.ceil(activeWaveTotalZombies * lateHeavyProgress);
-        return elapsed > 20L ? Math.max(1, target) : target;
+        int pushCount = Math.max(1, Math.min(remaining, Math.max(2, activeWaveTotalZombies / 4)));
+        for (int i = 0; i < pushCount && activeWaveSpawned < activeWaveTotalZombies; i++) {
+            if (spawnScheduledZombie(level, definition, activeWaveSpawned)) {
+                activeWaveSpawned++;
+            }
+        }
+        activeWaveNextSpawnTick = level.getGameTime() + KILL_ACCELERATED_MIN_DELAY_TICKS;
+    }
+
+    private void scheduleNormalNextSpawn(ServerLevel level) {
+        int remaining = activeWaveTotalZombies - activeWaveSpawned;
+        if (remaining <= 0) {
+            activeWaveNextSpawnTick = Long.MAX_VALUE;
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        long timeLeftBeforePush = Math.max(20L, (long) (DEFAULT_WAVE_DURATION_TICKS * FINAL_PUSH_PROGRESS) - elapsed);
+        long interval = Math.max(20L * 6, timeLeftBeforePush / Math.max(1, remaining));
+        activeWaveNextSpawnTick = level.getGameTime() + interval;
+    }
+
+    private void accelerateNextSpawnAfterKill(ServerLevel level) {
+        if (activeWaveSpawned >= activeWaveTotalZombies) {
+            return;
+        }
+
+        long acceleratedTick = level.getGameTime() + KILL_ACCELERATED_MIN_DELAY_TICKS + level.random.nextInt(KILL_ACCELERATED_RANDOM_DELAY_TICKS + 1);
+        if (activeWaveNextSpawnTick < 0L || acceleratedTick < activeWaveNextSpawnTick) {
+            activeWaveNextSpawnTick = acceleratedTick;
+        }
     }
 
     private boolean spawnScheduledZombie(ServerLevel level, GardenWaveDefinition definition, int spawnIndex) {
@@ -416,10 +457,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
+        int activeBeforeCleanup = activeWaveEntityIds.size();
         activeWaveEntityIds.removeIf(entityId -> {
             Entity entity = level.getEntity(entityId);
             return entity == null || !entity.isAlive();
         });
+        if (activeWaveEntityIds.size() < activeBeforeCleanup) {
+            accelerateNextSpawnAfterKill(level);
+        }
 
         if (activeWaveSpawned >= activeWaveTotalZombies && activeWaveEntityIds.isEmpty()) {
             completeCurrentWaveForNearbyPlayers(level);
@@ -559,7 +604,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
         float progress = Math.min(1.0F, elapsed / (float) DEFAULT_WAVE_DURATION_TICKS);
-        waveBossBar.setName(Component.literal("Wave " + waveProgress.currentWave() + " - " + activeWaveSpawned + "/" + activeWaveTotalZombies + " zombies"));
+        waveBossBar.setName(Component.literal("Wave " + waveProgress.currentWave() + " - Defend the Totem"));
         waveBossBar.setProgress(progress);
 
         Set<ServerPlayer> nearbyPlayers = new HashSet<>();
@@ -579,8 +624,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private void clearWaveRuntimeState() {
         activeWaveStartTick = -1L;
+        activeWaveNextSpawnTick = -1L;
         activeWaveTotalZombies = 0;
         activeWaveSpawned = 0;
+        activeWaveFinalPushStarted = false;
         activeWaveDirections.clear();
         waveBossBar.removeAllPlayers();
     }
@@ -775,8 +822,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
             legacyWaveProgress.load(tag.getCompound("WaveProgress"));
         }
         activeWaveStartTick = tag.contains("ActiveWaveStartTick") ? tag.getLong("ActiveWaveStartTick") : -1L;
+        activeWaveNextSpawnTick = tag.contains("ActiveWaveNextSpawnTick") ? tag.getLong("ActiveWaveNextSpawnTick") : -1L;
         activeWaveTotalZombies = tag.getInt("ActiveWaveTotalZombies");
         activeWaveSpawned = tag.getInt("ActiveWaveSpawned");
+        activeWaveFinalPushStarted = tag.getBoolean("ActiveWaveFinalPushStarted");
         activeWaveDirections.clear();
         ListTag directionsTag = tag.getList("ActiveWaveDirections", net.minecraft.nbt.Tag.TAG_STRING);
         for (int i = 0; i < directionsTag.size(); i++) {
@@ -806,8 +855,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         getWaveProgress().save(waveTag);
         tag.put("WaveProgress", waveTag);
         tag.putLong("ActiveWaveStartTick", activeWaveStartTick);
+        tag.putLong("ActiveWaveNextSpawnTick", activeWaveNextSpawnTick);
         tag.putInt("ActiveWaveTotalZombies", activeWaveTotalZombies);
         tag.putInt("ActiveWaveSpawned", activeWaveSpawned);
+        tag.putBoolean("ActiveWaveFinalPushStarted", activeWaveFinalPushStarted);
         ListTag directionsTag = new ListTag();
         for (WaveSpawnDirection direction : activeWaveDirections) {
             directionsTag.add(net.minecraft.nbt.StringTag.valueOf(direction.name()));
