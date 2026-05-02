@@ -1,0 +1,51 @@
+# Gradle / build output
+.gradle/
+build/
+out/
+
+# Minecraft / Forge local runtime data
+run/
+runs/
+.minecraft/
+saves/
+world/
+worlds/
+logs/
+crash-reports/
+screenshots/
+resourcepacks/
+shaderpacks/
+options.txt
+optionsof.txt
+servers.dat
+usercache.json
+usernamecache.json
+eula.txt
+
+# Logs and crash dumps
+*.log
+hs_err_pid*
+replay_pid*
+
+# IDE / editor files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
