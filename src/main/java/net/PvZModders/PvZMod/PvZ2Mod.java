@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
 import net.PvZModders.PvZMod.client.SunExperienceOrbRenderer;
+import net.PvZModders.PvZMod.client.seed.ClientSeedStorage;
 import net.PvZModders.PvZMod.client.screen.BiomeDetectorScreen;
 import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
@@ -68,6 +69,7 @@ public class PvZ2Mod {
             event.accept(ModItems.PEASHOOTER_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
+            event.accept(ModItems.SEED_HOLDER);
         }
     }
 
@@ -91,6 +93,9 @@ public class PvZ2Mod {
                 ItemProperties.register(ModItems.BIOME_DETECTOR.get(), new ResourceLocation("angle"), new CompassItemPropertyFunction((level, stack, entity) ->
                         CompassItem.isLodestoneCompass(stack) ? CompassItem.getLodestonePosition(stack.getOrCreateTag()) : CompassItem.getSpawnPosition(level)
                 ));
+                ItemProperties.register(ModItems.SEED_HOLDER.get(), new ResourceLocation(PvZ2Mod.MOD_ID, "enabled"), (stack, level, entity, seed) ->
+                        ClientSeedStorage.seedModeEnabled() ? 1.0F : 0.0F
+                );
             });
         }
 

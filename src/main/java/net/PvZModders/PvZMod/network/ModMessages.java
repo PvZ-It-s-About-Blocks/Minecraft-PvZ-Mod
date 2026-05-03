@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.network;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.progression.seed.SeedStorage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkDirection;
@@ -33,10 +34,34 @@ public final class ModMessages {
                 TriggerGardenTeleportOverlayS2CPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
+        CHANNEL.registerMessage(
+                nextPacketId(),
+                SeedStorageSyncS2CPacket.class,
+                SeedStorageSyncS2CPacket::encode,
+                SeedStorageSyncS2CPacket::decode,
+                SeedStorageSyncS2CPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
+        CHANNEL.registerMessage(
+                nextPacketId(),
+                SeedHotbarActionC2SPacket.class,
+                SeedHotbarActionC2SPacket::encode,
+                SeedHotbarActionC2SPacket::decode,
+                SeedHotbarActionC2SPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 
     public static void sendGardenTeleportOverlay(ServerPlayer player) {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new TriggerGardenTeleportOverlayS2CPacket());
+    }
+
+    public static void sendSeedStorage(ServerPlayer player) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new SeedStorageSyncS2CPacket(SeedStorage.copyForSync(player)));
+    }
+
+    public static void sendSeedActionToServer(int action, int value) {
+        CHANNEL.sendToServer(new SeedHotbarActionC2SPacket(action, value));
     }
 
     private static int nextPacketId() {

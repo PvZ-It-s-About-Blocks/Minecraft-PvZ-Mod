@@ -33,14 +33,15 @@ public final class SunHudOverlay {
     }
 
     private static void renderYellowExperienceBar(GuiGraphics guiGraphics, Minecraft minecraft, int screenWidth, int screenHeight, LocalPlayer player) {
-        int x = screenWidth / 2 - 91;
+        int barWidth = 154;
+        int x = screenWidth / 2 - barWidth / 2;
         int y = screenHeight - 32 + 3;
-        int fillWidth = Math.min(182, Math.max(0, (int) (player.experienceProgress * 182.0F)));
+        int fillWidth = Math.min(barWidth, Math.max(0, (int) (player.experienceProgress * barWidth)));
 
-        guiGraphics.fill(x - 1, y - 1, x + 183, y + 6, 0xFF1F1A00);
-        guiGraphics.fill(x, y, x + 182, y + 5, 0xFF5A4500);
+        guiGraphics.fill(x - 1, y - 1, x + barWidth + 1, y + 5, 0xFF1F1A00);
+        guiGraphics.fill(x, y, x + barWidth, y + 4, 0xFF5A4500);
         if (fillWidth > 0) {
-            guiGraphics.fill(x, y, x + fillWidth, y + 5, 0xFFFFD447);
+            guiGraphics.fill(x, y, x + fillWidth, y + 4, 0xFFFFD447);
             guiGraphics.fill(x, y, x + fillWidth, y + 1, 0xFFFFFF99);
         }
 

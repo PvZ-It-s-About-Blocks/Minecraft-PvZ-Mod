@@ -131,6 +131,15 @@ public final class SunManager {
         syncSunBar(player);
     }
 
+    public static boolean spendSun(Player player, int amount) {
+        if (getSun(player) < amount) {
+            return false;
+        }
+        setSun(player, getSun(player) - amount);
+        syncSunBar(player);
+        return true;
+    }
+
     public static void setSun(Player player, int amount) {
         int cap = getSunCap(player);
         player.getPersistentData().putInt(PLAYER_SUN_TAG, Math.max(0, Math.min(cap, amount)));

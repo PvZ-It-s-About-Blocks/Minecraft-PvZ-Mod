@@ -2,6 +2,8 @@ package net.PvZModders.PvZMod.block.entity;
 
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
+import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
@@ -49,6 +51,8 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.ArrayList;
@@ -70,6 +74,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
+    private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
+    private static final ResourceLocation SEED_HOLDER_RECIPE = new ResourceLocation(PvZ2Mod.MOD_ID, "seed_holder");
 
     private UUID totemDisplayId;
     private UUID sinkingPlotterDisplayId;
@@ -247,7 +253,28 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void grantStarterPlants(ServerPlayer player) {
+        grantSeedHolder(player);
+        unlockSeedHolderRecipe(player);
         player.sendSystemMessage(Component.literal("Tutorial unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
+    }
+
+    private void grantSeedHolder(ServerPlayer player) {
+        CompoundTag playerData = player.getPersistentData();
+        if (playerData.getBoolean(SEED_HOLDER_GRANTED_TAG)) {
+            return;
+        }
+
+        ItemStack seedHolder = new ItemStack(ModItems.SEED_HOLDER.get());
+        if (!player.getInventory().add(seedHolder)) {
+            player.drop(seedHolder, false);
+        }
+        playerData.putBoolean(SEED_HOLDER_GRANTED_TAG, true);
+        player.sendSystemMessage(Component.literal("Penny gave you a Seed Holder.").withStyle(ChatFormatting.GREEN));
+    }
+
+    private void unlockSeedHolderRecipe(ServerPlayer player) {
+        Optional<? extends Recipe<?>> recipe = player.server.getRecipeManager().byKey(SEED_HOLDER_RECIPE);
+        recipe.ifPresent(value -> player.awardRecipes(List.of(value)));
     }
 
     private List<WaveSpawnDirection> prepareWaveSpawnSchedule(ServerLevel level, GardenWaveDefinition definition) {
