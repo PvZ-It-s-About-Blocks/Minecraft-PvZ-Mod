@@ -10,11 +10,14 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import java.util.List;
 
 public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> {
     private static final int TAB_PROGRESS = 0;
@@ -32,6 +35,9 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private int selectedWave = 1;
     private double waveCanvasX;
     private boolean draggingWaveCanvas;
+    private boolean waveCanvasFocused;
+    private int lastFocusedWave = -1;
+    private Component hoveredRewardTooltip;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -45,12 +51,12 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int y = topPos;
         renderFrame(guiGraphics, x, y);
         renderTabs(guiGraphics, x, y, mouseX, mouseY);
-        renderSelectedTab(guiGraphics, x, y);
+        renderSelectedTab(guiGraphics, x, y, mouseX, mouseY);
     }
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(font, title, 14, 10, 0x1F8F2F, false);
+        guiGraphics.drawString(font, title, 14, 10, gardenColor(), false);
     }
 
     @Override
@@ -76,11 +82,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                 int hoveredWave = getHoveredWave(mouseX, mouseY);
                 if (hoveredWave > 0) {
                     selectedWave = hoveredWave;
+                    waveCanvasFocused = true;
                     return true;
                 }
 
                 if (isMouseOverWaveCanvas(mouseX, mouseY)) {
                     draggingWaveCanvas = true;
+                    waveCanvasFocused = true;
                     return true;
                 }
             } else if (selectedTab == TAB_PORTAL) {
@@ -154,9 +162,9 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         }
     }
 
-    private void renderSelectedTab(GuiGraphics guiGraphics, int x, int y) {
+    private void renderSelectedTab(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
         if (selectedTab == TAB_PROGRESS) {
-            renderProgressTab(guiGraphics, x, y);
+            renderProgressTab(guiGraphics, x, y, mouseX, mouseY);
         } else if (selectedTab == TAB_PORTAL) {
             renderPortalTab(guiGraphics, x, y);
         } else {
@@ -164,15 +172,16 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         }
     }
 
-    private void renderProgressTab(GuiGraphics guiGraphics, int x, int y) {
+    private void renderProgressTab(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+        focusCurrentWaveIfNeeded();
         guiGraphics.drawString(font, Component.literal("Waves").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        guiGraphics.drawString(font, Component.literal("Current: " + menu.currentWave() + "/30" + (menu.waveActive() ? " Active" : " Ready")).withStyle(ChatFormatting.DARK_GREEN), x + 176, y + 48, 0x2F6F2F, false);
 
         int canvasX = getWaveCanvasScreenX();
         int canvasY = getWaveCanvasScreenY();
         int canvasW = getWaveCanvasScreenWidth();
         int canvasH = getWaveCanvasScreenHeight();
 
+        hoveredRewardTooltip = null;
         guiGraphics.enableScissor(canvasX, canvasY, canvasX + canvasW, canvasY + canvasH);
         drawPanelNoise(guiGraphics, canvasX + (int) waveCanvasX, canvasY, WAVE_CANVAS_WIDTH, WAVE_CANVAS_HEIGHT);
 
@@ -182,25 +191,31 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             if (wave.wave() > 1) {
                 int previousX = canvasX + getWaveVirtualX(wave.wave() - 1) + (int) waveCanvasX;
                 int previousY = canvasY + getWaveVirtualY();
-                drawWaveLine(guiGraphics, previousX + WAVE_NODE_SIZE / 2, previousY + WAVE_NODE_SIZE / 2, nodeX + WAVE_NODE_SIZE / 2, nodeY + WAVE_NODE_SIZE / 2, wave.wave());
+                drawWaveLine(guiGraphics, previousX + WAVE_NODE_SIZE, previousY + WAVE_NODE_SIZE / 2, nodeX, nodeY + WAVE_NODE_SIZE / 2, wave.wave());
             }
 
             guiGraphics.drawString(font, String.valueOf(wave.wave()), nodeX + 8, nodeY - 12, 0x3F3F3F, false);
             if (!wave.rewards().isEmpty()) {
-                renderRewardIcons(guiGraphics, wave, nodeX + 4, nodeY - 32);
+                renderRewardIcons(guiGraphics, wave, nodeX + 4, nodeY - 32, mouseX, mouseY);
             }
             drawWaveNode(guiGraphics, nodeX, nodeY, wave.wave());
         }
         guiGraphics.disableScissor();
+        if (hoveredRewardTooltip != null) {
+            guiGraphics.renderTooltip(font, hoveredRewardTooltip, mouseX, mouseY);
+        }
 
         GardenWaveDefinition selected = OriginalGardenWaves.get(selectedWave);
         renderSelectedWaveBox(guiGraphics, x, y, selected);
     }
 
-    private void renderRewardIcons(GuiGraphics guiGraphics, GardenWaveDefinition wave, int x, int y) {
+    private void renderRewardIcons(GuiGraphics guiGraphics, GardenWaveDefinition wave, int x, int y, int mouseX, int mouseY) {
         int iconX = x;
         for (WaveReward reward : wave.rewards()) {
             guiGraphics.renderItem(itemFromId(reward.iconItemId()), iconX, y);
+            if (mouseX >= iconX && mouseX < iconX + 16 && mouseY >= y && mouseY < y + 16) {
+                hoveredRewardTooltip = Component.literal("Unlock: " + reward.displayName());
+            }
             iconX += 16;
         }
     }
@@ -235,17 +250,26 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         boolean current = selected.wave() == menu.currentWave();
         int fill = completed ? 0x883F9F3F : current ? 0x883366CC : 0x88363636;
         int border = completed ? 0xFF3F9F3F : current ? 0xFF3366CC : 0xFF111111;
+        int buttonW = 86;
+        int scanW = current && !menu.waveActive() ? boxW - buttonW - 8 : boxW;
 
-        guiGraphics.fill(boxX, boxY, boxX + boxW, boxY + boxH, border);
-        guiGraphics.fill(boxX + 2, boxY + 2, boxX + boxW - 2, boxY + boxH - 2, fill);
-        guiGraphics.drawString(font, Component.literal("Scans: " + selected.scanText()).withStyle(ChatFormatting.DARK_GRAY), boxX + 6, boxY + 6, 0x3F3F3F, false);
+        guiGraphics.fill(boxX, boxY, boxX + scanW, boxY + boxH, border);
+        guiGraphics.fill(boxX + 2, boxY + 2, boxX + scanW - 2, boxY + boxH - 2, fill);
+        renderWrappedScanText(guiGraphics, "Scans: " + selected.scanText(), boxX + 6, boxY + 5, scanW - 12);
 
         if (current && !menu.waveActive()) {
-            int buttonX = boxX + boxW - 82;
-            int buttonY = boxY + 8;
-            guiGraphics.fill(buttonX, buttonY, buttonX + 76, buttonY + 16, 0xFF1F1F1F);
-            guiGraphics.fill(buttonX + 2, buttonY + 2, buttonX + 74, buttonY + 14, 0xFF3366CC);
-            guiGraphics.drawString(font, "Start Wave?", buttonX + 7, buttonY + 5, 0xFFFFFF, false);
+            int buttonX = boxX + boxW - buttonW;
+            int buttonY = boxY;
+            guiGraphics.fill(buttonX, buttonY, buttonX + buttonW, buttonY + boxH, 0xFF1F1F1F);
+            guiGraphics.fill(buttonX + 3, buttonY + 3, buttonX + buttonW - 3, buttonY + boxH - 3, 0xFF3366CC);
+            guiGraphics.drawString(font, "Start Wave?", buttonX + 10, buttonY + 11, 0xFFFFFF, false);
+        }
+    }
+
+    private void renderWrappedScanText(GuiGraphics guiGraphics, String text, int x, int y, int width) {
+        List<FormattedCharSequence> lines = font.split(FormattedText.of(text), width);
+        for (int i = 0; i < Math.min(2, lines.size()); i++) {
+            guiGraphics.drawString(font, lines.get(i), x, y + i * 10, 0xFFFFFF, false);
         }
     }
 
@@ -276,9 +300,9 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
         int boxX = leftPos + 20;
         int boxY = topPos + 142;
-        int buttonX = boxX + imageWidth - 40 - 82;
-        int buttonY = boxY + 8;
-        return mouseX >= buttonX && mouseX < buttonX + 76 && mouseY >= buttonY && mouseY < buttonY + 16;
+        int buttonX = boxX + imageWidth - 40 - 86;
+        int buttonY = boxY;
+        return mouseX >= buttonX && mouseX < buttonX + 86 && mouseY >= buttonY && mouseY < buttonY + 30;
     }
 
     private boolean isMouseOverWaveCanvas(double mouseX, double mouseY) {
@@ -314,6 +338,27 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private double clampWaveCanvasX(double value) {
         return Math.max(getWaveCanvasScreenWidth() - WAVE_CANVAS_WIDTH, Math.min(0.0D, value));
+    }
+
+    private void focusCurrentWaveIfNeeded() {
+        int currentWave = menu.currentWave();
+        if (waveCanvasFocused && lastFocusedWave == currentWave) {
+            return;
+        }
+
+        if (!waveCanvasFocused || selectedWave == lastFocusedWave) {
+            selectedWave = currentWave;
+            int canvasCenter = getWaveCanvasScreenWidth() / 2;
+            waveCanvasX = clampWaveCanvasX(canvasCenter - getWaveVirtualX(currentWave) - WAVE_NODE_SIZE / 2.0D);
+            waveCanvasFocused = true;
+            lastFocusedWave = currentWave;
+        }
+    }
+
+    private int gardenColor() {
+        GardenPortalOption[] options = GardenPortalOption.values();
+        int index = Math.max(0, Math.min(options.length - 1, menu.currentPortalIndex()));
+        return options[index].color();
     }
 
     private void renderPortalTab(GuiGraphics guiGraphics, int x, int y) {

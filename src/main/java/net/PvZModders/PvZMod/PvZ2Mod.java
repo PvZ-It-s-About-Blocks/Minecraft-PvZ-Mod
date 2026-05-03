@@ -13,6 +13,7 @@ import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.menu.ModMenuTypes;
+import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
@@ -49,6 +50,7 @@ public class PvZ2Mod {
         ModBlockEntities.register(modEventBus);
         ModEntities.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ModMessages.register();
 
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);

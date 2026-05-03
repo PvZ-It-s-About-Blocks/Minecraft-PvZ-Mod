@@ -9,6 +9,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
+import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -185,6 +186,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         BlockPos arrival = findTeleportArrival(targetLevel, target.get().pos());
         player.closeContainer();
+        ModMessages.sendGardenTeleportOverlay(player);
         player.teleportTo(targetLevel, arrival.getX() + 0.5D, arrival.getY(), arrival.getZ() + 0.5D, Set.of(), player.getYRot(), player.getXRot());
     }
 
