@@ -152,7 +152,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private void renderTab(GuiGraphics guiGraphics, int x, int y, int tab, ItemStack icon, String tooltip, int mouseX, int mouseY) {
         int tabX = getTabX(x, tab);
-        int tabY = y - 24;
+        int tabY = y - 10;
         boolean selected = selectedTab == tab;
         boolean hovered = isMouseOverTab(tab, mouseX, mouseY);
         int border = selected ? 0xFF1F1F1F : 0xFF555555;
@@ -424,13 +424,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private void renderPlanterTab(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
         hoveredPlantTooltip = null;
         guiGraphics.drawString(font, Component.literal("Planter").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 124, y + 48, 0x2F6F2F, false);
+        guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 116, y + 48, 0x2F6F2F, false);
         List<GardenPlantDefinition> plants = GardenPlantDefinition.originalGardenPlants();
         for (int i = 0; i < plants.size(); i++) {
             renderPlantCard(guiGraphics, plants.get(i), i, x, y, mouseX, mouseY);
         }
         renderSeedStorageArea(guiGraphics, x, y);
-        renderVerticalInventoryArea(guiGraphics, x, y);
+        renderTrashArea(guiGraphics, x, y);
         if (hoveredPlantTooltip != null) {
             guiGraphics.renderTooltip(font, hoveredPlantTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
         }
@@ -439,8 +439,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private void renderPlantCard(GuiGraphics guiGraphics, GardenPlantDefinition plant, int index, int x, int y, int mouseX, int mouseY) {
         int cardX = getPlantCardX(x, index);
         int cardY = getPlantCardY(y, index);
-        int cardW = 82;
-        int cardH = 46;
+        int cardW = 238;
+        int cardH = 23;
         boolean unlocked = plant.isUnlockedAtWave(menu.currentWave());
         int count = menu.plantCount(index);
         int remaining = menu.plantRemainingSeconds(index);
@@ -449,28 +449,28 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
         guiGraphics.fill(cardX, cardY, cardX + cardW, cardY + cardH, border);
         guiGraphics.fill(cardX + 2, cardY + 2, cardX + cardW - 2, cardY + cardH - 2, fill);
-        guiGraphics.fill(cardX + 5, cardY + 6, cardX + 25, cardY + 26, unlocked ? 0xFFB6D7A8 : 0xFF000000);
+        guiGraphics.fill(cardX + 6, cardY + 5, cardX + 24, cardY + 23, unlocked ? 0xFFB6D7A8 : 0xFF000000);
         if (unlocked && count <= 0) {
-            guiGraphics.renderItem(itemFromId(plant.seedPacketId().toString()), cardX + 7, cardY + 8);
+            guiGraphics.renderItem(itemFromId(plant.seedPacketId().toString()), cardX + 7, cardY + 6);
         }
 
-        String name = font.plainSubstrByWidth(plant.displayName(), 48);
-        guiGraphics.drawString(font, name, cardX + 29, cardY + 5, unlocked ? 0x2F6F2F : 0x202020, false);
+        String name = font.plainSubstrByWidth(plant.displayName(), 70);
+        guiGraphics.drawString(font, name, cardX + 30, cardY + 4, unlocked ? 0x2F6F2F : 0x202020, false);
         String cost = unlocked ? plant.sunCost() + " sun" : "?";
-        guiGraphics.drawString(font, cost, cardX + 29, cardY + 16, unlocked ? 0x9E7E00 : 0x202020, false);
-        String description = unlocked ? font.plainSubstrByWidth(plant.description(), 70) : "?";
-        guiGraphics.drawString(font, description, cardX + 6, cardY + 29, unlocked ? 0x3F3F3F : 0x202020, false);
+        guiGraphics.drawString(font, cost, cardX + 104, cardY + 4, unlocked ? 0x9E7E00 : 0x202020, false);
+        String description = unlocked ? font.plainSubstrByWidth(plant.description(), 96) : "?";
+        guiGraphics.drawString(font, description, cardX + 30, cardY + 14, unlocked ? 0x3F3F3F : 0x202020, false);
 
-        int barX = cardX + 5;
-        int barY = cardY + 38;
-        int barW = cardW - 10;
+        int barX = cardX + 150;
+        int barY = cardY + 15;
+        int barW = cardW - 156;
         guiGraphics.fill(barX, barY, barX + barW, barY + 5, 0xFF1F1F1F);
         if (unlocked) {
             int fillW = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP
                     ? barW
                     : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) plant.productionSeconds())));
             guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF3F9F3F);
-            guiGraphics.drawString(font, count + "/40", barX + 2, barY - 8, count > 0 ? 0x2F6F2F : 0x5F5F5F, false);
+            guiGraphics.drawString(font, count + "/40", cardX + 190, cardY + 4, count > 0 ? 0x2F6F2F : 0x5F5F5F, false);
         }
 
         if (mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
@@ -500,17 +500,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private void renderSeedStorageArea(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.drawString(font, Component.literal("Seed Storage").withStyle(ChatFormatting.DARK_GRAY), x + 22, y + 156, 0x3F3F3F, false);
+        guiGraphics.drawString(font, Component.literal("Seed Storage").withStyle(ChatFormatting.DARK_GRAY), x + 276, y + 58, 0x3F3F3F, false);
         for (int index = 0; index < GardenTotemMenu.SEED_STORAGE_SLOT_COUNT; index++) {
-            drawSlotBackground(guiGraphics, x + 22 + (index % 8) * 18, y + 166 + (index / 8) * 18, 0xFF2F6F2F);
+            drawSlotBackground(guiGraphics, x + 286 + (index % 2) * 18, y + 78 + (index / 2) * 18, 0xFF2F6F2F);
         }
     }
 
-    private void renderVerticalInventoryArea(GuiGraphics guiGraphics, int x, int y) {
-        guiGraphics.drawString(font, Component.literal("Inventory").withStyle(ChatFormatting.DARK_GRAY), x + 276, y + 34, 0x3F3F3F, false);
-        for (int index = 0; index < GardenTotemMenu.PLAYER_INVENTORY_SLOT_COUNT; index++) {
-            drawSlotBackground(guiGraphics, x + 276 + (index / 9) * 18, y + 44 + (index % 9) * 18, 0xFF5F5F5F);
-        }
+    private void renderTrashArea(GuiGraphics guiGraphics, int x, int y) {
         drawSlotBackground(guiGraphics, x + 334, y + 206, 0xFF7F1F1F);
         guiGraphics.renderItem(new ItemStack(Items.BARRIER), x + 335, y + 207);
     }
@@ -524,7 +520,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         for (int i = 0; i < GardenPlantDefinition.originalGardenPlants().size(); i++) {
             int cardX = getPlantCardX(leftPos, i);
             int cardY = getPlantCardY(topPos, i);
-            if (mouseX >= cardX && mouseX < cardX + 82 && mouseY >= cardY && mouseY < cardY + 46) {
+            if (mouseX >= cardX && mouseX < cardX + 238 && mouseY >= cardY && mouseY < cardY + 23) {
                 return i;
             }
         }
@@ -532,11 +528,11 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getPlantCardX(int x, int index) {
-        return x + 18 + (index % 3) * 88;
+        return x + 24;
     }
 
     private int getPlantCardY(int y, int index) {
-        return y + 60 + (index / 3) * 50;
+        return y + 60 + index * 25;
     }
 
     private void renderShopTab(GuiGraphics guiGraphics, int x, int y) {
@@ -555,7 +551,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private boolean isMouseOverTab(int tab, double mouseX, double mouseY) {
         int tabX = getTabX(leftPos, tab);
-        int tabY = topPos - 24;
+        int tabY = topPos - 10;
         return mouseX >= tabX && mouseX < tabX + TAB_SIZE && mouseY >= tabY && mouseY < tabY + 28;
     }
 

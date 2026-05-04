@@ -20,12 +20,10 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public static final int PLANT_BUTTON_OFFSET = 200;
     public static final int PLANT_COUNT = GardenPlantDefinition.originalGardenPlants().size();
     public static final int SEED_STORAGE_SLOT_START = 0;
-    public static final int SEED_STORAGE_SLOT_COUNT = SeedStorage.PLANT_SLOTS_PER_PAGE * 2;
+    public static final int SEED_STORAGE_SLOT_COUNT = 6;
     public static final int GARDEN_SOURCE_SLOT_START = SEED_STORAGE_SLOT_START + SEED_STORAGE_SLOT_COUNT;
     public static final int GARDEN_SOURCE_SLOT_COUNT = PLANT_COUNT;
-    public static final int PLAYER_INVENTORY_SLOT_START = GARDEN_SOURCE_SLOT_START + GARDEN_SOURCE_SLOT_COUNT;
-    public static final int PLAYER_INVENTORY_SLOT_COUNT = 36;
-    public static final int TRASH_SLOT_INDEX = PLAYER_INVENTORY_SLOT_START + PLAYER_INVENTORY_SLOT_COUNT;
+    public static final int TRASH_SLOT_INDEX = GARDEN_SOURCE_SLOT_START + GARDEN_SOURCE_SLOT_COUNT;
 
     private final GardenTotemBlockEntity gardenTotem;
     private int currentWave;
@@ -66,22 +64,16 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private void addContainerSlots(Inventory playerInventory) {
         for (int index = 0; index < SEED_STORAGE_SLOT_COUNT; index++) {
             seedStorageStacks[index] = SeedStorage.getPlantSlotStackByStorageIndex(playerInventory.player, index);
-            int x = 22 + (index % 8) * 18;
-            int y = 166 + (index / 8) * 18;
+            int x = 286 + (index % 2) * 18;
+            int y = 78 + (index / 2) * 18;
             addSlot(new SeedStorageSlot(playerInventory.player, index, x, y));
         }
 
         for (int index = 0; index < GARDEN_SOURCE_SLOT_COUNT; index++) {
             GardenPlantDefinition plant = GardenPlantDefinition.originalGardenPlants().get(index);
-            int cardX = 18 + (index % 3) * 88;
-            int cardY = 60 + (index / 3) * 50;
-            addSlot(new GardenPlantSourceSlot(gardenTotem, index, plant, cardX + 6, cardY + 7));
-        }
-
-        for (int index = 0; index < PLAYER_INVENTORY_SLOT_COUNT; index++) {
-            int x = 276 + (index / 9) * 18;
-            int y = 44 + (index % 9) * 18;
-            addSlot(new TogglePlayerSlot(playerInventory, index, x, y));
+            int cardX = 24;
+            int cardY = 60 + index * 25;
+            addSlot(new GardenPlantSourceSlot(gardenTotem, index, plant, cardX + 7, cardY + 6));
         }
 
         addSlot(new TrashSlot(334, 206));
@@ -226,13 +218,8 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         ItemStack stack = slot.getItem();
         ItemStack original = stack.copy();
-        if (index >= SEED_STORAGE_SLOT_START && index < GARDEN_SOURCE_SLOT_START) {
-            if (!moveItemStackTo(stack, PLAYER_INVENTORY_SLOT_START, PLAYER_INVENTORY_SLOT_START + PLAYER_INVENTORY_SLOT_COUNT, false)) {
-                return ItemStack.EMPTY;
-            }
-        } else if (index >= PLAYER_INVENTORY_SLOT_START && index < PLAYER_INVENTORY_SLOT_START + PLAYER_INVENTORY_SLOT_COUNT) {
-            if (SeedStorage.isPlantSeedPacket(stack)
-                    && !moveItemStackTo(stack, SEED_STORAGE_SLOT_START, SEED_STORAGE_SLOT_START + SEED_STORAGE_SLOT_COUNT, false)) {
+        if (index >= GARDEN_SOURCE_SLOT_START && index < GARDEN_SOURCE_SLOT_START + GARDEN_SOURCE_SLOT_COUNT) {
+            if (!moveItemStackTo(stack, SEED_STORAGE_SLOT_START, SEED_STORAGE_SLOT_START + SEED_STORAGE_SLOT_COUNT, false)) {
                 return ItemStack.EMPTY;
             }
         } else {
@@ -338,17 +325,6 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPickup(Player player) {
             return !getItem().isEmpty();
-        }
-
-        @Override
-        public boolean isActive() {
-            return planterSlotsVisible;
-        }
-    }
-
-    private final class TogglePlayerSlot extends Slot {
-        private TogglePlayerSlot(Inventory inventory, int index, int x, int y) {
-            super(inventory, index, x, y);
         }
 
         @Override

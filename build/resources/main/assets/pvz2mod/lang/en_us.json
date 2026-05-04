@@ -1,6 +1,10 @@
 {
   "item.pvz2mod.sunflower_seed_packet": "Sunflower Seed Packet",
   "item.pvz2mod.peashooter_seed_packet": "Peashooter Seed Packet",
+  "item.pvz2mod.wall_nut_seed_packet": "Wall-nut Seed Packet",
+  "item.pvz2mod.potato_mine_seed_packet": "Potato Mine Seed Packet",
+  "item.pvz2mod.repeater_seed_packet": "Repeater Seed Packet",
+  "item.pvz2mod.chomper_seed_packet": "Chomper Seed Packet",
   "item.pvz2mod.sundrop": "Sun",
   "item.pvz2mod.sun_pillar": "Sun Pillar",
   "item.pvz2mod.garden_plotter": "Garden Plotter",
