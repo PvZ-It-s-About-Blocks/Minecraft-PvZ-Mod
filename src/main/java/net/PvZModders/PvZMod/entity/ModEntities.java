@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.entity;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.custom.AllPlantsDevSummonEntity;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZPlantEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
@@ -38,6 +39,11 @@ public class ModEntities {
                     .sized(0.6F, 1.95F)
                     .clientTrackingRange(8)
                     .build(PvZ2Mod.MOD_ID + ":garden_zombie"));
+    public static final RegistryObject<EntityType<AllPlantsDevSummonEntity>> ALL_PLANTS =
+            ENTITY_TYPES.register("all_plants", () -> EntityType.Builder.<AllPlantsDevSummonEntity>of(AllPlantsDevSummonEntity::new, MobCategory.MISC)
+                    .sized(0.7F, 1.9F)
+                    .clientTrackingRange(4)
+                    .build(PvZ2Mod.MOD_ID + ":all_plants"));
     public static final Map<String, RegistryObject<EntityType<PvZPlantEntity>>> PLANTS = registerPlantEntities();
 
     public static void register(IEventBus eventBus) {

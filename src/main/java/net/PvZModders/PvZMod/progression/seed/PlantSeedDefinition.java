@@ -1,89 +1,94 @@
 package net.PvZModders.PvZMod.progression.seed;
 
 import net.PvZModders.PvZMod.item.ModItems;
+import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
+public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior, GardenId gardenId) {
     private static final Map<ResourceLocation, PlantSeedDefinition> DEFINITIONS = new HashMap<>();
     private static final Map<String, PlantSeedDefinition> DEFINITIONS_BY_PLANT_ID = new HashMap<>();
+    private static final List<PlantSeedDefinition> ORDERED_DEFINITIONS = new ArrayList<>();
 
     static {
-        register(ModItems.SUNFLOWER_SEED_PACKET.getId(), "sunflower", "Sunflower", 50, PlantBehavior.SUNFLOWER);
-        register(ModItems.PEASHOOTER_SEED_PACKET.getId(), "peashooter", "Peashooter", 100, PlantBehavior.PEASHOOTER);
-        register(ModItems.WALL_NUT_SEED_PACKET.getId(), "wall_nut", "Wall-nut", 50, PlantBehavior.WALL_NUT);
-        register(ModItems.POTATO_MINE_SEED_PACKET.getId(), "potato_mine", "Potato Mine", 25, PlantBehavior.POTATO_MINE);
-        register(ModItems.REPEATER_SEED_PACKET.getId(), "repeater", "Repeater", 200, PlantBehavior.REPEATER);
-        register(ModItems.CHOMPER_SEED_PACKET.getId(), "chomper", "Chomper", 150, PlantBehavior.CHOMPER);
+        register(GardenId.INITIAL_PLAINS, ModItems.PEASHOOTER_SEED_PACKET.getId(), "peashooter", "Peashooter", 100, PlantBehavior.PEASHOOTER);
+        register(GardenId.INITIAL_PLAINS, ModItems.SUNFLOWER_SEED_PACKET.getId(), "sunflower", "Sunflower", 50, PlantBehavior.SUNFLOWER);
+        register(GardenId.INITIAL_PLAINS, ModItems.WALL_NUT_SEED_PACKET.getId(), "wall_nut", "Wall-nut", 50, PlantBehavior.WALL_NUT);
+        register(GardenId.INITIAL_PLAINS, ModItems.POTATO_MINE_SEED_PACKET.getId(), "potato_mine", "Potato Mine", 25, PlantBehavior.POTATO_MINE);
+        register(GardenId.INITIAL_PLAINS, "cabbage_pult", "Cabbage-pult", 100);
+        register(GardenId.INITIAL_PLAINS, ModItems.REPEATER_SEED_PACKET.getId(), "repeater", "Repeater", 200, PlantBehavior.REPEATER);
+        register(GardenId.INITIAL_PLAINS, ModItems.CHOMPER_SEED_PACKET.getId(), "chomper", "Chomper", 150, PlantBehavior.CHOMPER);
 
-        register("cabbage_pult", "Cabbage-pult", 100);
-        register("bloomerang", "Bloomerang", 175);
-        register("iceberg_lettuce", "Iceberg Lettuce", 0);
-        register("grave_buster", "Grave Buster", 0);
-        register("bonk_choy", "Bonk Choy", 150);
-        register("twin_sunflower", "Twin Sunflower", 125);
-        register("kernel_pult", "Kernel-pult", 100);
-        register("snapdragon", "Snapdragon", 150);
-        register("spikeweed", "Spikeweed", 100);
-        register("spring_bean", "Spring Bean", 50);
-        register("coconut_cannon", "Coconut Cannon", 400);
-        register("threepeater", "Threepeater", 300);
-        register("spikerock", "Spikerock", 250);
-        register("cherry_bomb", "Cherry Bomb", 150);
-        register("split_pea", "Split Pea", 125);
-        register("chili_bean", "Chili Bean", 50);
-        register("pea_pod", "Pea Pod", 125);
-        register("lightning_reed", "Lightning Reed", 125);
-        register("melon_pult", "Melon-pult", 325);
-        register("tall_nut", "Tall-nut", 125);
-        register("winter_melon", "Winter Melon", 500);
-        register("hot_potato", "Hot Potato", 0);
-        register("pepper_pult", "Pepper-pult", 200);
-        register("chard_guard", "Chard Guard", 75);
-        register("stunion", "Stunion", 25);
-        register("rotobaga", "Rotobaga", 150);
-        register("red_stinger", "Red Stinger", 150);
-        register("akee", "A.K.E.E.", 175);
-        register("endurian", "Endurian", 100);
-        register("stallia", "Stallia", 0);
-        register("gold_leaf", "Gold Leaf", 80);
-        register("laser_bean", "Laser Bean", 200);
-        register("blover", "Blover", 50);
-        register("citron", "Citron", 350);
-        register("em_peach", "E.M.Peach", 25);
-        register("infi_nut", "Infi-nut", 75);
-        register("magnifying_grass", "Magnifying Grass", 50);
-        register("tile_turnip", "Tile Turnip", 0);
-        register("sun_shroom", "Sun-shroom", 25);
-        register("puff_shroom", "Puff-shroom", 0);
-        register("fume_shroom", "Fume-shroom", 125);
-        register("sun_bean", "Sun Bean", 50);
-        register("magnet_shroom", "Magnet-shroom", 100);
-        register("phat_beet", "Phat Beet", 150);
-        register("celery_stalker", "Celery Stalker", 50);
-        register("thyme_warp", "Thyme Warp", 100);
-        register("garlic", "Garlic", 50);
-        register("spore_shroom", "Spore-shroom", 150);
-        register("intensive_carrot", "Intensive Carrot", 100);
-        register("primal_peashooter", "Primal Peashooter", 175);
-        register("primal_wall_nut", "Primal Wall-nut", 75);
-        register("perfume_shroom", "Perfume-shroom", 150);
-        register("primal_sunflower", "Primal Sunflower", 75);
-        register("primal_potato_mine", "Primal Potato Mine", 50);
-        register("lily_pad", "Lily Pad", 25);
-        register("tangle_kelp", "Tangle Kelp", 25);
-        register("bowling_bulb", "Bowling Bulb", 200);
-        register("guacodile", "Guacodile", 125);
-        register("banana_launcher", "Banana Launcher", 500);
-        register("moonflower", "Moonflower", 50);
-        register("nightshade", "Nightshade", 75);
-        register("shadow_shroom", "Shadow-shroom", 50);
-        register("dusk_lobber", "Dusk Lobber", 150);
-        register("grimrose", "Grimrose", 75);
+        register(GardenId.DESERT, "bloomerang", "Bloomerang", 175);
+        register(GardenId.DESERT, "iceberg_lettuce", "Iceberg Lettuce", 0);
+        register(GardenId.DESERT, "grave_buster", "Grave Buster", 0);
+        register(GardenId.DESERT, "bonk_choy", "Bonk Choy", 150);
+        register(GardenId.DESERT, "twin_sunflower", "Twin Sunflower", 125);
+        register(GardenId.PIRATE_SEAS, "kernel_pult", "Kernel-pult", 100);
+        register(GardenId.PIRATE_SEAS, "snapdragon", "Snapdragon", 150);
+        register(GardenId.PIRATE_SEAS, "spikeweed", "Spikeweed", 100);
+        register(GardenId.PIRATE_SEAS, "spring_bean", "Spring Bean", 50);
+        register(GardenId.PIRATE_SEAS, "coconut_cannon", "Coconut Cannon", 400);
+        register(GardenId.PIRATE_SEAS, "threepeater", "Threepeater", 300);
+        register(GardenId.PIRATE_SEAS, "spikerock", "Spikerock", 250);
+        register(GardenId.PIRATE_SEAS, "cherry_bomb", "Cherry Bomb", 150);
+        register(GardenId.WILD_WEST, "split_pea", "Split Pea", 125);
+        register(GardenId.WILD_WEST, "chili_bean", "Chili Bean", 50);
+        register(GardenId.WILD_WEST, "pea_pod", "Pea Pod", 125);
+        register(GardenId.WILD_WEST, "lightning_reed", "Lightning Reed", 125);
+        register(GardenId.WILD_WEST, "melon_pult", "Melon-pult", 325);
+        register(GardenId.WILD_WEST, "tall_nut", "Tall-nut", 125);
+        register(GardenId.WILD_WEST, "winter_melon", "Winter Melon", 500);
+        register(GardenId.FROSTBITE, "hot_potato", "Hot Potato", 0);
+        register(GardenId.FROSTBITE, "pepper_pult", "Pepper-pult", 200);
+        register(GardenId.FROSTBITE, "chard_guard", "Chard Guard", 75);
+        register(GardenId.FROSTBITE, "stunion", "Stunion", 25);
+        register(GardenId.FROSTBITE, "rotobaga", "Rotobaga", 150);
+        register(GardenId.LOST_CITY, "red_stinger", "Red Stinger", 150);
+        register(GardenId.LOST_CITY, "akee", "A.K.E.E.", 175);
+        register(GardenId.LOST_CITY, "endurian", "Endurian", 100);
+        register(GardenId.LOST_CITY, "stallia", "Stallia", 0);
+        register(GardenId.LOST_CITY, "gold_leaf", "Gold Leaf", 80);
+        register(GardenId.FAR_FUTURE, "laser_bean", "Laser Bean", 200);
+        register(GardenId.FAR_FUTURE, "blover", "Blover", 50);
+        register(GardenId.FAR_FUTURE, "citron", "Citron", 350);
+        register(GardenId.FAR_FUTURE, "empeach", "E.M.Peach", 25);
+        register(GardenId.FAR_FUTURE, "infi_nut", "Infi-nut", 75);
+        register(GardenId.FAR_FUTURE, "magnifying_grass", "Magnifying Grass", 50);
+        register(GardenId.FAR_FUTURE, "tile_turnip", "Tile Turnip", 0);
+        register(GardenId.DARK_AGES, "sun_shroom", "Sun-shroom", 25);
+        register(GardenId.DARK_AGES, "puff_shroom", "Puff-shroom", 0);
+        register(GardenId.DARK_AGES, "fume_shroom", "Fume-shroom", 125);
+        register(GardenId.DARK_AGES, "sun_bean", "Sun Bean", 50);
+        register(GardenId.DARK_AGES, "magnet_shroom", "Magnet-shroom", 100);
+        register(GardenId.NEON_MIXTAPE, "phat_beet", "Phat Beet", 150);
+        register(GardenId.NEON_MIXTAPE, "celery_stalker", "Celery Stalker", 50);
+        register(GardenId.NEON_MIXTAPE, "thyme_warp", "Thyme Warp", 100);
+        register(GardenId.NEON_MIXTAPE, "garlic", "Garlic", 50);
+        register(GardenId.NEON_MIXTAPE, "spore_shroom", "Spore-shroom", 150);
+        register(GardenId.NEON_MIXTAPE, "intensive_carrot", "Intensive Carrot", 100);
+        register(GardenId.JURASSIC_MARSH, "primal_peashooter", "Primal Peashooter", 175);
+        register(GardenId.JURASSIC_MARSH, "primal_wall_nut", "Primal Wall-nut", 75);
+        register(GardenId.JURASSIC_MARSH, "perfume_shroom", "Perfume-shroom", 150);
+        register(GardenId.JURASSIC_MARSH, "primal_sunflower", "Primal Sunflower", 75);
+        register(GardenId.JURASSIC_MARSH, "primal_potato_mine", "Primal Potato Mine", 50);
+        register(GardenId.BIG_WAVE_BEACH, "lily_pad", "Lily Pad", 25);
+        register(GardenId.BIG_WAVE_BEACH, "tangle_kelp", "Tangle Kelp", 25);
+        register(GardenId.BIG_WAVE_BEACH, "bowling_bulb", "Bowling Bulb", 200);
+        register(GardenId.BIG_WAVE_BEACH, "guacodile", "Guacodile", 125);
+        register(GardenId.BIG_WAVE_BEACH, "banana_launcher", "Banana Launcher", 500);
+        register(GardenId.MODERN_DAY, "moonflower", "Moonflower", 50);
+        register(GardenId.MODERN_DAY, "nightshade", "Nightshade", 75);
+        register(GardenId.MODERN_DAY, "shadow_shroom", "Shadow-shroom", 50);
+        register(GardenId.MODERN_DAY, "dusk_lobber", "Dusk Lobber", 150);
+        register(GardenId.MODERN_DAY, "grimrose", "Grimrose", 75);
     }
 
     public static Optional<PlantSeedDefinition> get(ResourceLocation seedPacketId) {
@@ -95,7 +100,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
     }
 
     public static Collection<PlantSeedDefinition> all() {
-        return DEFINITIONS_BY_PLANT_ID.values();
+        return List.copyOf(ORDERED_DEFINITIONS);
+    }
+
+    public int gardenColor() {
+        return GardenPortalOption.values()[GardenPortalOption.indexOf(gardenId)].color();
     }
 
     public static int sunCost(ResourceLocation seedPacketId) {
@@ -110,18 +119,19 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         return BuiltInIds.PEASHOOTER;
     }
 
-    private static void register(String plantId, String displayName, int sunCost) {
-        register(plantId, displayName, sunCost, PlantBehavior.PLACEHOLDER);
+    private static void register(GardenId gardenId, String plantId, String displayName, int sunCost) {
+        register(gardenId, plantId, displayName, sunCost, PlantBehavior.PLACEHOLDER);
     }
 
-    private static void register(String plantId, String displayName, int sunCost, PlantBehavior behavior) {
-        register(new ResourceLocation("pvz2mod", plantId + "_seed_packet"), plantId, displayName, sunCost, behavior);
+    private static void register(GardenId gardenId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
+        register(gardenId, new ResourceLocation("pvz2mod", plantId + "_seed_packet"), plantId, displayName, sunCost, behavior);
     }
 
-    private static void register(ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
-        PlantSeedDefinition definition = new PlantSeedDefinition(seedPacketId, plantId, displayName, sunCost, behavior);
+    private static void register(GardenId gardenId, ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
+        PlantSeedDefinition definition = new PlantSeedDefinition(seedPacketId, plantId, displayName, sunCost, behavior, gardenId);
         DEFINITIONS.put(seedPacketId, definition);
         DEFINITIONS_BY_PLANT_ID.put(plantId, definition);
+        ORDERED_DEFINITIONS.add(definition);
     }
 
     private static final class BuiltInIds {

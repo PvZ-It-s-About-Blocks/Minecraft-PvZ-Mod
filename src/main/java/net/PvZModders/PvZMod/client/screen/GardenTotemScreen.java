@@ -444,7 +444,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         boolean unlocked = plant.isUnlockedAtWave(menu.currentWave());
         int count = menu.plantCount(index);
         int remaining = menu.plantRemainingSeconds(index);
-        int border = unlocked ? 0xFF2F6F2F : 0xFF050505;
+        int gardenColor = plant.gardenColor();
+        int border = unlocked ? 0xFF000000 | gardenColor : 0xFF050505;
         int fill = unlocked ? 0x66FFFFFF : 0x66000000;
 
         guiGraphics.fill(cardX, cardY, cardX + cardW, cardY + cardH, border);
@@ -455,7 +456,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         }
 
         String name = font.plainSubstrByWidth(plant.displayName(), 70);
-        guiGraphics.drawString(font, name, cardX + 30, cardY + 4, unlocked ? 0x2F6F2F : 0x202020, false);
+        guiGraphics.drawString(font, name, cardX + 30, cardY + 4, unlocked ? gardenColor : 0x202020, false);
         String cost = unlocked ? plant.sunCost() + " sun" : "?";
         guiGraphics.drawString(font, cost, cardX + 104, cardY + 4, unlocked ? 0x9E7E00 : 0x202020, false);
         String description = unlocked ? font.plainSubstrByWidth(plant.description(), 96) : "?";
@@ -469,8 +470,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             int fillW = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP
                     ? barW
                     : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) plant.productionSeconds())));
-            guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF3F9F3F);
-            guiGraphics.drawString(font, count + "/40", cardX + 190, cardY + 4, count > 0 ? 0x2F6F2F : 0x5F5F5F, false);
+            guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF000000 | gardenColor);
+            guiGraphics.drawString(font, count + "/40", cardX + 190, cardY + 4, count > 0 ? gardenColor : 0x5F5F5F, false);
         }
 
         if (mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
@@ -490,7 +491,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
         String timer = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP ? "Full" : remaining + "s";
         return List.of(
-                Component.literal(plant.displayName()).withStyle(ChatFormatting.GREEN),
+                Component.literal(plant.displayName()).withStyle(style -> style.withColor(net.minecraft.network.chat.TextColor.fromRgb(plant.gardenColor()))),
                 Component.literal("Cost: " + plant.sunCost() + " sun").withStyle(ChatFormatting.GOLD),
                 Component.literal(plant.description()).withStyle(ChatFormatting.GRAY),
                 Component.literal("Totem packets: " + count + "/40").withStyle(ChatFormatting.DARK_GREEN),

@@ -28,6 +28,12 @@ public record GardenPlantDefinition(
         return unlockWave <= 0 || currentWave > unlockWave;
     }
 
+    public int gardenColor() {
+        return PlantSeedDefinition.getByPlantId(plantId)
+                .map(PlantSeedDefinition::gardenColor)
+                .orElse(0x2F9F3F);
+    }
+
     public static List<GardenPlantDefinition> originalGardenPlants() {
         return OriginalGardenPlants.PLANTS;
     }

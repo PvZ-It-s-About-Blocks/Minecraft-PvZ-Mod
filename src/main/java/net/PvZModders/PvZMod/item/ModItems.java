@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
+import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -16,17 +17,17 @@ public class ModItems {
             DeferredRegister.create(ForgeRegistries.ITEMS, PvZ2Mod.MOD_ID);
 
     public static final RegistryObject<Item> SUNFLOWER_SEED_PACKET = ITEMS.register("sunflower_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("sunflower", new Item.Properties()));
     public static final RegistryObject<Item> PEASHOOTER_SEED_PACKET = ITEMS.register("peashooter_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("peashooter", new Item.Properties()));
     public static final RegistryObject<Item> WALL_NUT_SEED_PACKET = ITEMS.register("wall_nut_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("wall_nut", new Item.Properties()));
     public static final RegistryObject<Item> POTATO_MINE_SEED_PACKET = ITEMS.register("potato_mine_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("potato_mine", new Item.Properties()));
     public static final RegistryObject<Item> REPEATER_SEED_PACKET = ITEMS.register("repeater_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("repeater", new Item.Properties()));
     public static final RegistryObject<Item> CHOMPER_SEED_PACKET = ITEMS.register("chomper_seed_packet",
-            () -> new Item(new Item.Properties()));
+            () -> new SeedPacketItem("chomper", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",

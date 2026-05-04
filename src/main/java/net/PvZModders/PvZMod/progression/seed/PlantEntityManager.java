@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -93,7 +94,7 @@ public final class PlantEntityManager {
         plant.setNoAi(true);
         plant.setSilent(true);
         plant.setPersistenceRequired();
-        plant.setCustomName(Component.literal(definition.displayName()).withStyle(ChatFormatting.GREEN));
+        plant.setCustomName(Component.literal(definition.displayName()).withStyle(style -> style.withColor(TextColor.fromRgb(definition.gardenColor()))));
         plant.setCustomNameVisible(true);
         setPlantHealth(plant, definition.behavior() == PlantSeedDefinition.PlantBehavior.WALL_NUT ? WALL_NUT_HEALTH : DEFAULT_PLANT_HEALTH);
 

@@ -84,6 +84,7 @@ public class PvZ2Mod {
     private void registerEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.PENNY_VAN.get(), PennyVanEntity.createAttributes().build());
         event.put(ModEntities.GARDEN_ZOMBIE.get(), Zombie.createAttributes().build());
+        event.put(ModEntities.ALL_PLANTS.get(), SnowGolem.createAttributes().build());
         for (var plantEntityType : ModEntities.plantEntityTypes()) {
             event.put(plantEntityType.get(), SnowGolem.createAttributes().build());
         }
@@ -102,6 +103,7 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(EntityType.EXPERIENCE_ORB, SunExperienceOrbRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
                 for (var plantEntityType : ModEntities.plantEntityTypes()) {
                     net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
                 }
