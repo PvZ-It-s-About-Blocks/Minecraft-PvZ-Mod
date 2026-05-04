@@ -2,7 +2,6 @@ package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.BiomeDetectorMenu;
 import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
-import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -63,8 +62,7 @@ public class BiomeDetectorScreen extends AbstractContainerScreen<BiomeDetectorMe
 
         guiGraphics.fill(optionX, optionY, optionX + OPTION_WIDTH, optionY + OPTION_HEIGHT, 0xFF1F1F1F);
         guiGraphics.fill(optionX + 2, optionY + 2, optionX + OPTION_WIDTH - 2, optionY + OPTION_HEIGHT - 2, 0xFF000000 | fill);
-        guiGraphics.drawString(font, category.displayName(), optionX + 6, optionY + 3, 0xFFFFFF, true);
-        guiGraphics.drawString(font, GardenDefinitions.get(category.gardenId()).displayName(), optionX + 6, optionY + 12, 0xFFEFEFEF, true);
+        guiGraphics.drawString(font, category.displayName(), optionX + 6, optionY + 6, 0xFFFFFF, true);
     }
 
     private int getOptionX(int index) {

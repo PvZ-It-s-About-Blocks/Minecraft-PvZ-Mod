@@ -3,7 +3,6 @@ package net.PvZModders.PvZMod.item.custom;
 import com.mojang.datafixers.util.Pair;
 import net.PvZModders.PvZMod.menu.BiomeDetectorMenu;
 import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
-import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.NbtUtils;
@@ -60,7 +59,7 @@ public class BiomeDetectorItem extends CompassItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         getTarget(stack).ifPresentOrElse(
-                target -> tooltip.add(colored("Detecting " + target.displayName() + " / " + GardenDefinitions.get(target.gardenId()).displayName(), target.color())),
+                target -> tooltip.add(colored("Detecting " + target.displayName(), target.color())),
                 () -> tooltip.add(Component.literal("Select a biome target"))
         );
     }
@@ -109,7 +108,7 @@ public class BiomeDetectorItem extends CompassItem {
         }
 
         writeCompassTarget(stack, level, found.getFirst());
-        player.displayClientMessage(colored("Detecting " + target.displayName() + " / " + GardenDefinitions.get(target.gardenId()).displayName(), target.color()), true);
+        player.displayClientMessage(colored("Detecting " + target.displayName(), target.color()), true);
     }
 
     private static void writeCompassTarget(ItemStack stack, ServerLevel level, BlockPos pos) {
