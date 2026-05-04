@@ -3,21 +3,16 @@ package net.PvZModders.PvZMod.progression.seed;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.DoublePlantBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -30,6 +25,7 @@ public final class SeedStorage {
     public static final int PLANT_SLOTS_PER_PAGE = 8;
     public static final int PAGE_ONE = 0;
     public static final int PAGE_TWO = 1;
+    public static final int PLAYER_PACKET_CAP = 25;
 
     private static final String ROOT_TAG = "PvZSeedStorage";
     private static final String SEED_MODE_TAG = "SeedModeEnabled";
@@ -147,6 +143,14 @@ public final class SeedStorage {
         return PlantSlotData.load(slots.getCompound(clampSlot(slot)));
     }
 
+    public static PlantSlotData getPlantSlotByStorageIndex(Player player, int storageIndex) {
+        return getPlantSlot(player, storageIndex / PLANT_SLOTS_PER_PAGE, storageIndex % PLANT_SLOTS_PER_PAGE);
+    }
+
+    public static ItemStack getPlantSlotStackByStorageIndex(Player player, int storageIndex) {
+        return getPlantSlotByStorageIndex(player, storageIndex).toItemStack();
+    }
+
     public static PlantSlotData getSelectedPlantSlotData(Player player) {
         return getPlantSlot(player, getCurrentPlantHotbarPage(player), getSelectedPlantSlot(player));
     }
@@ -207,7 +211,7 @@ public final class SeedStorage {
             return;
         }
 
-        if (definition.isEmpty() || target == null || !placePlantBlock(serverPlayer, target, definition.get().placeholderBlock())) {
+        if (definition.isEmpty() || target == null || !PlantEntityManager.placePlant(serverPlayer, target, definition.get())) {
             player.displayClientMessage(Component.literal("Cannot plant there.").withStyle(ChatFormatting.RED), true);
             sync(player);
             return;
@@ -238,12 +242,59 @@ public final class SeedStorage {
 
     public static void setPlantSlot(Player player, int page, int slot, PlantSlotData slotData) {
         ListTag slots = slotsForPage(root(player), clampPage(page));
-        slots.set(clampSlot(slot), slotData.save());
+        slots.set(clampSlot(slot), capped(slotData).save());
+    }
+
+    public static void setPlantSlotByStorageIndex(Player player, int storageIndex, ItemStack stack) {
+        int page = storageIndex / PLANT_SLOTS_PER_PAGE;
+        int slot = storageIndex % PLANT_SLOTS_PER_PAGE;
+        setPlantSlot(player, page, slot, slotDataFromStack(stack));
+        sync(player);
+    }
+
+    public static boolean isPlantSeedPacket(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        return PlantSeedDefinition.get(BuiltInRegistries.ITEM.getKey(stack.getItem())).isPresent();
     }
 
     public static void setPlantSlotLoadoutPlaceholder(Player player, int page, int slot, ResourceLocation seedPacketId, int packetCount) {
         setPlantSlot(player, page, slot, new PlantSlotData(seedPacketId, packetCount));
         sync(player);
+    }
+
+    public static boolean addPlantPacketsToLoadout(Player player, ResourceLocation seedPacketId, int packetCount) {
+        CompoundTag root = root(player);
+        for (int page = PAGE_ONE; page <= PAGE_TWO; page++) {
+            int unlocked = getUnlockedPlantSlots(player, page);
+            ListTag slots = slotsForPage(root, page);
+            for (int slot = 0; slot < unlocked; slot++) {
+                PlantSlotData slotData = PlantSlotData.load(slots.getCompound(slot));
+                if (!slotData.isEmpty() && slotData.itemId().equals(seedPacketId)) {
+                    slotData.set(seedPacketId, Math.min(PLAYER_PACKET_CAP, slotData.packetCount() + packetCount));
+                    slots.set(slot, slotData.save());
+                    sync(player);
+                    return true;
+                }
+            }
+        }
+
+        for (int page = PAGE_ONE; page <= PAGE_TWO; page++) {
+            int unlocked = getUnlockedPlantSlots(player, page);
+            ListTag slots = slotsForPage(root, page);
+            for (int slot = 0; slot < unlocked; slot++) {
+                PlantSlotData slotData = PlantSlotData.load(slots.getCompound(slot));
+                if (slotData.isEmpty()) {
+                    slots.set(slot, new PlantSlotData(seedPacketId, Math.min(PLAYER_PACKET_CAP, packetCount)).save());
+                    sync(player);
+                    return true;
+                }
+            }
+        }
+
+        sync(player);
+        return false;
     }
 
     public static CompoundTag copyForSync(Player player) {
@@ -275,35 +326,6 @@ public final class SeedStorage {
         ListTag pageOneSlots = slotsForPage(root, PAGE_ONE);
         pageOneSlots.set(0, new PlantSlotData(PlantSeedDefinition.sunflowerSeedPacketId(), 10).save());
         pageOneSlots.set(1, new PlantSlotData(PlantSeedDefinition.peashooterSeedPacketId(), 10).save());
-    }
-
-    private static boolean placePlantBlock(ServerPlayer player, BlockHitResult target, Block block) {
-        Level level = player.level();
-        BlockPos placePos = target.getBlockPos().relative(target.getDirection());
-        if (!level.getBlockState(placePos).isAir() || level.getBlockState(placePos.below()).isAir()) {
-            return false;
-        }
-
-        if (block instanceof DoublePlantBlock) {
-            if (!level.getBlockState(placePos.above()).isAir()) {
-                return false;
-            }
-            BlockState lower = block.defaultBlockState().setValue(DoublePlantBlock.HALF, DoubleBlockHalf.LOWER);
-            BlockState upper = block.defaultBlockState().setValue(DoublePlantBlock.HALF, DoubleBlockHalf.UPPER);
-            if (!lower.canSurvive(level, placePos)) {
-                return false;
-            }
-            level.setBlock(placePos, lower, 3);
-            level.setBlock(placePos.above(), upper, 3);
-            return true;
-        }
-
-        BlockState state = block == Blocks.AIR ? Blocks.OAK_SAPLING.defaultBlockState() : block.defaultBlockState();
-        if (!state.canSurvive(level, placePos)) {
-            return false;
-        }
-        level.setBlock(placePos, state, 3);
-        return true;
     }
 
     private static CompoundTag root(Player player) {
@@ -343,6 +365,21 @@ public final class SeedStorage {
             slots.add(PlantSlotData.empty().save());
         }
         return slots;
+    }
+
+    private static PlantSlotData capped(PlantSlotData slotData) {
+        if (slotData.isEmpty()) {
+            return slotData;
+        }
+        return new PlantSlotData(slotData.itemId(), Math.min(PLAYER_PACKET_CAP, slotData.packetCount()));
+    }
+
+    private static PlantSlotData slotDataFromStack(ItemStack stack) {
+        if (!isPlantSeedPacket(stack)) {
+            return PlantSlotData.empty();
+        }
+        ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return new PlantSlotData(itemId, Math.min(PLAYER_PACKET_CAP, stack.getCount()));
     }
 
     private static void ensureSlotsList(CompoundTag root, String key) {

@@ -41,6 +41,7 @@ public final class SunManager {
     private static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
     private static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
     private static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
+    private static final String TUTORIAL_SUN_GRANTED_TAG = "PvZTutorialSunGranted";
     private static final int SUN_LIFETIME_TICKS = 25 * 20;
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
     private static final int SUN_DROP_RADIUS = 32;
@@ -58,9 +59,12 @@ public final class SunManager {
         sunData.unlockSun();
         syncSunBar(player);
 
-        if (!wasUnlocked) {
+        if (!player.getPersistentData().getBoolean(TUTORIAL_SUN_GRANTED_TAG)) {
             player.sendSystemMessage(Component.literal("Penny: Sun is your main currency. Pick it up before it fades!").withStyle(ChatFormatting.YELLOW));
             spawnTutorialSun(level, player);
+            player.getPersistentData().putBoolean(TUTORIAL_SUN_GRANTED_TAG, true);
+        } else if (!wasUnlocked) {
+            player.sendSystemMessage(Component.literal("Penny: Sun will now fall during the day.").withStyle(ChatFormatting.YELLOW));
         }
         scheduleNextSunDrop(player, level.getGameTime() + MIN_DROP_DELAY_TICKS);
     }
@@ -212,6 +216,10 @@ public final class SunManager {
         sun.getPersistentData().putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
         level.addFreshEntity(sun);
+    }
+
+    public static void spawnSunAt(ServerLevel level, BlockPos pos) {
+        spawnSun(level, pos);
     }
 
     private static void tickNearbySunOrbs(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunOrbs) {

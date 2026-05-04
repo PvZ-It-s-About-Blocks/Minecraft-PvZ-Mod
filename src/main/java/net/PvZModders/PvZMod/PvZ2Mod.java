@@ -67,6 +67,10 @@ public class PvZ2Mod {
         if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
             event.accept(ModItems.SUNFLOWER_SEED_PACKET);
             event.accept(ModItems.PEASHOOTER_SEED_PACKET);
+            event.accept(ModItems.WALL_NUT_SEED_PACKET);
+            event.accept(ModItems.POTATO_MINE_SEED_PACKET);
+            event.accept(ModItems.REPEATER_SEED_PACKET);
+            event.accept(ModItems.CHOMPER_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);

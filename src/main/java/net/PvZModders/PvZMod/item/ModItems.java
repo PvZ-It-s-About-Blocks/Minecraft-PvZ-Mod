@@ -19,6 +19,14 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PEASHOOTER_SEED_PACKET = ITEMS.register("peashooter_seed_packet",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> WALL_NUT_SEED_PACKET = ITEMS.register("wall_nut_seed_packet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> POTATO_MINE_SEED_PACKET = ITEMS.register("potato_mine_seed_packet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> REPEATER_SEED_PACKET = ITEMS.register("repeater_seed_packet",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> CHOMPER_SEED_PACKET = ITEMS.register("chomper_seed_packet",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",

@@ -10,6 +10,11 @@ import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
+import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
+import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
+import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
+import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
+import net.PvZModders.PvZMod.progression.seed.SeedStorage;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
@@ -113,6 +118,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         be.ensureInitialized(serverLevel, pos);
+        be.tickGardenPlantProduction(serverLevel);
         be.tickSinkingPlotter(serverLevel, pos);
         be.syncHealthBar(serverLevel, pos);
         be.tickWaveSpawnSchedule(serverLevel);
@@ -163,6 +169,62 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     public int getCurrentPortalIndex() {
         return GardenPortalOption.indexOf(gardenId);
+    }
+
+    public int getGardenPlantCount(int plantIndex) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return 0;
+        }
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return 0;
+        }
+        return GardenPlantProductionSavedData.get(serverLevel).count(gardenId, plants.get(plantIndex).plantId());
+    }
+
+    public int getGardenPlantRemainingSeconds(int plantIndex) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return 0;
+        }
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return 0;
+        }
+        return GardenPlantProductionSavedData.get(serverLevel).remainingSeconds(serverLevel, gardenId, plants.get(plantIndex));
+    }
+
+    public boolean isGardenPlantUnlocked(int plantIndex) {
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return false;
+        }
+        return plants.get(plantIndex).isUnlockedAtWave(getWaveProgress().currentWave());
+    }
+
+    public List<GardenPlantDefinition> getGardenPlants() {
+        return gardenPlants();
+    }
+
+    public ItemStack removeGardenPlantPackets(int plantIndex, int amount) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return ItemStack.EMPTY;
+        }
+
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return ItemStack.EMPTY;
+        }
+
+        GardenPlantDefinition plant = plants.get(plantIndex);
+        if (!plant.isUnlockedAtWave(getWaveProgress(serverLevel).currentWave())) {
+            return ItemStack.EMPTY;
+        }
+
+        int taken = GardenPlantProductionSavedData.get(serverLevel).takePackets(gardenId, plant.plantId(), amount);
+        if (taken <= 0) {
+            return ItemStack.EMPTY;
+        }
+        return new ItemStack(BuiltInRegistries.ITEM.get(plant.seedPacketId()), taken);
     }
 
     public void teleportToGarden(ServerPlayer player, int portalIndex) {
@@ -217,6 +279,37 @@ public class GardenTotemBlockEntity extends BlockEntity {
         setChanged();
     }
 
+    public void withdrawGardenPlantPacket(ServerPlayer player, int plantIndex) {
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return;
+        }
+
+        GardenPlantDefinition plant = plants.get(plantIndex);
+        if (!plant.isUnlockedAtWave(getWaveProgress(player.serverLevel()).currentWave())) {
+            player.displayClientMessage(Component.literal(plant.unlockHint()).withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        GardenPlantProductionSavedData production = GardenPlantProductionSavedData.get(player.serverLevel());
+        if (production.count(gardenId, plant.plantId()) <= 0) {
+            player.displayClientMessage(Component.literal("No " + plant.displayName() + " packets ready yet.").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+
+        if (!production.takePacket(gardenId, plant.plantId())) {
+            return;
+        }
+
+        if (!SeedStorage.addPlantPacketsToLoadout(player, plant.seedPacketId(), 1)) {
+            production.addPacket(gardenId, plant.plantId());
+            player.displayClientMessage(Component.literal("Your seed storage is full.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        player.displayClientMessage(Component.literal("Loaded " + plant.displayName() + " packet.").withStyle(ChatFormatting.GREEN), true);
+    }
+
     public void completeCurrentWave(ServerPlayer player) {
         completeCurrentWave(player.serverLevel());
     }
@@ -231,6 +324,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         waveProgress.completeCurrentWave();
         markWaveProgressDirty(level);
         clearWaveRuntimeState();
+        totemHealth = TOTEM_MAX_HEALTH;
         grantMilestoneRewards(level, completedWave);
         setChanged();
     }
@@ -511,6 +605,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 continue;
             }
 
+            if (PlantEntityManager.attackNearbyPlant(level, mob, ZOMBIE_TOTEM_DAMAGE)) {
+                continue;
+            }
+
             if (isMobInTotemAttackRange(mob)) {
                 mob.getNavigation().stop();
                 mob.getLookControl().setLookAt(worldPosition.getX() + 0.5D, worldPosition.getY() + 1.5D, worldPosition.getZ() + 0.5D);
@@ -587,6 +685,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             int completedWave = waveProgress.currentWave();
             waveProgress.completeCurrentWave();
             markWaveProgressDirty(level);
+            totemHealth = TOTEM_MAX_HEALTH;
             grantMilestoneRewards(level, completedWave);
             setChanged();
         }
@@ -604,9 +703,28 @@ public class GardenTotemBlockEntity extends BlockEntity {
         for (WaveReward reward : definition.rewards()) {
             for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
                 player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
+                if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.PLANT_UNLOCK) {
+                    PlantSeedDefinition.getByPlantId(reward.id()).ifPresent(plantDefinition -> {
+                        if (!SeedStorage.addPlantPacketsToLoadout(player, plantDefinition.seedPacketId(), 10)) {
+                            player.sendSystemMessage(Component.literal("Your plant hotbar is full. Visit a garden loadout station later to equip " + plantDefinition.displayName() + ".")
+                                    .withStyle(ChatFormatting.YELLOW));
+                        }
+                    });
+                }
             }
         }
         // TODO: Apply plant unlocks, item unlocks, upgrades, and completion flags to real player/garden progression.
+    }
+
+    private void tickGardenPlantProduction(ServerLevel level) {
+        GardenPlantProductionSavedData.get(level).tick(level, gardenId, getWaveProgress(level).currentWave(), gardenPlants());
+    }
+
+    private List<GardenPlantDefinition> gardenPlants() {
+        return switch (gardenId) {
+            case INITIAL_PLAINS -> GardenPlantDefinition.originalGardenPlants();
+            default -> List.of();
+        };
     }
 
     private void ensureInitialized(ServerLevel level, BlockPos pos) {

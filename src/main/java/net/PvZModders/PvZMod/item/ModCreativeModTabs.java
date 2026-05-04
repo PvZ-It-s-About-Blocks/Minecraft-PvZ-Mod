@@ -19,6 +19,10 @@ public class ModCreativeModTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.SUNFLOWER_SEED_PACKET.get());
                         output.accept(ModItems.PEASHOOTER_SEED_PACKET.get());
+                        output.accept(ModItems.WALL_NUT_SEED_PACKET.get());
+                        output.accept(ModItems.POTATO_MINE_SEED_PACKET.get());
+                        output.accept(ModItems.REPEATER_SEED_PACKET.get());
+                        output.accept(ModItems.CHOMPER_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());

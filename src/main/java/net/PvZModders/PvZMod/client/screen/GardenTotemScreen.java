@@ -2,6 +2,8 @@ package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
+import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
+import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
@@ -23,9 +25,10 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private static final int TAB_PROGRESS = 0;
     private static final int TAB_PORTAL = 1;
     private static final int TAB_PLANTER = 2;
+    private static final int TAB_SHOP = 3;
     private static final int TAB_SIZE = 30;
     private static final int TAB_SPACING = 4;
-    private static final int TAB_COUNT = 3;
+    private static final int TAB_COUNT = 4;
     private static final int START_WAVE_BUTTON = 0;
     private static final int WAVE_SPACING = 72;
     private static final int WAVE_CANVAS_WIDTH = 34 + (OriginalGardenWaves.MAX_WAVE - 1) * WAVE_SPACING + 80;
@@ -38,11 +41,12 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private boolean waveCanvasFocused;
     private int lastFocusedWave = -1;
     private Component hoveredRewardTooltip;
+    private List<Component> hoveredPlantTooltip;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        imageWidth = 300;
-        imageHeight = 180;
+        imageWidth = 360;
+        imageHeight = 230;
     }
 
     @Override
@@ -62,7 +66,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 0) {
-            for (int tab = 0; tab < 3; tab++) {
+            for (int tab = 0; tab < TAB_COUNT; tab++) {
                 if (isMouseOverTab(tab, mouseX, mouseY)) {
                     selectedTab = tab;
                     draggingWaveCanvas = false;
@@ -143,6 +147,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         renderTab(guiGraphics, x, y, TAB_PROGRESS, new ItemStack(Items.EXPERIENCE_BOTTLE), "Waves", mouseX, mouseY);
         renderTab(guiGraphics, x, y, TAB_PORTAL, new ItemStack(Items.ENDER_PEARL), "Portal", mouseX, mouseY);
         renderTab(guiGraphics, x, y, TAB_PLANTER, new ItemStack(Items.GRASS_BLOCK), "Planter", mouseX, mouseY);
+        renderTab(guiGraphics, x, y, TAB_SHOP, new ItemStack(Items.VILLAGER_SPAWN_EGG), "Crazy Dave's Shop", mouseX, mouseY);
     }
 
     private void renderTab(GuiGraphics guiGraphics, int x, int y, int tab, ItemStack icon, String tooltip, int mouseX, int mouseY) {
@@ -163,12 +168,15 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private void renderSelectedTab(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+        menu.setPlanterSlotsVisible(selectedTab == TAB_PLANTER);
         if (selectedTab == TAB_PROGRESS) {
             renderProgressTab(guiGraphics, x, y, mouseX, mouseY);
         } else if (selectedTab == TAB_PORTAL) {
             renderPortalTab(guiGraphics, x, y);
+        } else if (selectedTab == TAB_PLANTER) {
+            renderPlanterTab(guiGraphics, x, y, mouseX, mouseY);
         } else {
-            renderPlanterTab(guiGraphics, x, y);
+            renderShopTab(guiGraphics, x, y);
         }
     }
 
@@ -413,10 +421,128 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         return (r << 16) | (g << 8) | b;
     }
 
-    private void renderPlanterTab(GuiGraphics guiGraphics, int x, int y) {
+    private void renderPlanterTab(GuiGraphics guiGraphics, int x, int y, int mouseX, int mouseY) {
+        hoveredPlantTooltip = null;
         guiGraphics.drawString(font, Component.literal("Planter").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        guiGraphics.drawString(font, Component.literal("Plant growth location placeholder").withStyle(ChatFormatting.DARK_GREEN), x + 54, y + 96, 0x2F6F2F, false);
-        drawNode(guiGraphics, x + 34, y + 84, new ItemStack(Items.GRASS_BLOCK), true);
+        guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 124, y + 48, 0x2F6F2F, false);
+        List<GardenPlantDefinition> plants = GardenPlantDefinition.originalGardenPlants();
+        for (int i = 0; i < plants.size(); i++) {
+            renderPlantCard(guiGraphics, plants.get(i), i, x, y, mouseX, mouseY);
+        }
+        renderSeedStorageArea(guiGraphics, x, y);
+        renderVerticalInventoryArea(guiGraphics, x, y);
+        if (hoveredPlantTooltip != null) {
+            guiGraphics.renderTooltip(font, hoveredPlantTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
+        }
+    }
+
+    private void renderPlantCard(GuiGraphics guiGraphics, GardenPlantDefinition plant, int index, int x, int y, int mouseX, int mouseY) {
+        int cardX = getPlantCardX(x, index);
+        int cardY = getPlantCardY(y, index);
+        int cardW = 82;
+        int cardH = 46;
+        boolean unlocked = plant.isUnlockedAtWave(menu.currentWave());
+        int count = menu.plantCount(index);
+        int remaining = menu.plantRemainingSeconds(index);
+        int border = unlocked ? 0xFF2F6F2F : 0xFF050505;
+        int fill = unlocked ? 0x66FFFFFF : 0x66000000;
+
+        guiGraphics.fill(cardX, cardY, cardX + cardW, cardY + cardH, border);
+        guiGraphics.fill(cardX + 2, cardY + 2, cardX + cardW - 2, cardY + cardH - 2, fill);
+        guiGraphics.fill(cardX + 5, cardY + 6, cardX + 25, cardY + 26, unlocked ? 0xFFB6D7A8 : 0xFF000000);
+        if (unlocked && count <= 0) {
+            guiGraphics.renderItem(itemFromId(plant.seedPacketId().toString()), cardX + 7, cardY + 8);
+        }
+
+        String name = font.plainSubstrByWidth(plant.displayName(), 48);
+        guiGraphics.drawString(font, name, cardX + 29, cardY + 5, unlocked ? 0x2F6F2F : 0x202020, false);
+        String cost = unlocked ? plant.sunCost() + " sun" : "?";
+        guiGraphics.drawString(font, cost, cardX + 29, cardY + 16, unlocked ? 0x9E7E00 : 0x202020, false);
+        String description = unlocked ? font.plainSubstrByWidth(plant.description(), 70) : "?";
+        guiGraphics.drawString(font, description, cardX + 6, cardY + 29, unlocked ? 0x3F3F3F : 0x202020, false);
+
+        int barX = cardX + 5;
+        int barY = cardY + 38;
+        int barW = cardW - 10;
+        guiGraphics.fill(barX, barY, barX + barW, barY + 5, 0xFF1F1F1F);
+        if (unlocked) {
+            int fillW = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP
+                    ? barW
+                    : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) plant.productionSeconds())));
+            guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF3F9F3F);
+            guiGraphics.drawString(font, count + "/40", barX + 2, barY - 8, count > 0 ? 0x2F6F2F : 0x5F5F5F, false);
+        }
+
+        if (mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
+            hoveredPlantTooltip = plantTooltip(plant, unlocked, count, remaining);
+        }
+    }
+
+    private List<Component> plantTooltip(GardenPlantDefinition plant, boolean unlocked, int count, int remaining) {
+        if (!unlocked) {
+            return List.of(
+                    Component.literal(plant.displayName()).withStyle(ChatFormatting.DARK_GRAY),
+                    Component.literal("Cost: ?").withStyle(ChatFormatting.GRAY),
+                    Component.literal("Description: ?").withStyle(ChatFormatting.GRAY),
+                    Component.literal("Unlock: " + plant.unlockHint()).withStyle(ChatFormatting.YELLOW)
+            );
+        }
+
+        String timer = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP ? "Full" : remaining + "s";
+        return List.of(
+                Component.literal(plant.displayName()).withStyle(ChatFormatting.GREEN),
+                Component.literal("Cost: " + plant.sunCost() + " sun").withStyle(ChatFormatting.GOLD),
+                Component.literal(plant.description()).withStyle(ChatFormatting.GRAY),
+                Component.literal("Totem packets: " + count + "/40").withStyle(ChatFormatting.DARK_GREEN),
+                Component.literal("Next packet: " + timer).withStyle(ChatFormatting.YELLOW),
+                Component.literal("Drag packets into Seed Storage or inventory.").withStyle(ChatFormatting.AQUA)
+        );
+    }
+
+    private void renderSeedStorageArea(GuiGraphics guiGraphics, int x, int y) {
+        guiGraphics.drawString(font, Component.literal("Seed Storage").withStyle(ChatFormatting.DARK_GRAY), x + 22, y + 156, 0x3F3F3F, false);
+        for (int index = 0; index < GardenTotemMenu.SEED_STORAGE_SLOT_COUNT; index++) {
+            drawSlotBackground(guiGraphics, x + 22 + (index % 8) * 18, y + 166 + (index / 8) * 18, 0xFF2F6F2F);
+        }
+    }
+
+    private void renderVerticalInventoryArea(GuiGraphics guiGraphics, int x, int y) {
+        guiGraphics.drawString(font, Component.literal("Inventory").withStyle(ChatFormatting.DARK_GRAY), x + 276, y + 34, 0x3F3F3F, false);
+        for (int index = 0; index < GardenTotemMenu.PLAYER_INVENTORY_SLOT_COUNT; index++) {
+            drawSlotBackground(guiGraphics, x + 276 + (index / 9) * 18, y + 44 + (index % 9) * 18, 0xFF5F5F5F);
+        }
+        drawSlotBackground(guiGraphics, x + 334, y + 206, 0xFF7F1F1F);
+        guiGraphics.renderItem(new ItemStack(Items.BARRIER), x + 335, y + 207);
+    }
+
+    private void drawSlotBackground(GuiGraphics guiGraphics, int x, int y, int border) {
+        guiGraphics.fill(x - 1, y - 1, x + 17, y + 17, border);
+        guiGraphics.fill(x, y, x + 16, y + 16, 0xFF8F8F8F);
+    }
+
+    private int getHoveredPlant(double mouseX, double mouseY) {
+        for (int i = 0; i < GardenPlantDefinition.originalGardenPlants().size(); i++) {
+            int cardX = getPlantCardX(leftPos, i);
+            int cardY = getPlantCardY(topPos, i);
+            if (mouseX >= cardX && mouseX < cardX + 82 && mouseY >= cardY && mouseY < cardY + 46) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getPlantCardX(int x, int index) {
+        return x + 18 + (index % 3) * 88;
+    }
+
+    private int getPlantCardY(int y, int index) {
+        return y + 60 + (index / 3) * 50;
+    }
+
+    private void renderShopTab(GuiGraphics guiGraphics, int x, int y) {
+        guiGraphics.drawString(font, Component.literal("Crazy Dave's Shop").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
+        guiGraphics.drawString(font, Component.literal("Shop inventory placeholder").withStyle(ChatFormatting.DARK_GREEN), x + 70, y + 96, 0x2F6F2F, false);
+        drawNode(guiGraphics, x + 34, y + 84, new ItemStack(Items.VILLAGER_SPAWN_EGG), true);
     }
 
     private void drawNode(GuiGraphics guiGraphics, int x, int y, ItemStack icon, boolean unlocked) {
