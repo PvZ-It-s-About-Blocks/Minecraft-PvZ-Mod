@@ -75,9 +75,16 @@ public class PvZ2Mod {
             event.accept(ModItems.POTATO_MINE_SEED_PACKET);
             event.accept(ModItems.REPEATER_SEED_PACKET);
             event.accept(ModItems.CHOMPER_SEED_PACKET);
+            event.accept(ModItems.BLOOMERANG_SEED_PACKET);
+            event.accept(ModItems.ICEBERG_LETTUCE_SEED_PACKET);
+            event.accept(ModItems.GRAVE_BUSTER_SEED_PACKET);
+            event.accept(ModItems.BONK_CHOY_SEED_PACKET);
+            event.accept(ModItems.TORCHWOOD_SEED_PACKET);
+            event.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
+            event.accept(ModItems.TARGETING_PRIORITY_CHANGER);
         }
     }
 

@@ -30,6 +30,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private int waveActive;
     private int portalDiscoveryMask;
     private int currentPortalIndex;
+    private int gardenPortalIndex;
     private final int[] plantCounts = new int[PLANT_COUNT];
     private final int[] plantRemainingSeconds = new int[PLANT_COUNT];
     private final ItemStack[] seedStorageStacks = new ItemStack[SEED_STORAGE_SLOT_COUNT];
@@ -46,6 +47,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.waveActive = waveActive ? 1 : 0;
         this.portalDiscoveryMask = 1;
         this.currentPortalIndex = 0;
+        this.gardenPortalIndex = 0;
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -57,6 +59,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.waveActive = gardenTotem.isWaveActive() ? 1 : 0;
         this.portalDiscoveryMask = gardenTotem.getPortalDiscoveryMask();
         this.currentPortalIndex = gardenTotem.getCurrentPortalIndex();
+        this.gardenPortalIndex = gardenTotem.getGardenPortalIndex();
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -129,6 +132,17 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                 GardenTotemMenu.this.currentPortalIndex = value;
             }
         });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.gardenPortalIndex : gardenTotem.getGardenPortalIndex();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.gardenPortalIndex = value;
+            }
+        });
         for (int plantIndex = 0; plantIndex < PLANT_COUNT; plantIndex++) {
             final int index = plantIndex;
             addDataSlot(new DataSlot() {
@@ -170,6 +184,12 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
     public int currentPortalIndex() {
         return currentPortalIndex;
+    }
+
+    public net.PvZModders.PvZMod.progression.GardenId gardenId() {
+        net.PvZModders.PvZMod.progression.GardenPortalOption[] options = net.PvZModders.PvZMod.progression.GardenPortalOption.values();
+        int index = Math.max(0, Math.min(options.length - 1, gardenPortalIndex));
+        return options[index].gardenId();
     }
 
     public int plantCount(int plantIndex) {

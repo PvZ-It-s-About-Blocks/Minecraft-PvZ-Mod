@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
+import net.PvZModders.PvZMod.progression.waves.GardenWaves;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.minecraft.ChatFormatting;
@@ -193,7 +194,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         guiGraphics.enableScissor(canvasX, canvasY, canvasX + canvasW, canvasY + canvasH);
         drawPanelNoise(guiGraphics, canvasX + (int) waveCanvasX, canvasY, WAVE_CANVAS_WIDTH, WAVE_CANVAS_HEIGHT);
 
-        for (GardenWaveDefinition wave : OriginalGardenWaves.all()) {
+        for (GardenWaveDefinition wave : GardenWaves.all(menu.gardenId())) {
             int nodeX = canvasX + getWaveVirtualX(wave.wave()) + (int) waveCanvasX;
             int nodeY = canvasY + getWaveVirtualY();
             if (wave.wave() > 1) {
@@ -213,7 +214,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             guiGraphics.renderTooltip(font, hoveredRewardTooltip, mouseX, mouseY);
         }
 
-        GardenWaveDefinition selected = OriginalGardenWaves.get(selectedWave);
+        GardenWaveDefinition selected = GardenWaves.get(menu.gardenId(), selectedWave);
         renderSelectedWaveBox(guiGraphics, x, y, selected);
     }
 

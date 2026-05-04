@@ -26,11 +26,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.INITIAL_PLAINS, ModItems.REPEATER_SEED_PACKET.getId(), "repeater", "Repeater", 200, PlantBehavior.REPEATER);
         register(GardenId.INITIAL_PLAINS, ModItems.CHOMPER_SEED_PACKET.getId(), "chomper", "Chomper", 150, PlantBehavior.CHOMPER);
 
-        register(GardenId.DESERT, "bloomerang", "Bloomerang", 175);
-        register(GardenId.DESERT, "iceberg_lettuce", "Iceberg Lettuce", 0);
-        register(GardenId.DESERT, "grave_buster", "Grave Buster", 0);
-        register(GardenId.DESERT, "bonk_choy", "Bonk Choy", 150);
-        register(GardenId.DESERT, "twin_sunflower", "Twin Sunflower", 125);
+        register(GardenId.DESERT, ModItems.BLOOMERANG_SEED_PACKET.getId(), "bloomerang", "Bloomerang", 175, PlantBehavior.BLOOMERANG);
+        register(GardenId.DESERT, ModItems.ICEBERG_LETTUCE_SEED_PACKET.getId(), "iceberg_lettuce", "Iceberg Lettuce", 0, PlantBehavior.ICEBERG_LETTUCE);
+        register(GardenId.DESERT, ModItems.GRAVE_BUSTER_SEED_PACKET.getId(), "grave_buster", "Grave Buster", 0, PlantBehavior.GRAVE_BUSTER);
+        register(GardenId.DESERT, ModItems.BONK_CHOY_SEED_PACKET.getId(), "bonk_choy", "Bonk Choy", 150, PlantBehavior.BONK_CHOY);
+        register(GardenId.DESERT, ModItems.TORCHWOOD_SEED_PACKET.getId(), "torchwood", "Torchwood", 175, PlantBehavior.TORCHWOOD);
+        register(GardenId.DESERT, ModItems.TWIN_SUNFLOWER_SEED_PACKET.getId(), "twin_sunflower", "Twin Sunflower", 125, PlantBehavior.TWIN_SUNFLOWER);
         register(GardenId.PIRATE_SEAS, "kernel_pult", "Kernel-pult", 100);
         register(GardenId.PIRATE_SEAS, "snapdragon", "Snapdragon", 150);
         register(GardenId.PIRATE_SEAS, "spikeweed", "Spikeweed", 100);
@@ -146,6 +147,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         WALL_NUT,
         POTATO_MINE,
         CHOMPER,
-        REPEATER
+        REPEATER,
+        BLOOMERANG,
+        ICEBERG_LETTUCE,
+        GRAVE_BUSTER,
+        BONK_CHOY,
+        TORCHWOOD,
+        TWIN_SUNFLOWER
     }
 }

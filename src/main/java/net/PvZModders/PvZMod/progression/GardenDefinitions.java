@@ -25,9 +25,9 @@ public final class GardenDefinitions {
         ), Biomes.SUNFLOWER_PLAINS, Biomes.MEADOW);
         register(new GardenDefinition(
                 GardenId.DESERT,
-                "Desert Garden",
+                "Ancient Egypt Garden",
                 Biomes.DESERT,
-                List.of("bloomerang", "iceberg_lettuce", "grave_buster", "bonk_choy", "repeater", "twin_sunflower"),
+                List.of("bloomerang", "iceberg_lettuce", "grave_buster", "bonk_choy", "torchwood", "twin_sunflower"),
                 List.of(),
                 2
         ));

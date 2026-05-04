@@ -6,6 +6,7 @@ import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
+import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -28,6 +29,18 @@ public class ModItems {
             () -> new SeedPacketItem("repeater", new Item.Properties()));
     public static final RegistryObject<Item> CHOMPER_SEED_PACKET = ITEMS.register("chomper_seed_packet",
             () -> new SeedPacketItem("chomper", new Item.Properties()));
+    public static final RegistryObject<Item> BLOOMERANG_SEED_PACKET = ITEMS.register("bloomerang_seed_packet",
+            () -> new SeedPacketItem("bloomerang", new Item.Properties()));
+    public static final RegistryObject<Item> ICEBERG_LETTUCE_SEED_PACKET = ITEMS.register("iceberg_lettuce_seed_packet",
+            () -> new SeedPacketItem("iceberg_lettuce", new Item.Properties()));
+    public static final RegistryObject<Item> GRAVE_BUSTER_SEED_PACKET = ITEMS.register("grave_buster_seed_packet",
+            () -> new SeedPacketItem("grave_buster", new Item.Properties()));
+    public static final RegistryObject<Item> BONK_CHOY_SEED_PACKET = ITEMS.register("bonk_choy_seed_packet",
+            () -> new SeedPacketItem("bonk_choy", new Item.Properties()));
+    public static final RegistryObject<Item> TORCHWOOD_SEED_PACKET = ITEMS.register("torchwood_seed_packet",
+            () -> new SeedPacketItem("torchwood", new Item.Properties()));
+    public static final RegistryObject<Item> TWIN_SUNFLOWER_SEED_PACKET = ITEMS.register("twin_sunflower_seed_packet",
+            () -> new SeedPacketItem("twin_sunflower", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
@@ -38,6 +51,8 @@ public class ModItems {
             () -> new BiomeDetectorItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SEED_HOLDER = ITEMS.register("seed_holder",
             () -> new SeedHolderItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TARGETING_PRIORITY_CHANGER = ITEMS.register("targeting_priority_changer",
+            () -> new TargetingPriorityChangerItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

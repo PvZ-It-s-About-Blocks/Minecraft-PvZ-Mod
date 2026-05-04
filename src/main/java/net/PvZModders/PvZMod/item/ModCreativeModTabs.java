@@ -23,9 +23,16 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.POTATO_MINE_SEED_PACKET.get());
                         output.accept(ModItems.REPEATER_SEED_PACKET.get());
                         output.accept(ModItems.CHOMPER_SEED_PACKET.get());
+                        output.accept(ModItems.BLOOMERANG_SEED_PACKET.get());
+                        output.accept(ModItems.ICEBERG_LETTUCE_SEED_PACKET.get());
+                        output.accept(ModItems.GRAVE_BUSTER_SEED_PACKET.get());
+                        output.accept(ModItems.BONK_CHOY_SEED_PACKET.get());
+                        output.accept(ModItems.TORCHWOOD_SEED_PACKET.get());
+                        output.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
+                        output.accept(ModItems.TARGETING_PRIORITY_CHANGER.get());
                     })
                     .build());
 

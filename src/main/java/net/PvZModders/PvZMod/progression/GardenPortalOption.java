@@ -4,7 +4,7 @@ import java.util.Optional;
 
 public enum GardenPortalOption {
     ORIGINAL(GardenId.INITIAL_PLAINS, "Original Garden", 0x2F9F3F),
-    DESERT(GardenId.DESERT, "Desert Garden", 0xE6C84A),
+    DESERT(GardenId.DESERT, "Ancient Egypt Garden", 0xE6C84A),
     PIRATE_SEAS(GardenId.PIRATE_SEAS, "Pirate Seas Garden", 0x2AB7D6),
     WILD_WEST(GardenId.WILD_WEST, "Wild West Garden", 0xD87925),
     FROSTBITE(GardenId.FROSTBITE, "Frostbite Garden", 0x8FE8FF),

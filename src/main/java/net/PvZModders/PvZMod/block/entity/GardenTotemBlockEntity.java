@@ -19,6 +19,7 @@ import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
+import net.PvZModders.PvZMod.progression.waves.GardenWaves;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
@@ -181,6 +182,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         return GardenPortalOption.indexOf(gardenId);
     }
 
+    public int getGardenPortalIndex() {
+        return GardenPortalOption.indexOf(gardenId);
+    }
+
     public int getGardenPlantCount(int plantIndex) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return 0;
@@ -283,7 +288,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         waveProgress.startWave();
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
-        List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), OriginalGardenWaves.get(waveProgress.currentWave()));
+        List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
         showWaveDirectionTitle(player, directions);
         player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
         setChanged();
@@ -428,10 +433,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         if (activeWaveStartTick < 0L || activeWaveTotalZombies <= 0 || activeWaveDirections.isEmpty()) {
-            prepareWaveSpawnSchedule(level, OriginalGardenWaves.get(waveProgress.currentWave()));
+            prepareWaveSpawnSchedule(level, waveDefinition(waveProgress.currentWave()));
         }
 
-        GardenWaveDefinition definition = OriginalGardenWaves.get(waveProgress.currentWave());
+        GardenWaveDefinition definition = waveDefinition(waveProgress.currentWave());
         long gameTime = level.getGameTime();
         long elapsed = Math.max(0L, gameTime - activeWaveStartTick);
         if (!activeWaveFinalPushStarted && elapsed >= (long) (DEFAULT_WAVE_DURATION_TICKS * FINAL_PUSH_PROGRESS)) {
@@ -702,7 +707,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void grantMilestoneRewards(ServerLevel level, int wave) {
-        GardenWaveDefinition definition = OriginalGardenWaves.get(wave);
+        GardenWaveDefinition definition = GardenWaves.get(gardenId, wave);
         GardenWaveProgress waveProgress = getWaveProgress(level);
         if (definition.rewards().isEmpty() || waveProgress.isRewardClaimed(wave)) {
             return;
@@ -720,6 +725,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                                     .withStyle(ChatFormatting.YELLOW));
                         }
                     });
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("targeting_priority_changer")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.TARGETING_PRIORITY_CHANGER.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
                 }
             }
         }
@@ -733,8 +744,13 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private List<GardenPlantDefinition> gardenPlants() {
         return switch (gardenId) {
             case INITIAL_PLAINS -> GardenPlantDefinition.originalGardenPlants();
+            case DESERT -> GardenPlantDefinition.ancientEgyptPlants();
             default -> List.of();
         };
+    }
+
+    private GardenWaveDefinition waveDefinition(int wave) {
+        return GardenWaves.get(gardenId, wave);
     }
 
     private void ensureInitialized(ServerLevel level, BlockPos pos) {
