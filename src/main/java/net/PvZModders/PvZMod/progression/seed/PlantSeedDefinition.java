@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
@@ -91,6 +92,10 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
 
     public static Optional<PlantSeedDefinition> getByPlantId(String plantId) {
         return Optional.ofNullable(DEFINITIONS_BY_PLANT_ID.get(plantId));
+    }
+
+    public static Collection<PlantSeedDefinition> all() {
+        return DEFINITIONS_BY_PLANT_ID.values();
     }
 
     public static int sunCost(ResourceLocation seedPacketId) {

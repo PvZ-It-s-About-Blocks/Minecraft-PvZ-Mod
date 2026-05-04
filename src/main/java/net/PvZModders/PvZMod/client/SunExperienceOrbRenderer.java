@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.minecraft.client.renderer.LightTexture;
@@ -35,7 +36,7 @@ public class SunExperienceOrbRenderer extends ExperienceOrbRenderer {
 
     @Override
     public void render(ExperienceOrb orb, float entityYaw, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int packedLight) {
-        if (SunManager.isSunOrb(orb) || orb.getValue() == SunManager.DEFAULT_SUN_VALUE) {
+        if (orb instanceof PvZSunEntity || SunManager.isSunOrb(orb) || orb.getValue() == SunManager.DEFAULT_SUN_VALUE) {
             if (!orb.isInvisible()) {
                 renderSun(orb, partialTicks, poseStack, buffer);
             }

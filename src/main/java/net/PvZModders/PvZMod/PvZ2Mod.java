@@ -17,10 +17,14 @@ import net.PvZModders.PvZMod.menu.ModMenuTypes;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.entity.SnowGolemRenderer;
+import net.minecraft.client.renderer.entity.ZombieRenderer;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.SnowGolem;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
@@ -79,6 +83,10 @@ public class PvZ2Mod {
 
     private void registerEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.PENNY_VAN.get(), PennyVanEntity.createAttributes().build());
+        event.put(ModEntities.GARDEN_ZOMBIE.get(), Zombie.createAttributes().build());
+        for (var plantEntityType : ModEntities.plantEntityTypes()) {
+            event.put(plantEntityType.get(), SnowGolem.createAttributes().build());
+        }
     }
 
     @SubscribeEvent
@@ -92,6 +100,11 @@ public class PvZ2Mod {
             event.enqueueWork(() -> {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(EntityType.EXPERIENCE_ORB, SunExperienceOrbRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
+                for (var plantEntityType : ModEntities.plantEntityTypes()) {
+                    net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
+                }
                 MenuScreens.register(ModMenuTypes.GARDEN_TOTEM.get(), GardenTotemScreen::new);
                 MenuScreens.register(ModMenuTypes.BIOME_DETECTOR.get(), BiomeDetectorScreen::new);
                 ItemProperties.register(ModItems.BIOME_DETECTOR.get(), new ResourceLocation("angle"), new CompassItemPropertyFunction((level, stack, entity) ->

@@ -1,9 +1,11 @@
 package net.PvZModders.PvZMod.progression.seed;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -33,11 +35,11 @@ import java.util.UUID;
 
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class PlantEntityManager {
-    private static final String PLANT_TAG = "PvZPlant";
-    private static final String PLANT_ID_TAG = "PvZPlantId";
-    private static final String PLANT_BEHAVIOR_TAG = "PvZPlantBehavior";
-    private static final String NEXT_ACTION_TICK_TAG = "PvZPlantNextActionTick";
-    private static final String CHOMPER_COOLDOWN_TICK_TAG = "PvZChomperCooldownTick";
+    public static final String PLANT_TAG = "PvZPlant";
+    public static final String PLANT_ID_TAG = "PvZPlantId";
+    public static final String PLANT_BEHAVIOR_TAG = "PvZPlantBehavior";
+    public static final String NEXT_ACTION_TICK_TAG = "PvZPlantNextActionTick";
+    public static final String CHOMPER_COOLDOWN_TICK_TAG = "PvZChomperCooldownTick";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -64,12 +66,30 @@ public final class PlantEntityManager {
             return false;
         }
 
-        SnowGolem plant = EntityType.SNOW_GOLEM.create(level);
+        EntityType<? extends SnowGolem> plantType = ModEntities.PLANTS.containsKey(definition.plantId())
+                ? ModEntities.PLANTS.get(definition.plantId()).get()
+                : EntityType.SNOW_GOLEM;
+        SnowGolem plant = plantType.create(level);
         if (plant == null) {
             return false;
         }
 
         plant.moveTo(placePos.getX() + 0.5D, placePos.getY(), placePos.getZ() + 0.5D, player.getYRot(), 0.0F);
+        initializePlantEntity(plant, definition, level.getGameTime());
+
+        return level.addFreshEntity(plant);
+    }
+
+    public static void initializeSummonedPlant(SnowGolem plant) {
+        if (isPlant(plant)) {
+            return;
+        }
+
+        String plantId = BuiltInRegistries.ENTITY_TYPE.getKey(plant.getType()).getPath();
+        PlantSeedDefinition.getByPlantId(plantId).ifPresent(definition -> initializePlantEntity(plant, definition, plant.level().getGameTime()));
+    }
+
+    public static void initializePlantEntity(SnowGolem plant, PlantSeedDefinition definition, long gameTime) {
         plant.setNoAi(true);
         plant.setSilent(true);
         plant.setPersistenceRequired();
@@ -81,9 +101,7 @@ public final class PlantEntityManager {
         tag.putBoolean(PLANT_TAG, true);
         tag.putString(PLANT_ID_TAG, definition.plantId());
         tag.putString(PLANT_BEHAVIOR_TAG, definition.behavior().name());
-        tag.putLong(NEXT_ACTION_TICK_TAG, level.getGameTime() + 20L);
-
-        return level.addFreshEntity(plant);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {

@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.progression.sun;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -36,11 +37,11 @@ public final class SunManager {
     private static final String PLAYER_SUN_TAG = "PvZSun";
     private static final String PLAYER_SUN_CAP_TAG = "PvZSunCap";
     private static final String NEXT_SUN_DROP_TICK_TAG = "PvZNextSunDropTick";
-    private static final String SUN_ORB_TAG = "PvZSunOrb";
-    private static final String SUN_VALUE_TAG = "PvZSunValue";
-    private static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
-    private static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
-    private static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
+    public static final String SUN_ORB_TAG = "PvZSunOrb";
+    public static final String SUN_VALUE_TAG = "PvZSunValue";
+    public static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
+    public static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
+    public static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
     private static final String TUTORIAL_SUN_GRANTED_TAG = "PvZTutorialSunGranted";
     private static final int SUN_LIFETIME_TICKS = 25 * 20;
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
@@ -207,19 +208,22 @@ public final class SunManager {
     }
 
     private static void spawnSun(ServerLevel level, BlockPos pos) {
-        ExperienceOrb sun = new ExperienceOrb(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, DEFAULT_SUN_VALUE);
-        sun.setCustomName(Component.literal("Sun").withStyle(ChatFormatting.YELLOW));
-        sun.getPersistentData().putBoolean(SUN_ORB_TAG, true);
-        sun.getPersistentData().putInt(SUN_VALUE_TAG, DEFAULT_SUN_VALUE);
-        sun.getPersistentData().putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
-        sun.getPersistentData().putDouble(SUN_ANCHOR_X_TAG, sun.getX());
-        sun.getPersistentData().putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
+        ExperienceOrb sun = new PvZSunEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, DEFAULT_SUN_VALUE);
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
         level.addFreshEntity(sun);
     }
 
     public static void spawnSunAt(ServerLevel level, BlockPos pos) {
         spawnSun(level, pos);
+    }
+
+    public static void initializeSunOrb(ExperienceOrb sun, ServerLevel level, int value) {
+        sun.setCustomName(Component.literal("Sun").withStyle(ChatFormatting.YELLOW));
+        sun.getPersistentData().putBoolean(SUN_ORB_TAG, true);
+        sun.getPersistentData().putInt(SUN_VALUE_TAG, value);
+        sun.getPersistentData().putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
+        sun.getPersistentData().putDouble(SUN_ANCHOR_X_TAG, sun.getX());
+        sun.getPersistentData().putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
     }
 
     private static void tickNearbySunOrbs(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunOrbs) {
@@ -266,7 +270,7 @@ public final class SunManager {
     }
 
     public static boolean isSunOrb(ExperienceOrb orb) {
-        return orb.getPersistentData().getBoolean(SUN_ORB_TAG);
+        return orb instanceof PvZSunEntity || orb.getPersistentData().getBoolean(SUN_ORB_TAG);
     }
 
     private static int getSunValue(ExperienceOrb orb) {
