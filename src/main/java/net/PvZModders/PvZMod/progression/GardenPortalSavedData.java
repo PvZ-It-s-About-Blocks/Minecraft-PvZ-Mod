@@ -61,6 +61,20 @@ public class GardenPortalSavedData extends SavedData {
         return Optional.ofNullable(portals.get(gardenId));
     }
 
+    public boolean hasGarden(GardenId gardenId) {
+        return portals.containsKey(gardenId);
+    }
+
+    public boolean isAnyGardenWithin(ServerLevel level, BlockPos pos, int radius) {
+        double maxDistance = radius * radius;
+        for (GlobalPos portal : portals.values()) {
+            if (portal.dimension() == level.dimension() && portal.pos().distSqr(pos) <= maxDistance) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void setPortal(GardenId gardenId, ServerLevel level, BlockPos pos) {
         GlobalPos newPortal = GlobalPos.of(level.dimension(), pos);
         if (!newPortal.equals(portals.get(gardenId))) {

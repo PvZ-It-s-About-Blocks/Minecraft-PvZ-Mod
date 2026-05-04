@@ -30,7 +30,7 @@ public final class GardenDefinitions {
                 List.of("bloomerang", "iceberg_lettuce", "grave_buster", "bonk_choy", "repeater", "twin_sunflower"),
                 List.of(),
                 2
-        ), Biomes.ERODED_BADLANDS, Biomes.WOODED_BADLANDS);
+        ));
         register(new GardenDefinition(
                 GardenId.PIRATE_SEAS,
                 "Pirate Seas Garden",
@@ -38,7 +38,7 @@ public final class GardenDefinitions {
                 List.of("kernel_pult", "snapdragon", "spikeweed", "spring_bean", "coconut_cannon", "threepeater", "spikerock", "cherry_bomb"),
                 List.of("pirate_ship"),
                 3
-        ), Biomes.BEACH, Biomes.LUKEWARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN);
+        ), Biomes.LUKEWARM_OCEAN, Biomes.DEEP_LUKEWARM_OCEAN);
         register(new GardenDefinition(
                 GardenId.WILD_WEST,
                 "Wild West Garden",
@@ -66,7 +66,7 @@ public final class GardenDefinitions {
         register(new GardenDefinition(
                 GardenId.FAR_FUTURE,
                 "Far Future Garden",
-                Biomes.CHERRY_GROVE,
+                Biomes.MUSHROOM_FIELDS,
                 List.of("laser_bean", "blover", "citron", "empeach", "infi_nut", "magnifying_grass", "tile_turnip"),
                 List.of("jetpack"),
                 7
@@ -78,11 +78,11 @@ public final class GardenDefinitions {
                 List.of("sun_shroom", "puff_shroom", "fume_shroom", "sun_bean", "magnet_shroom"),
                 List.of(),
                 8
-        ), Biomes.OLD_GROWTH_PINE_TAIGA, Biomes.OLD_GROWTH_SPRUCE_TAIGA);
+        ));
         register(new GardenDefinition(
                 GardenId.NEON_MIXTAPE,
                 "Neon Mixtape Garden",
-                Biomes.DRIPSTONE_CAVES,
+                Biomes.FLOWER_FOREST,
                 List.of("phat_beet", "celery_stalker", "thyme_warp", "garlic", "spore_shroom", "intensive_carrot"),
                 List.of(),
                 9
@@ -90,19 +90,19 @@ public final class GardenDefinitions {
         register(new GardenDefinition(
                 GardenId.JURASSIC_MARSH,
                 "Jurassic Marsh Garden",
-                Biomes.SWAMP,
+                Biomes.BADLANDS,
                 List.of("primal_peashooter", "primal_wall_nut", "perfume_shroom", "primal_sunflower", "primal_potato_mine"),
                 List.of("triceratops_schematic"),
                 10
-        ), Biomes.MANGROVE_SWAMP);
+        ), Biomes.ERODED_BADLANDS, Biomes.WOODED_BADLANDS);
         register(new GardenDefinition(
                 GardenId.BIG_WAVE_BEACH,
                 "Big Wave Beach Garden",
-                Biomes.OCEAN,
+                Biomes.BEACH,
                 List.of("lily_pad", "tangle_kelp", "bowling_bulb", "guacodile", "banana_launcher"),
                 List.of(),
                 11
-        ), Biomes.DEEP_OCEAN, Biomes.COLD_OCEAN, Biomes.DEEP_COLD_OCEAN);
+        ));
         register(new GardenDefinition(
                 GardenId.MODERN_DAY,
                 "Modern Day Garden",
@@ -111,6 +111,14 @@ public final class GardenDefinitions {
                 List.of("commanders_bucket"),
                 12
         ), Biomes.END_HIGHLANDS, Biomes.END_MIDLANDS, Biomes.SMALL_END_ISLANDS, Biomes.END_BARRENS);
+        registerUnmapped(new GardenDefinition(
+                GardenId.GREENHOUSE,
+                "Greenhouse Garden",
+                Biomes.PLAINS,
+                List.of(),
+                List.of(),
+                13
+        ));
     }
 
     private GardenDefinitions() {
@@ -123,6 +131,10 @@ public final class GardenDefinitions {
         for (ResourceKey<Biome> biome : biomeAliases) {
             BIOME_GARDENS.put(biome, definition.id());
         }
+    }
+
+    private static void registerUnmapped(GardenDefinition definition) {
+        DEFINITIONS.put(definition.id(), definition);
     }
 
     public static GardenDefinition get(GardenId id) {

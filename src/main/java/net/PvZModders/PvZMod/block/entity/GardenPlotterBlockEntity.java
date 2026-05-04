@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.minecraft.ChatFormatting;
@@ -42,6 +43,7 @@ public class GardenPlotterBlockEntity extends BlockEntity {
     private static final int AIR_CLEARANCE = 3;
     private static final int PREVIEW_REFRESH_TICKS = 20;
     private static final int STATUS_REFRESH_TICKS = 40;
+    private static final int GREENHOUSE_MIN_DISTANCE = 60;
 
     private final Map<PreviewMarker, UUID> previewDisplayIds = new HashMap<>();
     private UUID promptDisplayId;
@@ -64,7 +66,8 @@ public class GardenPlotterBlockEntity extends BlockEntity {
             return;
         }
 
-        ValidationResult validation = validateGarden(level, origin);
+        GardenId intendedGardenId = intendedGardenId(level, origin);
+        ValidationResult validation = validateGarden(level, origin, intendedGardenId);
         syncValidationPreview(level, validation.markers());
 
         if (validation.valid()) {
@@ -198,17 +201,14 @@ public class GardenPlotterBlockEntity extends BlockEntity {
             return;
         }
 
-        ValidationResult validation = validateGarden(level, origin);
+        GardenId intendedGardenId = intendedGardenId(level, origin);
+        ValidationResult validation = validateGarden(level, origin, intendedGardenId);
         Optional<ResourceKey<Biome>> biomeKey = level.getBiome(origin).unwrapKey();
         Optional<GardenBiomeCategory> category = biomeKey.flatMap(GardenBiomeCategory::forBiome);
         String biomeName = category
                 .map(GardenBiomeCategory::displayName)
                 .orElse("Unknown");
-        GardenDefinition garden = category
-                .map(GardenBiomeCategory::gardenId)
-                .map(GardenDefinitions::get)
-                .or(() -> biomeKey.flatMap(GardenDefinitions::forBiome))
-                .orElse(GardenDefinitions.get(GardenId.INITIAL_PLAINS));
+        GardenDefinition garden = GardenDefinitions.get(intendedGardenId);
         TextColor color = validation.valid()
                 ? TextColor.fromRgb(category.map(GardenBiomeCategory::color).orElse(0x2F9F3F))
                 : TextColor.fromRgb(0xD33F3F);
@@ -226,9 +226,15 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         if (!(level instanceof ServerLevel serverLevel)) {
             return false;
         }
-        ValidationResult validation = validateGarden(serverLevel, worldPosition);
+        GardenId intendedGardenId = intendedGardenId(serverLevel, worldPosition);
+        ValidationResult validation = validateGarden(serverLevel, worldPosition, intendedGardenId);
         if (!validation.valid()) {
             player.displayClientMessage(Component.literal("Garden area is invalid").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+
+        Optional<GardenId> creationGardenId = resolveCreationGardenId(serverLevel, worldPosition, intendedGardenId, player);
+        if (creationGardenId.isEmpty()) {
             return false;
         }
 
@@ -238,27 +244,60 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         serverLevel.setBlock(worldPosition.above(), ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, 1), 3);
         serverLevel.setBlock(worldPosition.above(2), ModBlocks.GARDEN_TOTEM.get().defaultBlockState().setValue(GardenTotemBlock.PART, 2), 3);
         if (serverLevel.getBlockEntity(worldPosition) instanceof GardenTotemBlockEntity gardenTotem) {
-            gardenTotem.initializeFromPlotter(serverLevel, worldPosition);
+            gardenTotem.initializeFromPlotter(serverLevel, worldPosition, creationGardenId.get());
         }
-        player.displayClientMessage(Component.literal("Garden created").withStyle(ChatFormatting.GREEN), true);
+        player.displayClientMessage(Component.literal(GardenDefinitions.get(creationGardenId.get()).displayName() + " created").withStyle(ChatFormatting.GREEN), true);
         return true;
     }
 
-    private ValidationResult validateGarden(ServerLevel level, BlockPos origin) {
+    private Optional<GardenId> resolveCreationGardenId(ServerLevel level, BlockPos origin, GardenId intendedGardenId, ServerPlayer player) {
+        GardenPortalSavedData portalData = GardenPortalSavedData.get(level);
+        if (!portalData.hasGarden(intendedGardenId)) {
+            return Optional.of(intendedGardenId);
+        }
+
+        if (portalData.hasGarden(GardenId.GREENHOUSE)) {
+            player.displayClientMessage(Component.literal("Greenhouse Garden already exists.").withStyle(ChatFormatting.RED), true);
+            return Optional.empty();
+        }
+
+        if (portalData.isAnyGardenWithin(level, origin, GREENHOUSE_MIN_DISTANCE)) {
+            player.displayClientMessage(Component.literal("Greenhouse Garden must be at least 60 blocks away from another garden.").withStyle(ChatFormatting.RED), true);
+            return Optional.empty();
+        }
+
+        return Optional.of(GardenId.GREENHOUSE);
+    }
+
+    private GardenId intendedGardenId(ServerLevel level, BlockPos origin) {
+        Optional<ResourceKey<Biome>> biomeKey = level.getBiome(origin).unwrapKey();
+        return biomeKey
+                .flatMap(GardenBiomeCategory::forBiome)
+                .map(GardenBiomeCategory::gardenId)
+                .or(() -> biomeKey.flatMap(GardenDefinitions::forBiome).map(GardenDefinition::id))
+                .orElse(GardenId.INITIAL_PLAINS);
+    }
+
+    private ValidationResult validateGarden(ServerLevel level, BlockPos origin, GardenId intendedGardenId) {
         Set<PreviewMarker> markers = new HashSet<>();
         int startX = origin.getX() - (WIDTH / 2);
         int startZ = origin.getZ() - (LENGTH / 2);
         int y = origin.getY();
         boolean valid = true;
+        boolean waterAllowed = intendedGardenId == GardenId.BIG_WAVE_BEACH;
 
         for (int dx = 0; dx < WIDTH; dx++) {
             for (int dz = 0; dz < LENGTH; dz++) {
                 BlockPos floorPos = new BlockPos(startX + dx, y - 1, startZ + dz);
                 BlockPos gardenPos = floorPos.above();
-                boolean validFloor = level.getBlockState(floorPos).is(BlockTags.DIRT) || level.getBlockState(floorPos).is(BlockTags.SAND);
+                BlockState gardenState = level.getBlockState(gardenPos);
+                boolean waterInPlot = gardenState.is(Blocks.WATER);
+                boolean validFloor = level.getBlockState(floorPos).is(BlockTags.DIRT)
+                        || level.getBlockState(floorPos).is(BlockTags.SAND)
+                        || (waterAllowed && waterInPlot && level.getBlockState(floorPos).isFaceSturdy(level, floorPos, net.minecraft.core.Direction.UP));
                 markers.add(new PreviewMarker(gardenPos, validFloor, false));
 
-                boolean validGardenLevel = gardenPos.equals(origin) || level.getBlockState(gardenPos).isAir();
+                boolean validGardenLevel = gardenPos.equals(origin) || gardenState.isAir() || (waterAllowed && waterInPlot);
                 if (!validGardenLevel) {
                     markers.add(new PreviewMarker(gardenPos, false, true));
                 }

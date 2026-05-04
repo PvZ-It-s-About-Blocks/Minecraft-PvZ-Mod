@@ -132,9 +132,19 @@ public class GardenTotemBlockEntity extends BlockEntity {
         GardenDefinition garden = biomeKey
                 .flatMap(GardenDefinitions::forBiome)
                 .orElse(GardenDefinitions.get(GardenId.INITIAL_PLAINS));
+        initializeAsGarden(level, pos, garden.id(), biomeKey.map(key -> key.location().toString()).orElse("unknown"));
+    }
+
+    public void initializeFromPlotter(ServerLevel level, BlockPos pos, GardenId explicitGardenId) {
+        Optional<ResourceKey<Biome>> biomeKey = level.getBiome(pos).unwrapKey();
+        initializeAsGarden(level, pos, explicitGardenId, biomeKey.map(key -> key.location().toString()).orElse("unknown"));
+    }
+
+    public void initializeAsGarden(ServerLevel level, BlockPos pos, GardenId gardenId, String biomeName) {
+        GardenDefinition garden = GardenDefinitions.get(gardenId);
         this.gardenId = garden.id();
         this.gardenName = garden.displayName();
-        this.biomeName = biomeKey.map(key -> key.location().toString()).orElse("unknown");
+        this.biomeName = biomeName;
         this.initialized = true;
         this.totemY = pos.getY() - 1.0D;
         this.sinkingPlotterY = pos.getY();
