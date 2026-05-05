@@ -59,6 +59,11 @@ public class GardenTotemBlock extends BaseEntityBlock {
                 return InteractionResult.CONSUME;
             }
 
+            if (gardenTotem.isWaveActive()) {
+                player.displayClientMessage(net.minecraft.network.chat.Component.literal("The Totem cannot be used during an active wave.").withStyle(net.minecraft.ChatFormatting.RED), true);
+                return InteractionResult.CONSUME;
+            }
+
             gardenTotem.openGardenMenu(serverPlayer);
             return InteractionResult.CONSUME;
         }

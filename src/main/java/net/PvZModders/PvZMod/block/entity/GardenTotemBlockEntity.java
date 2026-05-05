@@ -64,6 +64,8 @@ import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.particles.ParticleTypes;
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.ArrayList;
@@ -133,6 +135,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.tickGoldTileSunProduction(serverLevel);
         be.tickSinkingPlotter(serverLevel, pos);
         be.syncHealthBar(serverLevel, pos);
+        be.absorbSunFromPlayersDuringWave(serverLevel, false);
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
         be.updateWaveBossBar(serverLevel);
@@ -169,6 +172,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public void openGardenMenu(ServerPlayer player) {
+        if (isWaveActive()) {
+            player.displayClientMessage(Component.literal("The Totem is focused on the active wave.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         player.openMenu(new SimpleMenuProvider(
                 (containerId, inventory, p) -> new GardenTotemMenu(containerId, inventory, this),
                 Component.literal(gardenName + " Totem").withStyle(ChatFormatting.GREEN)
@@ -255,6 +263,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public void teleportToGarden(ServerPlayer player, int portalIndex) {
+        if (isWaveActive()) {
+            player.displayClientMessage(Component.literal("Garden portals are sealed during an active wave.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         Optional<GardenPortalOption> option = GardenPortalOption.byIndex(portalIndex);
         if (option.isEmpty()) {
             return;
@@ -279,6 +292,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
+        if (targetLevel.getBlockEntity(target.get().pos()) instanceof GardenTotemBlockEntity targetTotem && targetTotem.isWaveActive()) {
+            player.displayClientMessage(Component.literal("That garden is currently defending a wave.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         BlockPos arrival = findTeleportArrival(targetLevel, target.get().pos());
         player.closeContainer();
         ModMessages.sendGardenTeleportOverlay(player);
@@ -300,6 +318,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         waveProgress.startWave();
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
+        absorbSunFromPlayersDuringWave(player.serverLevel(), true);
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
         showWaveDirectionTitle(player, directions);
         player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
@@ -814,6 +833,48 @@ public class GardenTotemBlockEntity extends BlockEntity {
             if (!nearbyPlayers.contains(player)) {
                 waveBossBar.removePlayer(player);
             }
+        }
+    }
+
+    private void absorbSunFromPlayersDuringWave(ServerLevel level, boolean announce) {
+        if (!getWaveProgress(level).waveActive()) {
+            return;
+        }
+
+        for (ServerPlayer player : level.players()) {
+            if (!isPlayerInsideGarden(player)) {
+                continue;
+            }
+
+            int drained = SunManager.drainSun(player);
+            if (drained <= 0) {
+                continue;
+            }
+
+            animateSunAbsorption(level, player, drained);
+            if (announce) {
+                player.displayClientMessage(Component.literal("The Totem absorbs your Sun to begin the defense.").withStyle(ChatFormatting.GOLD), true);
+            }
+        }
+    }
+
+    private boolean isPlayerInsideGarden(ServerPlayer player) {
+        return player.level() == level
+                && Math.abs(player.getX() - (worldPosition.getX() + 0.5D)) <= GARDEN_RADIUS + 1.0D
+                && Math.abs(player.getZ() - (worldPosition.getZ() + 0.5D)) <= GARDEN_RADIUS + 1.0D
+                && player.getY() >= worldPosition.getY() - 2.0D
+                && player.getY() <= worldPosition.getY() + 8.0D;
+    }
+
+    private void animateSunAbsorption(ServerLevel level, ServerPlayer player, int drainedSun) {
+        int particleBursts = Math.min(18, Math.max(4, drainedSun / 25));
+        Vec3 start = player.position().add(0.0D, player.getBbHeight() * 0.65D, 0.0D);
+        Vec3 end = Vec3.atCenterOf(worldPosition).add(0.0D, 1.2D, 0.0D);
+        Vec3 delta = end.subtract(start);
+        for (int i = 0; i < particleBursts; i++) {
+            double t = particleBursts <= 1 ? 1.0D : i / (double) (particleBursts - 1);
+            Vec3 pos = start.add(delta.scale(t));
+            level.sendParticles(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 2, 0.05D, 0.05D, 0.05D, 0.01D);
         }
     }
 

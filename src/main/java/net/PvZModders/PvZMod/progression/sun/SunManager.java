@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.progression.sun;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
+import net.PvZModders.PvZMod.progression.atmosphere.DarkAgesBiomeEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -145,6 +146,13 @@ public final class SunManager {
         return true;
     }
 
+    public static int drainSun(Player player) {
+        int sun = getSun(player);
+        setSun(player, 0);
+        syncSunBar(player);
+        return sun;
+    }
+
     public static void setSun(Player player, int amount) {
         int cap = getSunCap(player);
         player.getPersistentData().putInt(PLAYER_SUN_TAG, Math.max(0, Math.min(cap, amount)));
@@ -172,7 +180,8 @@ public final class SunManager {
 
     private static void tickSunDrops(ServerPlayer player) {
         ServerLevel level = player.serverLevel();
-        if (!canSpawnNaturalSun(level)) {
+        tickDarkAgesBiomeMessage(player);
+        if (!canSpawnNaturalSun(level) || DarkAgesBiomeEffects.shouldSuppressPassiveSunDrops(player)) {
             scheduleNextSunDrop(player, level.getGameTime() + MIN_DROP_DELAY_TICKS);
             return;
         }
@@ -187,6 +196,19 @@ public final class SunManager {
 
     private static boolean canSpawnNaturalSun(ServerLevel level) {
         return level.dimension() == Level.OVERWORLD && level.isDay();
+    }
+
+    private static void tickDarkAgesBiomeMessage(ServerPlayer player) {
+        boolean inDarkAges = DarkAgesBiomeEffects.isPlayerInDarkAgesBiome(player);
+        boolean wasInDarkAges = DarkAgesBiomeEffects.wasInDarkAgesBiome(player);
+        if (inDarkAges == wasInDarkAges) {
+            return;
+        }
+
+        DarkAgesBiomeEffects.setInDarkAgesBiome(player, inDarkAges);
+        player.displayClientMessage(Component.literal(inDarkAges
+                ? "The sky darkens. Natural Sun cannot reach this place."
+                : "Natural Sun returns.").withStyle(inDarkAges ? ChatFormatting.DARK_PURPLE : ChatFormatting.YELLOW), true);
     }
 
     private static void scheduleNextSunDrop(ServerPlayer player, long gameTime) {
