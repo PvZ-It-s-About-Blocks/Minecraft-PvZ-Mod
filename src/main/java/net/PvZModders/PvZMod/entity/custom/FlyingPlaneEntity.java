@@ -17,9 +17,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class FlyingPlaneEntity extends Minecart {
     public static final double BASE_SPEED = 0.18D;
-    public static final double MAX_SPEED_BASE = 0.85D;
-    public static final double MAX_SPEED_UPGRADED = 1.15D;
-    public static final int SUN_FOR_MAX_SPEED = 300;
+    public static final double SPEED_PER_SUN = 0.0018D;
 
     public FlyingPlaneEntity(EntityType<? extends Minecart> entityType, Level level) {
         super(entityType, level);
@@ -67,10 +65,7 @@ public class FlyingPlaneEntity extends Minecart {
     }
 
     public static double getSpeedFromSun(Player player) {
-        int sunCap = Math.max(1, SunManager.getSunCap(player));
-        double maxSpeed = sunCap > SunManager.DEFAULT_SUN_CAP ? MAX_SPEED_UPGRADED : MAX_SPEED_BASE;
-        double t = Math.min(1.0D, SunManager.getSun(player) / (double) SUN_FOR_MAX_SPEED);
-        return BASE_SPEED + (maxSpeed - BASE_SPEED) * t;
+        return BASE_SPEED + Math.max(0, SunManager.getSun(player)) * SPEED_PER_SUN;
     }
 
     private static double throttleFor(Player player) {
@@ -89,7 +84,7 @@ public class FlyingPlaneEntity extends Minecart {
         if (passenger instanceof Player player) {
             return getSpeedFromSun(player);
         }
-        return MAX_SPEED_BASE;
+        return BASE_SPEED;
     }
 
     @Override

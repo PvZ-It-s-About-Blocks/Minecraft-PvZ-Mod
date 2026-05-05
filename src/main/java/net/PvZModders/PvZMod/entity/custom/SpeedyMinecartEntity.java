@@ -16,9 +16,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class SpeedyMinecartEntity extends Minecart {
     public static final double BASE_SPEED = 0.12D;
-    public static final double MAX_SPEED_BASE = 0.48D;
-    public static final double MAX_SPEED_UPGRADED = 0.72D;
-    public static final int SUN_FOR_MAX_SPEED = 300;
+    public static final double SPEED_PER_SUN = 0.0012D;
 
     public SpeedyMinecartEntity(EntityType<? extends Minecart> entityType, Level level) {
         super(entityType, level);
@@ -53,10 +51,7 @@ public class SpeedyMinecartEntity extends Minecart {
     }
 
     public static double getSpeedFromSun(Player player) {
-        int sunCap = Math.max(1, SunManager.getSunCap(player));
-        double maxSpeed = sunCap > SunManager.DEFAULT_SUN_CAP ? MAX_SPEED_UPGRADED : MAX_SPEED_BASE;
-        double t = Math.min(1.0D, SunManager.getSun(player) / (double) SUN_FOR_MAX_SPEED);
-        return BASE_SPEED + (maxSpeed - BASE_SPEED) * t;
+        return BASE_SPEED + Math.max(0, SunManager.getSun(player)) * SPEED_PER_SUN;
     }
 
     @Override
@@ -65,7 +60,11 @@ public class SpeedyMinecartEntity extends Minecart {
         if (passenger instanceof Player player) {
             return getSpeedFromSun(player);
         }
-        return MAX_SPEED_BASE;
+        return getSpeedFromSunFallback();
+    }
+
+    private static double getSpeedFromSunFallback() {
+        return BASE_SPEED;
     }
 
     @Override
