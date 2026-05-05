@@ -12,6 +12,7 @@ import net.PvZModders.PvZMod.entity.client.WildWestMinecartRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
+import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.item.ModCreativeModTabs;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.menu.ModMenuTypes;
@@ -22,11 +23,13 @@ import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.SnowGolemRenderer;
 import net.minecraft.client.renderer.entity.ZombieRenderer;
 import net.minecraft.client.renderer.entity.MinecartRenderer;
+import net.minecraft.client.renderer.entity.SnifferRenderer;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.SnowGolem;
+import net.minecraft.world.entity.animal.sniffer.Sniffer;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -101,12 +104,18 @@ public class PvZ2Mod {
             event.accept(ModItems.FUME_SHROOM_SEED_PACKET);
             event.accept(ModItems.SUN_BEAN_SEED_PACKET);
             event.accept(ModItems.MAGNET_SHROOM_SEED_PACKET);
+            event.accept(ModItems.PRIMAL_PEASHOOTER_SEED_PACKET);
+            event.accept(ModItems.PRIMAL_WALL_NUT_SEED_PACKET);
+            event.accept(ModItems.PERFUME_SHROOM_SEED_PACKET);
+            event.accept(ModItems.PRIMAL_SUNFLOWER_SEED_PACKET);
+            event.accept(ModItems.PRIMAL_POTATO_MINE_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
             event.accept(ModItems.TARGETING_PRIORITY_CHANGER);
             event.accept(ModItems.SPEEDY_MINECART);
             event.accept(ModItems.FLYING_PLANE);
+            event.accept(ModItems.DINO_WHISTLE);
         }
     }
 
@@ -114,6 +123,7 @@ public class PvZ2Mod {
         event.put(ModEntities.PENNY_VAN.get(), PennyVanEntity.createAttributes().build());
         event.put(ModEntities.GARDEN_ZOMBIE.get(), Zombie.createAttributes().build());
         event.put(ModEntities.ALL_PLANTS.get(), SnowGolem.createAttributes().build());
+        event.put(ModEntities.JURASSIC_DINOSAUR.get(), Sniffer.createAttributes().build());
         for (var plantEntityType : ModEntities.plantEntityTypes()) {
             event.put(plantEntityType.get(), SnowGolem.createAttributes().build());
         }
@@ -136,6 +146,7 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.WILD_WEST_MINECART.get(), WildWestMinecartRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.FLYING_PLANE.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.JURASSIC_DINOSAUR.get(), SnifferRenderer::new);
                 for (var plantEntityType : ModEntities.plantEntityTypes()) {
                     net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
                 }

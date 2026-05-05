@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.entity;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.AllPlantsDevSummonEntity;
 import net.PvZModders.PvZMod.entity.custom.FlyingPlaneEntity;
+import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZPlantEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
@@ -62,6 +63,11 @@ public class ModEntities {
                     .sized(1.4F, 0.6F)
                     .clientTrackingRange(10)
                     .build(PvZ2Mod.MOD_ID + ":flying_plane"));
+    public static final RegistryObject<EntityType<JurassicDinosaurEntity>> JURASSIC_DINOSAUR =
+            ENTITY_TYPES.register("jurassic_dinosaur", () -> EntityType.Builder.<JurassicDinosaurEntity>of(JurassicDinosaurEntity::new, MobCategory.CREATURE)
+                    .sized(1.9F, 1.75F)
+                    .clientTrackingRange(10)
+                    .build(PvZ2Mod.MOD_ID + ":jurassic_dinosaur"));
     public static final Map<String, RegistryObject<EntityType<PvZPlantEntity>>> PLANTS = registerPlantEntities();
 
     public static void register(IEventBus eventBus) {

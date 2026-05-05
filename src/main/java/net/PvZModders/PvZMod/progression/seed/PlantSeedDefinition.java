@@ -75,11 +75,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.NEON_MIXTAPE, "garlic", "Garlic", 50);
         register(GardenId.NEON_MIXTAPE, "spore_shroom", "Spore-shroom", 150);
         register(GardenId.NEON_MIXTAPE, "intensive_carrot", "Intensive Carrot", 100);
-        register(GardenId.JURASSIC_MARSH, "primal_peashooter", "Primal Peashooter", 175);
-        register(GardenId.JURASSIC_MARSH, "primal_wall_nut", "Primal Wall-nut", 75);
-        register(GardenId.JURASSIC_MARSH, "perfume_shroom", "Perfume-shroom", 150);
-        register(GardenId.JURASSIC_MARSH, "primal_sunflower", "Primal Sunflower", 75);
-        register(GardenId.JURASSIC_MARSH, "primal_potato_mine", "Primal Potato Mine", 50);
+        register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_PEASHOOTER_SEED_PACKET.getId(), "primal_peashooter", "Primal Peashooter", 175, PlantBehavior.PRIMAL_PEASHOOTER);
+        register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_WALL_NUT_SEED_PACKET.getId(), "primal_wall_nut", "Primal Wall-nut", 75, PlantBehavior.PRIMAL_WALL_NUT);
+        register(GardenId.JURASSIC_MARSH, ModItems.PERFUME_SHROOM_SEED_PACKET.getId(), "perfume_shroom", "Perfume-shroom", 150, PlantBehavior.PERFUME_SHROOM);
+        register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_SUNFLOWER_SEED_PACKET.getId(), "primal_sunflower", "Primal Sunflower", 75, PlantBehavior.PRIMAL_SUNFLOWER);
+        register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_POTATO_MINE_SEED_PACKET.getId(), "primal_potato_mine", "Primal Potato Mine", 50, PlantBehavior.PRIMAL_POTATO_MINE);
         register(GardenId.BIG_WAVE_BEACH, "lily_pad", "Lily Pad", 25);
         register(GardenId.BIG_WAVE_BEACH, "tangle_kelp", "Tangle Kelp", 25);
         register(GardenId.BIG_WAVE_BEACH, "bowling_bulb", "Bowling Bulb", 200);
@@ -170,6 +170,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         PUFF_SHROOM,
         FUME_SHROOM,
         SUN_BEAN,
-        MAGNET_SHROOM
+        MAGNET_SHROOM,
+        PRIMAL_PEASHOOTER,
+        PRIMAL_WALL_NUT,
+        PERFUME_SHROOM,
+        PRIMAL_SUNFLOWER,
+        PRIMAL_POTATO_MINE
     }
 }

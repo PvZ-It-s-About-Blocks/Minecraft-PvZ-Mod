@@ -46,12 +46,18 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.FUME_SHROOM_SEED_PACKET.get());
                         output.accept(ModItems.SUN_BEAN_SEED_PACKET.get());
                         output.accept(ModItems.MAGNET_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.PRIMAL_PEASHOOTER_SEED_PACKET.get());
+                        output.accept(ModItems.PRIMAL_WALL_NUT_SEED_PACKET.get());
+                        output.accept(ModItems.PERFUME_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.PRIMAL_SUNFLOWER_SEED_PACKET.get());
+                        output.accept(ModItems.PRIMAL_POTATO_MINE_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
                         output.accept(ModItems.TARGETING_PRIORITY_CHANGER.get());
                         output.accept(ModItems.SPEEDY_MINECART.get());
                         output.accept(ModItems.FLYING_PLANE.get());
+                        output.accept(ModItems.DINO_WHISTLE.get());
                     })
                     .build());
 

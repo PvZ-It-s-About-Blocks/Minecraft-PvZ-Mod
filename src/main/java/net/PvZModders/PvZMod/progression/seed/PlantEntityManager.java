@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.progression.seed;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
+import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
@@ -76,6 +77,7 @@ public final class PlantEntityManager {
     private static final double PUFF_SHROOM_RANGE = 4.0D;
     private static final double FUME_SHROOM_RANGE = 6.0D;
     private static final double MAGNET_SHROOM_RANGE = 8.0D;
+    private static final double PERFUME_SHROOM_RANGE = 8.0D;
     private static final int SHOOTER_INTERVAL_TICKS = 30;
     private static final int SUNFLOWER_INTERVAL_TICKS = 60;
     private static final int SUN_SHROOM_INTERVAL_TICKS = 80;
@@ -88,13 +90,16 @@ public final class PlantEntityManager {
     private static final int CHOMPER_COOLDOWN_TICKS = 100;
     private static final int LIGHTNING_REED_INTERVAL_TICKS = 25;
     private static final int MELON_PULT_INTERVAL_TICKS = 45;
+    private static final int PRIMAL_POTATO_ARM_TICKS = 20;
     private static final int SUN_BEAN_INFECTED_TICKS = 20 * 15;
     private static final int SUN_BEAN_SUN_COOLDOWN_TICKS = 10;
     private static final int MAGNET_SHROOM_COOLDOWN_TICKS = 20 * 10;
     private static final float PEA_DAMAGE = 4.0F;
+    private static final float PRIMAL_PEA_DAMAGE = 7.0F;
     private static final float PUFF_SHROOM_DAMAGE = 2.0F;
     private static final float FUME_SHROOM_DAMAGE = 4.0F;
     private static final float POTATO_MINE_DAMAGE = 24.0F;
+    private static final float PRIMAL_POTATO_MINE_DAMAGE = 36.0F;
     private static final float CHOMPER_DAMAGE = 40.0F;
     private static final float BLOOMERANG_DAMAGE = 5.0F;
     private static final float BONK_CHOY_DAMAGE = 3.0F;
@@ -111,6 +116,7 @@ public final class PlantEntityManager {
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
+    private static final float PRIMAL_WALL_NUT_HEALTH = 120.0F;
     private static final float TALL_NUT_HEALTH = 150.0F;
     private static final float ENDURIAN_HEALTH = 100.0F;
     private static final float RED_STINGER_DEFENSIVE_HEALTH = 55.0F;
@@ -311,7 +317,11 @@ public final class PlantEntityManager {
             case FUME_SHROOM -> tickFumeShroom(level, plant);
             case SUN_BEAN -> tickSunBean(level, plant);
             case MAGNET_SHROOM -> tickMagnetShroom(level, plant);
-            case WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
+            case PRIMAL_PEASHOOTER -> tickPrimalPeashooter(level, plant);
+            case PERFUME_SHROOM -> tickPerfumeShroom(level, plant);
+            case PRIMAL_SUNFLOWER -> tickPrimalSunflower(level, plant);
+            case PRIMAL_POTATO_MINE -> tickPrimalPotatoMine(level, plant);
+            case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
             }
         }
     }
@@ -465,6 +475,77 @@ public final class PlantEntityManager {
         } else {
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
         }
+    }
+
+    private static void tickPrimalPeashooter(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie zombie = target.get();
+        shootSnowballVisual(level, plant, zombie, hasTorchwoodBetween(level, plant.position(), zombie.position()), "primal_pea");
+        zombie.hurt(level.damageSources().mobAttack(plant), PRIMAL_PEA_DAMAGE);
+        zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 8));
+        if (level.random.nextFloat() < 0.25F) {
+            Vec3 knock = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+            if (knock.lengthSqr() > 1.0E-4D) {
+                zombie.setDeltaMovement(zombie.getDeltaMovement().add(knock.normalize().scale(0.55D)).add(0.0D, 0.18D, 0.0D));
+            }
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickPerfumeShroom(ServerLevel level, SnowGolem plant) {
+        Optional<JurassicDinosaurEntity> dinosaur = level.getEntitiesOfClass(JurassicDinosaurEntity.class, plant.getBoundingBox().inflate(PERFUME_SHROOM_RANGE), JurassicDinosaurEntity::isAlive)
+                .stream()
+                .filter(dino -> !dino.isCharmed())
+                .min((first, second) -> Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second)));
+        if (dinosaur.isEmpty()) {
+            return;
+        }
+
+        Player owner = level.getNearestPlayer(plant, 64.0D);
+        dinosaur.get().charmFor(owner == null ? plant.getUUID() : owner.getUUID(), 20 * 60);
+        level.sendParticles(ParticleTypes.HEART, dinosaur.get().getX(), dinosaur.get().getY() + 1.3D, dinosaur.get().getZ(), 12, 0.5D, 0.45D, 0.5D, 0.02D);
+        plant.discard();
+    }
+
+    private static void tickPrimalSunflower(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        SunManager.spawnSunAt(level, plant.blockPosition().above(3), 50);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
+    }
+
+    private static void tickPrimalPotatoMine(ServerLevel level, SnowGolem plant) {
+        if (level.getGameTime() - plant.getPersistentData().getLong(PLANT_PLACED_TICK_TAG) < PRIMAL_POTATO_ARM_TICKS) {
+            return;
+        }
+
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(1.75D, 0.75D, 1.75D), Zombie::isAlive);
+        if (zombies.isEmpty()) {
+            return;
+        }
+
+        AABB blastArea = new AABB(plant.blockPosition()).inflate(2.5D, 1.0D, 2.5D);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, blastArea, Zombie::isAlive)) {
+            zombie.hurt(level.damageSources().generic(), PRIMAL_POTATO_MINE_DAMAGE);
+        }
+        level.sendParticles(ParticleTypes.EXPLOSION, plant.getX(), plant.getY() + 0.5D, plant.getZ(), 6, 1.2D, 0.4D, 1.2D, 0.0D);
+        level.levelEvent(2001, plant.blockPosition(), 0);
+        plant.discard();
     }
 
     private static void tickPotatoMine(ServerLevel level, SnowGolem plant) {
@@ -1020,6 +1101,7 @@ public final class PlantEntityManager {
     private static float maxHealthFor(PlantSeedDefinition.PlantBehavior behavior) {
         return switch (behavior) {
             case WALL_NUT -> WALL_NUT_HEALTH;
+            case PRIMAL_WALL_NUT -> PRIMAL_WALL_NUT_HEALTH;
             case TALL_NUT -> TALL_NUT_HEALTH;
             case ENDURIAN -> ENDURIAN_HEALTH;
             default -> DEFAULT_PLANT_HEALTH;

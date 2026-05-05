@@ -54,6 +54,10 @@ public record GardenPlantDefinition(
         return DarkAgesPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> jurassicMarshPlants() {
+        return JurassicMarshPlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
@@ -61,6 +65,7 @@ public record GardenPlantDefinition(
             case WILD_WEST -> wildWestPlants();
             case LOST_CITY -> lostCityPlants();
             case DARK_AGES -> darkAgesPlants();
+            case JURASSIC_MARSH -> jurassicMarshPlants();
             default -> List.of();
         };
     }
@@ -68,7 +73,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                darkAgesPlants().size()
+                Math.max(darkAgesPlants().size(), jurassicMarshPlants().size())
         );
     }
 
@@ -110,6 +115,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.DARK_AGES, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition jurassic(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.JURASSIC_MARSH, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -163,6 +176,16 @@ public record GardenPlantDefinition(
                 darkAges("fume_shroom", "Fume-shroom", "Damages all zombies in a forward fume cloud.", 125, 4),
                 darkAges("sun_bean", "Sun Bean", "Infects one zombie so damage creates Sun.", 50, 6),
                 darkAges("magnet_shroom", "Magnet-shroom", "Strips armor or metal equipment from nearby zombies.", 100, 15)
+        );
+    }
+
+    private static final class JurassicMarshPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                jurassic("primal_peashooter", "Primal Peashooter", "Shoots heavy stunning peas with occasional knockback.", 175, 1),
+                jurassic("primal_wall_nut", "Primal Wall-nut", "Durable prehistoric blocker.", 75, 4),
+                jurassic("perfume_shroom", "Perfume-shroom", "Charms a nearby dinosaur for your defense.", 150, 8),
+                jurassic("primal_sunflower", "Primal Sunflower", "Produces 50 sun every few seconds.", 75, 17),
+                jurassic("primal_potato_mine", "Primal Potato Mine", "Fast-arming mine with a larger blast.", 50, 23)
         );
     }
 }

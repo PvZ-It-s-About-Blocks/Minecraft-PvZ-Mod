@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.block.entity;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
@@ -62,6 +63,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -104,6 +106,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int totemHealth = TOTEM_MAX_HEALTH;
     private final GardenWaveProgress legacyWaveProgress = new GardenWaveProgress();
     private final Set<UUID> activeWaveEntityIds = new HashSet<>();
+    private final Set<UUID> activeWaveDinosaurIds = new HashSet<>();
     private final List<WaveSpawnDirection> activeWaveDirections = new ArrayList<>();
     private final ServerBossEvent waveBossBar = new ServerBossEvent(
             Component.literal("Wave Progress"),
@@ -419,6 +422,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private List<WaveSpawnDirection> prepareWaveSpawnSchedule(ServerLevel level, GardenWaveDefinition definition) {
         activeWaveEntityIds.clear();
+        activeWaveDinosaurIds.clear();
         activeWaveDirections.clear();
         activeWaveStartTick = level.getGameTime();
         activeWaveNextSpawnTick = activeWaveStartTick + FIRST_SPAWN_DELAY_TICKS;
@@ -543,11 +547,20 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return false;
         }
 
+        if (entity instanceof JurassicDinosaurEntity dinosaur) {
+            dinosaur.initializeForWave(definition.wave(), worldPosition);
+        }
         if (entity instanceof Mob mob) {
             mob.setPersistenceRequired();
-            moveMobTowardTotem(mob);
+            if (!(entity instanceof JurassicDinosaurEntity)) {
+                moveMobTowardTotem(mob);
+            }
         }
-        activeWaveEntityIds.add(entity.getUUID());
+        if (entity instanceof JurassicDinosaurEntity) {
+            activeWaveDinosaurIds.add(entity.getUUID());
+        } else {
+            activeWaveEntityIds.add(entity.getUUID());
+        }
         return true;
     }
 
@@ -650,6 +663,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         for (UUID entityId : List.copyOf(activeWaveEntityIds)) {
             Entity entity = level.getEntity(entityId);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) {
+                continue;
+            }
+            if (entity instanceof JurassicDinosaurEntity) {
                 continue;
             }
 
@@ -776,6 +792,18 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("dino_whistle")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.DINO_WHISTLE.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("torchflower_utility")) {
+                    ItemStack rewardStack = new ItemStack(Items.TORCHFLOWER);
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
                 }
             }
         }
@@ -886,6 +914,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveFinalPushStarted = false;
         activeWaveDirections.clear();
         waveBossBar.removeAllPlayers();
+        discardActiveWaveDinosaurs();
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.LOST_CITY) {
             clearGoldTiles(serverLevel);
         }
@@ -1329,6 +1358,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
         for (int i = 0; i < activeEntities.size(); i++) {
             activeWaveEntityIds.add(UUID.fromString(activeEntities.getString(i)));
         }
+        activeWaveDinosaurIds.clear();
+        ListTag activeDinosaurs = tag.getList("ActiveWaveDinosaurs", net.minecraft.nbt.Tag.TAG_STRING);
+        for (int i = 0; i < activeDinosaurs.size(); i++) {
+            activeWaveDinosaurIds.add(UUID.fromString(activeDinosaurs.getString(i)));
+        }
         goldTilePositions.clear();
         goldTileDisplayIds.clear();
         goldTileNextSunTicks.clear();
@@ -1369,6 +1403,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
             activeEntities.add(net.minecraft.nbt.StringTag.valueOf(entityId.toString()));
         }
         tag.put("ActiveWaveEntities", activeEntities);
+        ListTag activeDinosaurs = new ListTag();
+        for (UUID entityId : activeWaveDinosaurIds) {
+            activeDinosaurs.add(net.minecraft.nbt.StringTag.valueOf(entityId.toString()));
+        }
+        tag.put("ActiveWaveDinosaurs", activeDinosaurs);
         ListTag goldTiles = new ListTag();
         for (BlockPos tilePos : goldTilePositions) {
             CompoundTag tileTag = new CompoundTag();
@@ -1403,6 +1442,22 @@ public class GardenTotemBlockEntity extends BlockEntity {
             }
         }
         activeWaveEntityIds.clear();
+        discardActiveWaveDinosaurs();
+    }
+
+    private void discardActiveWaveDinosaurs() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            activeWaveDinosaurIds.clear();
+            return;
+        }
+
+        for (UUID entityId : activeWaveDinosaurIds) {
+            Entity entity = serverLevel.getEntity(entityId);
+            if (entity != null) {
+                entity.discard();
+            }
+        }
+        activeWaveDinosaurIds.clear();
     }
 
     private void discardDisplay(ServerLevel level, UUID displayId) {

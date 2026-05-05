@@ -14,6 +14,7 @@ public final class GardenWaves {
             case WILD_WEST -> WildWestWaves.all();
             case LOST_CITY -> LostCityWaves.all();
             case DARK_AGES -> DarkAgesWaves.all();
+            case JURASSIC_MARSH -> JurassicMarshWaves.all();
             default -> OriginalGardenWaves.all();
         };
     }
@@ -24,6 +25,7 @@ public final class GardenWaves {
             case WILD_WEST -> WildWestWaves.get(wave);
             case LOST_CITY -> LostCityWaves.get(wave);
             case DARK_AGES -> DarkAgesWaves.get(wave);
+            case JURASSIC_MARSH -> JurassicMarshWaves.get(wave);
             default -> OriginalGardenWaves.get(wave);
         };
     }
