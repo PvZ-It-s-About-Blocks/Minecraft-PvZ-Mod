@@ -11,6 +11,7 @@ import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -18,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -134,6 +137,8 @@ public final class PlantEntityManager {
     private static final float PHAT_BEET_DAMAGE = 4.0F;
     private static final float CELERY_STALKER_DAMAGE = 8.0F;
     private static final float SPORE_SHROOM_DAMAGE = 5.0F;
+    private static final float LASER_BEAN_DAMAGE = 6.0F;
+    private static final float MAGNIFYING_GRASS_DAMAGE = 12.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
@@ -410,6 +415,8 @@ public final class PlantEntityManager {
             case THYME_WARP -> tickThymeWarp(level, plant);
             case SPORE_SHROOM -> tickSporeShroom(level, plant);
             case INTENSIVE_CARROT -> tickIntensiveCarrot(level, plant);
+            case LASER_BEAN -> tickLaserBean(level, plant);
+            case MAGNIFYING_GRASS -> tickMagnifyingGrass(level, plant);
             case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, PLACEHOLDER -> {
             }
         }
@@ -431,6 +438,7 @@ public final class PlantEntityManager {
         for (int shot = 0; shot < shots; shot++) {
             shootSnowball(level, plant, target.get(), shot * 0.18D);
         }
+        level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 1.15D, plant.getZ(), 4, 0.15D, 0.08D, 0.15D, 0.01D);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
@@ -561,6 +569,7 @@ public final class PlantEntityManager {
         }
         Vec3 center = plant.position().add(facing.scale(2.5D)).add(0.0D, 0.8D, 0.0D);
         level.sendParticles(ParticleTypes.CLOUD, center.x, center.y, center.z, 32, 1.2D, 0.35D, 1.2D, 0.04D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.HOSTILE, 0.35F, 1.8F);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + FUME_SHROOM_INTERVAL_TICKS);
     }
 
@@ -600,6 +609,7 @@ public final class PlantEntityManager {
         if (stripOneMetalOrArmorItem(target.get())) {
             level.sendParticles(ParticleTypes.CRIT, target.get().getX(), target.get().getY() + 1.0D, target.get().getZ(), 24, 0.35D, 0.45D, 0.35D, 0.05D);
             level.sendParticles(ParticleTypes.ENCHANT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 16, 0.35D, 0.45D, 0.35D, 0.05D);
+            renderBeam(level, plant.position().add(0.0D, 1.1D, 0.0D), target.get().position().add(0.0D, 1.0D, 0.0D), ParticleTypes.ENCHANT);
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MAGNET_SHROOM_COOLDOWN_TICKS);
         } else {
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
@@ -695,6 +705,7 @@ public final class PlantEntityManager {
         }
         level.sendParticles(ParticleTypes.NOTE, plant.getX(), plant.getY() + 1.1D, plant.getZ(), 8, 0.8D, 0.2D, 0.8D, 0.0D);
         level.sendParticles(ParticleTypes.SONIC_BOOM, plant.getX(), plant.getY() + 0.3D, plant.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.NOTE_BLOCK_BASEDRUM.get(), SoundSource.HOSTILE, 0.7F, 0.6F);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + PHAT_BEET_INTERVAL_TICKS);
     }
 
@@ -928,6 +939,7 @@ public final class PlantEntityManager {
 
         Zombie primary = target.get();
         hurtWithoutKnockback(primary, level.damageSources().mobAttack(plant), LIGHTNING_REED_DAMAGE);
+        renderBeam(level, plant.position().add(0.0D, 1.1D, 0.0D), primary.position().add(0.0D, primary.getBbHeight() * 0.55D, 0.0D), ParticleTypes.ELECTRIC_SPARK);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, primary.getX(), primary.getY() + 1.0D, primary.getZ(), 16, 0.35D, 0.5D, 0.35D, 0.02D);
 
         List<Zombie> chainedTargets = level.getEntitiesOfClass(Zombie.class, primary.getBoundingBox().inflate(4.0D), Zombie::isAlive)
@@ -937,10 +949,13 @@ public final class PlantEntityManager {
                 .limit(2)
                 .toList();
         float chainDamage = LIGHTNING_REED_DAMAGE * 0.7F;
+        Zombie previousTarget = primary;
         for (Zombie zombie : chainedTargets) {
             hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), chainDamage);
+            renderBeam(level, previousTarget.position().add(0.0D, previousTarget.getBbHeight() * 0.55D, 0.0D), zombie.position().add(0.0D, zombie.getBbHeight() * 0.55D, 0.0D), ParticleTypes.ELECTRIC_SPARK);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 10, 0.3D, 0.45D, 0.3D, 0.02D);
             chainDamage *= 0.7F;
+            previousTarget = zombie;
         }
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + LIGHTNING_REED_INTERVAL_TICKS);
     }
@@ -970,7 +985,7 @@ public final class PlantEntityManager {
                 zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 6, 2));
             }
         }
-        shootSnowballVisual(level, plant, directTarget, false, winter ? "winter_melon" : "melon");
+        shootLobbedSnowballVisual(level, plant, directTarget, winter ? "winter_melon" : "melon");
         level.levelEvent(2001, directTarget.blockPosition(), 0);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MELON_PULT_INTERVAL_TICKS);
     }
@@ -1018,7 +1033,7 @@ public final class PlantEntityManager {
         Zombie current = firstTarget.get();
         for (int bounce = 0; bounce < 4 && current != null; bounce++) {
             hurtWithoutKnockback(current, level.damageSources().mobAttack(plant), AKEE_DAMAGE);
-            shootSnowballVisual(level, plant, current, false, "akee_seed");
+            shootLobbedSnowballVisual(level, plant, current, "akee_seed");
             hitTargets.add(current.getUUID());
             Zombie previous = current;
             current = level.getEntitiesOfClass(Zombie.class, previous.getBoundingBox().inflate(5.0D), Zombie::isAlive)
@@ -1027,6 +1042,53 @@ public final class PlantEntityManager {
                     .min((first, second) -> Double.compare(previous.distanceToSqr(first), previous.distanceToSqr(second)))
                     .orElse(null);
         }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickLaserBean(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 facing = facingVector(plant);
+        List<Zombie> targets = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(SHOOTER_RANGE, 2.0D, SHOOTER_RANGE), Zombie::isAlive)
+                .stream()
+                .filter(zombie -> isInFrontCone(plant, zombie, facing, SHOOTER_RANGE))
+                .toList();
+        if (targets.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Vec3 start = plant.position().add(0.0D, 1.15D, 0.0D);
+        Vec3 end = start.add(facing.scale(SHOOTER_RANGE));
+        renderGuardianStyleLaser(level, start, end);
+        for (Zombie zombie : targets) {
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), LASER_BEAN_DAMAGE);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickMagnifyingGrass(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Vec3 start = plant.position().add(0.0D, 1.15D, 0.0D);
+        Vec3 end = target.get().position().add(0.0D, target.get().getBbHeight() * 0.55D, 0.0D);
+        renderGuardianStyleLaser(level, start, end);
+        level.sendParticles(ParticleTypes.END_ROD, end.x, end.y, end.z, 10, 0.15D, 0.15D, 0.15D, 0.03D);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), MAGNIFYING_GRASS_DAMAGE);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
@@ -1431,6 +1493,45 @@ public final class PlantEntityManager {
             snowball.setSecondsOnFire(2);
         }
         level.addFreshEntity(snowball);
+    }
+
+    private static void shootLobbedSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, String projectileKind) {
+        Snowball snowball = new Snowball(level, plant);
+        Vec3 start = plant.position().add(0.0D, 1.45D, 0.0D);
+        Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.45D, 0.0D);
+        Vec3 delta = targetPos.subtract(start);
+        Vec3 horizontal = new Vec3(delta.x, 0.0D, delta.z);
+        double distance = Math.max(1.0D, horizontal.length());
+        Vec3 direction = horizontal.normalize();
+        double speed = Mth.clamp(distance / 13.0D, 0.45D, 1.15D);
+        double verticalLift = Mth.clamp(0.35D + distance * 0.035D, 0.45D, 0.95D);
+        snowball.setPos(start.x, start.y, start.z);
+        snowball.shoot(direction.x, verticalLift, direction.z, (float) speed, 0.0F);
+        snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
+        snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
+        level.addFreshEntity(snowball);
+        level.sendParticles(ParticleTypes.POOF, start.x, start.y, start.z, 4, 0.12D, 0.12D, 0.12D, 0.01D);
+    }
+
+    private static void renderGuardianStyleLaser(ServerLevel level, Vec3 start, Vec3 end) {
+        renderBeam(level, start, end, ParticleTypes.END_ROD);
+        renderBeam(level, start, end, ParticleTypes.ELECTRIC_SPARK);
+        level.playSound(null, BlockPos.containing(start), SoundEvents.GUARDIAN_ATTACK, SoundSource.HOSTILE, 0.65F, 1.6F);
+    }
+
+    private static void renderBeam(ServerLevel level, Vec3 start, Vec3 end, ParticleOptions particle) {
+        Vec3 delta = end.subtract(start);
+        double length = delta.length();
+        if (length <= 0.01D) {
+            return;
+        }
+
+        Vec3 step = delta.normalize().scale(0.35D);
+        int points = Math.max(1, Mth.ceil(length / 0.35D));
+        for (int index = 0; index <= points; index++) {
+            Vec3 pos = start.add(step.scale(index));
+            level.sendParticles(particle, pos.x, pos.y, pos.z, 1, 0.01D, 0.01D, 0.01D, 0.0D);
+        }
     }
 
     private static boolean hasTorchwoodBetween(ServerLevel level, Vec3 start, Vec3 end) {

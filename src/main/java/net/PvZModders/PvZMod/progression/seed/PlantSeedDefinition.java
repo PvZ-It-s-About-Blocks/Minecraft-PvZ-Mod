@@ -57,12 +57,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.LOST_CITY, ModItems.ENDURIAN_SEED_PACKET.getId(), "endurian", "Endurian", 100, PlantBehavior.ENDURIAN);
         register(GardenId.LOST_CITY, ModItems.STALLIA_SEED_PACKET.getId(), "stallia", "Stallia", 0, PlantBehavior.STALLIA);
         register(GardenId.LOST_CITY, ModItems.GOLD_LEAF_SEED_PACKET.getId(), "gold_leaf", "Gold Leaf", 80, PlantBehavior.GOLD_LEAF);
-        register(GardenId.FAR_FUTURE, "laser_bean", "Laser Bean", 200);
+        register(GardenId.FAR_FUTURE, "laser_bean", "Laser Bean", 200, PlantBehavior.LASER_BEAN);
         register(GardenId.FAR_FUTURE, "blover", "Blover", 50);
         register(GardenId.FAR_FUTURE, "citron", "Citron", 350);
         register(GardenId.FAR_FUTURE, "empeach", "E.M.Peach", 25);
         register(GardenId.FAR_FUTURE, "infi_nut", "Infi-nut", 75);
-        register(GardenId.FAR_FUTURE, "magnifying_grass", "Magnifying Grass", 50);
+        register(GardenId.FAR_FUTURE, "magnifying_grass", "Magnifying Grass", 50, PlantBehavior.MAGNIFYING_GRASS);
         register(GardenId.FAR_FUTURE, "tile_turnip", "Tile Turnip", 0);
         register(GardenId.DARK_AGES, ModItems.SUN_SHROOM_SEED_PACKET.getId(), "sun_shroom", "Sun-shroom", 25, PlantBehavior.SUN_SHROOM);
         register(GardenId.DARK_AGES, ModItems.PUFF_SHROOM_SEED_PACKET.getId(), "puff_shroom", "Puff-shroom", 0, PlantBehavior.PUFF_SHROOM);
@@ -181,6 +181,8 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         THYME_WARP,
         GARLIC,
         SPORE_SHROOM,
-        INTENSIVE_CARROT
+        INTENSIVE_CARROT,
+        LASER_BEAN,
+        MAGNIFYING_GRASS
     }
 }
