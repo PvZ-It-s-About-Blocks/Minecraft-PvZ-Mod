@@ -299,6 +299,11 @@ public final class PlantEntityManager {
             return;
         }
 
+        if (isPlant(event.getEntity()) && isEnvironmentalPlaceholderDamage(event.getSource())) {
+            event.setCanceled(true);
+            return;
+        }
+
         if (isPlant(event.getEntity()) && event.getEntity().level() instanceof ServerLevel level
                 && event.getEntity().getHealth() - event.getAmount() <= 0.0F) {
             recordPlantDeath(level, event.getEntity());
@@ -358,6 +363,8 @@ public final class PlantEntityManager {
             return;
         }
 
+        event.setCanceled(true);
+        projectile.discard();
         if (event.getRayTraceResult() instanceof net.minecraft.world.phys.EntityHitResult hitResult && isPlant(hitResult.getEntity())) {
             event.setCanceled(true);
         }
@@ -528,7 +535,7 @@ public final class PlantEntityManager {
         }
 
         shootSnowballVisual(level, plant, target.get(), false, "spore");
-        target.get().hurt(level.damageSources().mobAttack(plant), PUFF_SHROOM_DAMAGE);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), PUFF_SHROOM_DAMAGE);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
@@ -550,7 +557,7 @@ public final class PlantEntityManager {
         }
 
         for (Zombie zombie : targets) {
-            zombie.hurt(level.damageSources().mobAttack(plant), FUME_SHROOM_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), FUME_SHROOM_DAMAGE);
         }
         Vec3 center = plant.position().add(facing.scale(2.5D)).add(0.0D, 0.8D, 0.0D);
         level.sendParticles(ParticleTypes.CLOUD, center.x, center.y, center.z, 32, 1.2D, 0.35D, 1.2D, 0.04D);
@@ -614,7 +621,7 @@ public final class PlantEntityManager {
 
         Zombie zombie = target.get();
         shootSnowballVisual(level, plant, zombie, hasTorchwoodBetween(level, plant.position(), zombie.position()), "primal_pea");
-        zombie.hurt(level.damageSources().mobAttack(plant), PRIMAL_PEA_DAMAGE);
+        hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), PRIMAL_PEA_DAMAGE);
         zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20, 8));
         if (level.random.nextFloat() < 0.25F) {
             Vec3 knock = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
@@ -663,7 +670,7 @@ public final class PlantEntityManager {
 
         AABB blastArea = new AABB(plant.blockPosition()).inflate(2.5D, 1.0D, 2.5D);
         for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, blastArea, Zombie::isAlive)) {
-            zombie.hurt(level.damageSources().generic(), PRIMAL_POTATO_MINE_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().generic(), PRIMAL_POTATO_MINE_DAMAGE);
         }
         level.sendParticles(ParticleTypes.EXPLOSION, plant.getX(), plant.getY() + 0.5D, plant.getZ(), 6, 1.2D, 0.4D, 1.2D, 0.0D);
         level.levelEvent(2001, plant.blockPosition(), 0);
@@ -684,7 +691,7 @@ public final class PlantEntityManager {
         }
 
         for (Zombie zombie : zombies) {
-            zombie.hurt(level.damageSources().mobAttack(plant), PHAT_BEET_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), PHAT_BEET_DAMAGE);
         }
         level.sendParticles(ParticleTypes.NOTE, plant.getX(), plant.getY() + 1.1D, plant.getZ(), 8, 0.8D, 0.2D, 0.8D, 0.0D);
         level.sendParticles(ParticleTypes.SONIC_BOOM, plant.getX(), plant.getY() + 0.3D, plant.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
@@ -715,7 +722,7 @@ public final class PlantEntityManager {
 
         List<Zombie> targets = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(1.6D, 0.75D, 1.6D), Zombie::isAlive);
         for (Zombie zombie : targets) {
-            zombie.hurt(level.damageSources().mobAttack(plant), CELERY_STALKER_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), CELERY_STALKER_DAMAGE);
         }
         if (!targets.isEmpty()) {
             level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 10, 0.5D, 0.3D, 0.5D, 0.04D);
@@ -758,7 +765,7 @@ public final class PlantEntityManager {
         Zombie zombie = target.get();
         zombie.getPersistentData().putUUID(SPORE_SHROOM_SOURCE_TAG, plant.getUUID());
         shootSnowballVisual(level, plant, zombie, false, "spore_shroom");
-        zombie.hurt(level.damageSources().mobAttack(plant), SPORE_SHROOM_DAMAGE);
+        hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), SPORE_SHROOM_DAMAGE);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
@@ -777,7 +784,7 @@ public final class PlantEntityManager {
 
         AABB blastArea = new AABB(plant.blockPosition()).inflate(1.5D, 1.0D, 1.5D);
         for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, blastArea, Zombie::isAlive)) {
-            zombie.hurt(level.damageSources().generic(), POTATO_MINE_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().generic(), POTATO_MINE_DAMAGE);
         }
         level.levelEvent(2001, plant.blockPosition(), 0);
         plant.discard();
@@ -795,7 +802,7 @@ public final class PlantEntityManager {
             return;
         }
 
-        target.get().hurt(level.damageSources().mobAttack(plant), CHOMPER_DAMAGE);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), CHOMPER_DAMAGE);
         tag.putLong(CHOMPER_COOLDOWN_TICK_TAG, gameTime + CHOMPER_COOLDOWN_TICKS);
     }
 
@@ -819,8 +826,8 @@ public final class PlantEntityManager {
         boolean buffed = hasTorchwoodBetween(level, plant.position(), targets.get(0).position());
         float damage = buffed ? BLOOMERANG_DAMAGE * 2.0F : BLOOMERANG_DAMAGE;
         for (Zombie zombie : targets) {
-            zombie.hurt(level.damageSources().mobAttack(plant), damage);
-            zombie.hurt(level.damageSources().mobAttack(plant), damage);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), damage);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), damage);
         }
         shootSnowballVisual(level, plant, targets.get(0), buffed);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 40L);
@@ -862,7 +869,7 @@ public final class PlantEntityManager {
         }
 
         Optional<Zombie> target = selectZombie(level, plant, 1.5D);
-        target.ifPresent(zombie -> zombie.hurt(level.damageSources().mobAttack(plant), BONK_CHOY_DAMAGE));
+        target.ifPresent(zombie -> hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), BONK_CHOY_DAMAGE));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + BONK_CHOY_INTERVAL_TICKS);
     }
 
@@ -892,7 +899,7 @@ public final class PlantEntityManager {
         }
 
         Zombie triggeringZombie = trigger.get();
-        triggeringZombie.hurt(level.damageSources().mobAttack(plant), CHILI_BEAN_DAMAGE);
+        hurtWithoutKnockback(triggeringZombie, level.damageSources().mobAttack(plant), CHILI_BEAN_DAMAGE);
         AABB gasArea = triggeringZombie.getBoundingBox().inflate(3.0D, 1.0D, 3.0D);
         for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, gasArea, Zombie::isAlive)) {
             zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 5, 6));
@@ -920,7 +927,7 @@ public final class PlantEntityManager {
         }
 
         Zombie primary = target.get();
-        primary.hurt(level.damageSources().mobAttack(plant), LIGHTNING_REED_DAMAGE);
+        hurtWithoutKnockback(primary, level.damageSources().mobAttack(plant), LIGHTNING_REED_DAMAGE);
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, primary.getX(), primary.getY() + 1.0D, primary.getZ(), 16, 0.35D, 0.5D, 0.35D, 0.02D);
 
         List<Zombie> chainedTargets = level.getEntitiesOfClass(Zombie.class, primary.getBoundingBox().inflate(4.0D), Zombie::isAlive)
@@ -931,7 +938,7 @@ public final class PlantEntityManager {
                 .toList();
         float chainDamage = LIGHTNING_REED_DAMAGE * 0.7F;
         for (Zombie zombie : chainedTargets) {
-            zombie.hurt(level.damageSources().mobAttack(plant), chainDamage);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), chainDamage);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 10, 0.3D, 0.45D, 0.3D, 0.02D);
             chainDamage *= 0.7F;
         }
@@ -954,10 +961,10 @@ public final class PlantEntityManager {
         Zombie directTarget = target.get();
         float directDamage = winter ? WINTER_MELON_DIRECT_DAMAGE : MELON_DIRECT_DAMAGE;
         float splashDamage = winter ? WINTER_MELON_SPLASH_DAMAGE : MELON_SPLASH_DAMAGE;
-        directTarget.hurt(level.damageSources().mobAttack(plant), directDamage);
+        hurtWithoutKnockback(directTarget, level.damageSources().mobAttack(plant), directDamage);
         for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, directTarget.getBoundingBox().inflate(2.25D, 1.0D, 2.25D), Zombie::isAlive)) {
             if (zombie != directTarget) {
-                zombie.hurt(level.damageSources().mobAttack(plant), splashDamage);
+                hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), splashDamage);
             }
             if (winter) {
                 zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 6, 2));
@@ -990,7 +997,7 @@ public final class PlantEntityManager {
 
         float damage = "STRONG".equals(mode) ? RED_STINGER_STRONG_DAMAGE : RED_STINGER_NORMAL_DAMAGE;
         shootSnowballVisual(level, plant, target.get(), hasTorchwoodBetween(level, plant.position(), target.get().position()), "red_stinger");
-        target.get().hurt(level.damageSources().mobAttack(plant), damage);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), damage);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
@@ -1010,7 +1017,7 @@ public final class PlantEntityManager {
         Set<UUID> hitTargets = new HashSet<>();
         Zombie current = firstTarget.get();
         for (int bounce = 0; bounce < 4 && current != null; bounce++) {
-            current.hurt(level.damageSources().mobAttack(plant), AKEE_DAMAGE);
+            hurtWithoutKnockback(current, level.damageSources().mobAttack(plant), AKEE_DAMAGE);
             shootSnowballVisual(level, plant, current, false, "akee_seed");
             hitTargets.add(current.getUUID());
             Zombie previous = current;
@@ -1374,6 +1381,17 @@ public final class PlantEntityManager {
         return isPlant(attacker);
     }
 
+    private static boolean isEnvironmentalPlaceholderDamage(DamageSource source) {
+        return source.getEntity() == null && source.getDirectEntity() == null;
+    }
+
+    private static boolean hurtWithoutKnockback(LivingEntity target, DamageSource source, float amount) {
+        Vec3 movement = target.getDeltaMovement();
+        boolean hurt = target.hurt(source, amount);
+        target.setDeltaMovement(movement);
+        return hurt;
+    }
+
     private static void shootSnowball(ServerLevel level, SnowGolem plant, LivingEntity target, double sideOffset) {
         boolean buffed = hasTorchwoodBetween(level, plant.position(), target.position());
         Snowball snowball = new Snowball(level, plant);
@@ -1392,7 +1410,7 @@ public final class PlantEntityManager {
         level.addFreshEntity(snowball);
 
         DamageSource source = level.damageSources().mobProjectile(snowball, plant);
-        target.hurt(source, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE);
+        hurtWithoutKnockback(target, source, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE);
     }
 
     private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed) {

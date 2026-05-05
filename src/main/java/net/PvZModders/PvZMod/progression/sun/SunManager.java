@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.progression.sun;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
 import net.PvZModders.PvZMod.progression.atmosphere.DarkAgesBiomeEffects;
 import net.minecraft.ChatFormatting;
@@ -20,6 +21,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerXpEvent;
@@ -93,19 +95,30 @@ public final class SunManager {
 
     @SubscribeEvent
     public static void onExperienceDrop(LivingExperienceDropEvent event) {
-        event.setDroppedExperience(0);
+        if (event.getEntity().getPersistentData().getBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG)) {
+            event.setDroppedExperience(0);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDrops(LivingDropsEvent event) {
+        if (event.getEntity().getPersistentData().getBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG)) {
+            event.getDrops().clear();
+        }
     }
 
     @SubscribeEvent
     public static void onExperiencePickup(PlayerXpEvent.PickupXp event) {
-        event.setCanceled(true);
         ExperienceOrb orb = event.getOrb();
-        if (isSunOrb(orb)) {
-            Player player = event.getEntity();
-            addSun(player, getSunValue(orb));
-            player.take(orb, 1);
-            player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.25F, 1.4F);
+        if (!isSunOrb(orb)) {
+            return;
         }
+
+        event.setCanceled(true);
+        Player player = event.getEntity();
+        addSun(player, getSunValue(orb));
+        player.take(orb, 1);
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.25F, 1.4F);
         orb.discard();
     }
 

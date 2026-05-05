@@ -17,4 +17,11 @@ public class PvZPlantEntity extends SnowGolem {
         }
         super.tick();
     }
+
+    @Override
+    public void aiStep() {
+        if (!PlantEntityManager.isPlant(this)) {
+            super.aiStep();
+        }
+    }
 }

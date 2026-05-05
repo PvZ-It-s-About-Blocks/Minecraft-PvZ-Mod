@@ -55,6 +55,31 @@ public final class PlantHotbarHudOverlay {
 
         int swapX = startX + 8 * (SLOT_SIZE + SLOT_GAP);
         renderSwapSlot(guiGraphics, minecraft.font, swapX, y);
+        renderSelectedPlantName(guiGraphics, minecraft.font, screenWidth, y - 12, page, selected);
+    }
+
+    private static void renderSelectedPlantName(GuiGraphics guiGraphics, Font font, int screenWidth, int y, int page, int selected) {
+        String label = selectedPlantLabel(page, selected);
+        if (label.isEmpty()) {
+            return;
+        }
+
+        int textWidth = font.width(label);
+        int x = screenWidth / 2 - textWidth / 2;
+        guiGraphics.fill(x - 4, y - 2, x + textWidth + 4, y + 10, 0x99000000);
+        guiGraphics.drawString(font, label, x, y, 0xFFE9FFE9, false);
+    }
+
+    private static String selectedPlantLabel(int page, int selected) {
+        if (selected < 0 || selected >= 8) {
+            return ClientSeedStorage.secondPageUnlocked() ? "Swap Page" : "Second plant page locked.";
+        }
+        if (!ClientSeedStorage.isSlotUnlocked(page, selected)) {
+            return "Locked";
+        }
+
+        ItemStack stack = ClientSeedStorage.slotStack(page, selected);
+        return stack.isEmpty() ? "Empty" : stack.getHoverName().getString();
     }
 
     private static void renderPlantSlot(GuiGraphics guiGraphics, Font font, int x, int y, ItemStack stack, boolean unlocked, boolean selected, boolean affordable) {

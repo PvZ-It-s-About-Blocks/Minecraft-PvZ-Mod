@@ -28,6 +28,7 @@ import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnGroup;
+import net.PvZModders.PvZMod.progression.waves.WildWestRailProtection;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -93,11 +94,13 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int TOTEM_MAX_HEALTH = 100;
     private static final int ZOMBIE_TOTEM_DAMAGE = 4;
     private static final int DEFAULT_WAVE_DURATION_TICKS = 20 * 60;
+    private static final int WAVE_FAILSAFE_DURATION_TICKS = 20 * 150;
     private static final int FIRST_SPAWN_DELAY_TICKS = 20;
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
     private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
+    public static final String WAVE_ZOMBIE_TAG = "PvZWaveZombie";
     private static final ResourceLocation SEED_HOLDER_RECIPE = new ResourceLocation(PvZ2Mod.MOD_ID, "seed_holder");
 
     private UUID totemDisplayId;
@@ -113,6 +116,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private final GardenWaveProgress legacyWaveProgress = new GardenWaveProgress();
     private final Set<UUID> activeWaveEntityIds = new HashSet<>();
     private final Set<UUID> activeWaveDinosaurIds = new HashSet<>();
+    private final Set<UUID> playersSunAbsorbedThisWave = new HashSet<>();
+    private final Set<BlockPos> activeWildWestRailPositions = new HashSet<>();
     private final List<WaveSpawnDirection> activeWaveDirections = new ArrayList<>();
     private final ServerBossEvent waveBossBar = new ServerBossEvent(
             Component.literal("Wave Progress"),
@@ -125,6 +130,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveSpawned;
     private boolean activeWaveFinalPushStarted;
     private int activeWaveSpeakerCursor;
+    private boolean wildWestWaveObjectsArranged;
     private boolean totemShieldUnlocked;
     private boolean totemShieldActive;
     private int totemShieldHealth;
@@ -332,8 +338,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
         waveProgress.startWave();
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
-        absorbSunFromPlayersDuringWave(player.serverLevel(), true);
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
+        absorbSunFromPlayersDuringWave(player.serverLevel(), true);
         showWaveDirectionTitle(player, directions);
         player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
         setChanged();
@@ -434,6 +440,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private List<WaveSpawnDirection> prepareWaveSpawnSchedule(ServerLevel level, GardenWaveDefinition definition) {
         activeWaveEntityIds.clear();
         activeWaveDinosaurIds.clear();
+        playersSunAbsorbedThisWave.clear();
         activeWaveDirections.clear();
         activeWaveStartTick = level.getGameTime();
         activeWaveNextSpawnTick = activeWaveStartTick + FIRST_SPAWN_DELAY_TICKS;
@@ -441,6 +448,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
+        wildWestWaveObjectsArranged = false;
         List<WaveSpawnDirection> waveDirections = new ArrayList<>();
 
         for (WaveSpawnGroup group : definition.spawnGroups()) {
@@ -449,7 +457,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         activeWaveDirections.addAll(waveDirections.stream().distinct().toList());
-        arrangeWildWestMinecartsForWave(level);
+        ensureWildWestMinecarts(level);
         generateGoldTilesForWave(level, definition.wave());
         return List.copyOf(activeWaveDirections);
     }
@@ -488,6 +496,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
         GardenWaveDefinition definition = waveDefinition(waveProgress.currentWave());
         long gameTime = level.getGameTime();
         long elapsed = Math.max(0L, gameTime - activeWaveStartTick);
+        if (elapsed >= WAVE_FAILSAFE_DURATION_TICKS) {
+            failCurrentWave(level, "Wave timed out. The Totem defense failed.");
+            return;
+        }
+
         if (!activeWaveFinalPushStarted && elapsed >= (long) (DEFAULT_WAVE_DURATION_TICKS * FINAL_PUSH_PROGRESS)) {
             spawnFinalWavePush(level, definition);
             activeWaveFinalPushStarted = true;
@@ -604,6 +617,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         if (entity instanceof JurassicDinosaurEntity dinosaur) {
             dinosaur.initializeForWave(definition.wave(), worldPosition);
+        } else {
+            entity.getPersistentData().putBoolean(WAVE_ZOMBIE_TAG, true);
         }
         if (entity instanceof Mob mob) {
             mob.setPersistenceRequired();
@@ -788,13 +803,24 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
-        getWaveProgress(level).failCurrentWave();
+        failCurrentWave(level, "The Totem was overwhelmed. Wave failed.");
+        setChanged();
+    }
+
+    private void failCurrentWave(ServerLevel level, String message) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (!waveProgress.waveActive()) {
+            clearWaveRuntimeState();
+            return;
+        }
+
+        waveProgress.failCurrentWave();
         markWaveProgressDirty(level);
         discardActiveWaveEntities(level);
         clearWaveRuntimeState();
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
-                player.displayClientMessage(Component.literal("The Totem was overwhelmed. Wave failed.").withStyle(ChatFormatting.RED), false);
+                player.displayClientMessage(Component.literal(message).withStyle(ChatFormatting.RED), false);
             }
         }
         setChanged();
@@ -981,8 +1007,13 @@ public class GardenTotemBlockEntity extends BlockEntity {
             if (!isPlayerInsideGarden(player)) {
                 continue;
             }
+            UUID playerId = player.getUUID();
+            if (playersSunAbsorbedThisWave.contains(playerId)) {
+                continue;
+            }
 
             int drained = SunManager.drainSun(player);
+            playersSunAbsorbedThisWave.add(playerId);
             if (drained <= 0) {
                 continue;
             }
@@ -1022,8 +1053,13 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
         activeWaveDirections.clear();
+        playersSunAbsorbedThisWave.clear();
+        wildWestWaveObjectsArranged = false;
         waveBossBar.removeAllPlayers();
         discardActiveWaveDinosaurs();
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.WILD_WEST) {
+            clearWildWestRails(serverLevel);
+        }
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.LOST_CITY) {
             clearGoldTiles(serverLevel);
         }
@@ -1084,8 +1120,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void ensureWildWestMinecarts(ServerLevel level) {
-        if (gardenId == GardenId.WILD_WEST && getWaveProgress(level).waveActive() && level.getGameTime() % 40L == 0L) {
+        if (gardenId != GardenId.WILD_WEST || !getWaveProgress(level).waveActive()) {
+            clearWildWestRails(level);
+            return;
+        }
+
+        if (!wildWestWaveObjectsArranged) {
             arrangeWildWestMinecartsForWave(level);
+            wildWestWaveObjectsArranged = true;
         }
     }
 
@@ -1097,61 +1139,41 @@ public class GardenTotemBlockEntity extends BlockEntity {
         List<WildWestCartPattern> patterns = wildWestCartPatternsForWave(getWaveProgress(level).currentWave(), activeWaveDirections);
         clearWildWestRails(level);
 
-        List<WildWestMinecartEntity> existingCarts = new ArrayList<>();
-        AABB searchArea = new AABB(worldPosition).inflate(GARDEN_RADIUS + 2.0D, 3.0D, GARDEN_RADIUS + 2.0D);
-        for (WildWestMinecartEntity cart : level.getEntitiesOfClass(WildWestMinecartEntity.class, searchArea, Entity::isAlive)) {
-            if (cart.belongsTo(worldPosition)) {
-                existingCarts.add(cart);
-            }
-        }
-        existingCarts.sort((first, second) -> Integer.compare(first.railIndex(), second.railIndex()));
-
         for (int index = 0; index < patterns.size(); index++) {
             WildWestCartPattern pattern = patterns.get(index);
             placeWildWestRail(level, pattern.axis(), pattern.fixedOffset(), pattern.minOffset(), pattern.maxOffset());
-            if (index < existingCarts.size()) {
-                existingCarts.get(index).configure(worldPosition, pattern.axis(), index, pattern.fixedOffset(), pattern.currentOffset(), pattern.minOffset(), pattern.maxOffset());
-            } else {
-                WildWestMinecartEntity cart = WildWestMinecartEntity.create(level, worldPosition, pattern.axis(), index, pattern.fixedOffset(), pattern.currentOffset(), pattern.minOffset(), pattern.maxOffset());
-                level.addFreshEntity(cart);
-            }
-        }
-
-        for (int index = patterns.size(); index < existingCarts.size(); index++) {
-            existingCarts.get(index).discard();
+            WildWestMinecartEntity cart = WildWestMinecartEntity.create(level, worldPosition, pattern.axis(), index, pattern.fixedOffset(), pattern.currentOffset(), pattern.minOffset(), pattern.maxOffset());
+            level.addFreshEntity(cart);
         }
     }
 
     private List<WildWestCartPattern> wildWestCartPatternsForWave(int wave, List<WaveSpawnDirection> directions) {
-        int railsPerDirection = wildWestRailsPerDirection(wave);
-        if (railsPerDirection <= 0 || directions.isEmpty()) {
+        int cartCap = wildWestCartCap(wave);
+        if (cartCap <= 0 || directions.isEmpty()) {
             return List.of();
         }
 
         List<WildWestCartPattern> patterns = new ArrayList<>();
         for (WaveSpawnDirection direction : directions.stream().distinct().toList()) {
-            addWildWestDirectionPattern(patterns, direction, railsPerDirection);
+            addWildWestDirectionPattern(patterns, direction, cartCap - patterns.size());
+            if (patterns.size() >= cartCap) {
+                break;
+            }
         }
         return List.copyOf(patterns);
     }
 
-    private int wildWestRailsPerDirection(int wave) {
+    private int wildWestCartCap(int wave) {
         if (wave <= 2) {
             return 0;
         }
-        if (wave <= 5) {
+        if (wave <= 8) {
             return 1;
         }
-        if (wave <= 8) {
+        if (wave <= 20) {
             return 2;
         }
-        if (wave <= 14) {
-            return 3;
-        }
-        if (wave <= 20) {
-            return 4;
-        }
-        return 5;
+        return 3;
     }
 
     private void addWildWestDirectionPattern(List<WildWestCartPattern> patterns, WaveSpawnDirection direction, int railCount) {
@@ -1168,6 +1190,23 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void clearWildWestRails(ServerLevel level) {
+        if (!activeWildWestRailPositions.isEmpty()) {
+            for (BlockPos pos : List.copyOf(activeWildWestRailPositions)) {
+                WildWestRailProtection.unprotect(level, pos);
+                if (level.getBlockState(pos).is(Blocks.RAIL)) {
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+            activeWildWestRailPositions.clear();
+        }
+
+        AABB searchArea = new AABB(worldPosition).inflate(GARDEN_RADIUS + 2.0D, 3.0D, GARDEN_RADIUS + 2.0D);
+        for (WildWestMinecartEntity cart : level.getEntitiesOfClass(WildWestMinecartEntity.class, searchArea, cart -> cart.belongsTo(worldPosition))) {
+            cart.discard();
+        }
+    }
+
+    private void clearWildWestRailsByScan(ServerLevel level) {
         for (int x = -GARDEN_RADIUS; x <= GARDEN_RADIUS; x++) {
             for (int z = -GARDEN_RADIUS; z <= GARDEN_RADIUS; z++) {
                 BlockPos pos = worldPosition.offset(x, 0, z);
@@ -1187,6 +1226,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
             BlockState current = level.getBlockState(railPos);
             if (current.isAir() || current.is(Blocks.RAIL)) {
                 level.setBlock(railPos, Blocks.RAIL.defaultBlockState().setValue(RailBlock.SHAPE, shape), 3);
+                activeWildWestRailPositions.add(railPos.immutable());
+                WildWestRailProtection.protect(level, railPos);
             }
         }
     }
