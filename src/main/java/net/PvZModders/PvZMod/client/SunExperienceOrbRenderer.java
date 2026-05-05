@@ -5,33 +5,28 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
-import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ExperienceOrbRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ExperienceOrb;
-import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraft.world.item.ItemStack;
 
 public class SunExperienceOrbRenderer extends ExperienceOrbRenderer {
-    private static final float SUNDROP_SCALE = 0.95F;
+    private static final ResourceLocation SUNDROP_TEXTURE = new ResourceLocation(PvZ2Mod.MOD_ID, "textures/block/sundrop.png");
     private static final ResourceLocation SUN_PILLAR_TEXTURE = new ResourceLocation(PvZ2Mod.MOD_ID, "textures/block/sunpillar.png");
+    private static final float SUN_HALF_SIZE = 0.42F;
     private static final float PILLAR_HALF_WIDTH = 0.18F;
     private static final float FALLING_PILLAR_BOTTOM = -16.0F;
     private static final float FALLING_PILLAR_TOP = 3.0F;
     private static final float RESTING_PILLAR_BOTTOM = 0.0F;
     private static final float RESTING_PILLAR_TOP = 3.0F;
-    private final ItemRenderer itemRenderer;
 
     public SunExperienceOrbRenderer(EntityRendererProvider.Context context) {
         super(context);
-        this.itemRenderer = context.getItemRenderer();
     }
 
     @Override
@@ -50,15 +45,18 @@ public class SunExperienceOrbRenderer extends ExperienceOrbRenderer {
         if (SunManager.shouldRenderSunPillar(orb)) {
             renderSunPillar(orb, partialTicks, poseStack, buffer);
         }
-        renderItemModel(ModItems.SUNDROP.get().getDefaultInstance(), SUNDROP_SCALE, 90.0F, orb, poseStack, buffer);
+        renderSunSprite(poseStack, buffer);
     }
 
-    private void renderItemModel(ItemStack stack, float scale, float yRotation, ExperienceOrb orb, PoseStack poseStack, MultiBufferSource buffer) {
+    private void renderSunSprite(PoseStack poseStack, MultiBufferSource buffer) {
         poseStack.pushPose();
         poseStack.mulPose(this.entityRenderDispatcher.cameraOrientation());
-        poseStack.mulPose(Axis.YP.rotationDegrees(yRotation));
-        poseStack.scale(scale, scale, scale);
-        this.itemRenderer.renderStatic(stack, ItemDisplayContext.GROUND, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, poseStack, buffer, orb.level(), orb.getId());
+        VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(SUNDROP_TEXTURE));
+        PoseStack.Pose pose = poseStack.last();
+        addSunVertex(consumer, pose, -SUN_HALF_SIZE, -SUN_HALF_SIZE, 0.0F, 1.0F);
+        addSunVertex(consumer, pose, SUN_HALF_SIZE, -SUN_HALF_SIZE, 1.0F, 1.0F);
+        addSunVertex(consumer, pose, SUN_HALF_SIZE, SUN_HALF_SIZE, 1.0F, 0.0F);
+        addSunVertex(consumer, pose, -SUN_HALF_SIZE, SUN_HALF_SIZE, 0.0F, 0.0F);
         poseStack.popPose();
     }
 
@@ -87,6 +85,16 @@ public class SunExperienceOrbRenderer extends ExperienceOrbRenderer {
     private static void addBeamVertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v) {
         consumer.vertex(pose.pose(), x, y, z)
                 .color(255, 255, 255, 190)
+                .uv(u, v)
+                .overlayCoords(OverlayTexture.NO_OVERLAY)
+                .uv2(LightTexture.FULL_BRIGHT)
+                .normal(pose.normal(), 0.0F, 1.0F, 0.0F)
+                .endVertex();
+    }
+
+    private static void addSunVertex(VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v) {
+        consumer.vertex(pose.pose(), x, y, 0.0F)
+                .color(255, 255, 255, 255)
                 .uv(u, v)
                 .overlayCoords(OverlayTexture.NO_OVERLAY)
                 .uv2(LightTexture.FULL_BRIGHT)

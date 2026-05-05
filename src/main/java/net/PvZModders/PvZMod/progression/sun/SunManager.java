@@ -3,6 +3,8 @@ package net.PvZModders.PvZMod.progression.sun;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
+import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.atmosphere.DarkAgesBiomeEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -82,15 +84,26 @@ public final class SunManager {
 
         ServerLevel overworld = event.getServer().overworld();
         boolean sunUnlocked = SunSavedData.get(overworld).sunUnlocked();
+        boolean waveActive = isAnyGardenWaveActive(overworld);
         Set<UUID> updatedSunOrbs = new HashSet<>();
 
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             syncSunBar(player);
             tickNearbySunOrbs(player.serverLevel(), player, updatedSunOrbs);
-            if (sunUnlocked) {
+            if (sunUnlocked || waveActive) {
                 tickSunDrops(player);
             }
         }
+    }
+
+    private static boolean isAnyGardenWaveActive(ServerLevel level) {
+        GardenProgressSavedData progressData = GardenProgressSavedData.get(level);
+        for (GardenId gardenId : GardenId.values()) {
+            if (progressData.getWaveProgress(gardenId).waveActive()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @SubscribeEvent

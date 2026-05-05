@@ -146,8 +146,6 @@ public class PvZ2Mod {
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
-                net.minecraft.client.renderer.entity.EntityRenderers.register(EntityType.EXPERIENCE_ORB, SunExperienceOrbRenderer::new);
-                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
@@ -171,6 +169,11 @@ public class PvZ2Mod {
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
             event.registerLayerDefinition(pennytest.LAYER_LOCATION, pennytest::createBodyLayer);
+        }
+
+        @SubscribeEvent
+        public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+            event.registerEntityRenderer(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
         }
     }
 }
