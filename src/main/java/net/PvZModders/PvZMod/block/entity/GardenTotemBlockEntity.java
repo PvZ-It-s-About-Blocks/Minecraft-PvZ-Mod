@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.block.entity;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
@@ -55,10 +56,13 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RailBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.RailShape;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.phys.AABB;
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.ArrayList;
@@ -122,6 +126,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.tickGardenPlantProduction(serverLevel);
         be.tickSinkingPlotter(serverLevel, pos);
         be.syncHealthBar(serverLevel, pos);
+        be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
         be.updateWaveBossBar(serverLevel);
         be.tickActiveWaveZombies(serverLevel);
@@ -402,6 +407,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         activeWaveDirections.addAll(waveDirections.stream().distinct().toList());
+        arrangeWildWestMinecartsForWave(level);
         return List.copyOf(activeWaveDirections);
     }
 
@@ -832,6 +838,117 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (gardenId == GardenId.INITIAL_PLAINS && getWaveProgress(level).currentWave() > 1 && !level.players().isEmpty()) {
             SunManager.unlockSunDrops(level, level.players().get(0));
         }
+    }
+
+    private void ensureWildWestMinecarts(ServerLevel level) {
+        if (gardenId == GardenId.WILD_WEST && getWaveProgress(level).waveActive() && level.getGameTime() % 40L == 0L) {
+            arrangeWildWestMinecartsForWave(level);
+        }
+    }
+
+    private void arrangeWildWestMinecartsForWave(ServerLevel level) {
+        if (gardenId != GardenId.WILD_WEST) {
+            return;
+        }
+
+        List<WildWestCartPattern> patterns = wildWestCartPatternsForWave(getWaveProgress(level).currentWave(), activeWaveDirections);
+        clearWildWestRails(level);
+
+        List<WildWestMinecartEntity> existingCarts = new ArrayList<>();
+        AABB searchArea = new AABB(worldPosition).inflate(GARDEN_RADIUS + 2.0D, 3.0D, GARDEN_RADIUS + 2.0D);
+        for (WildWestMinecartEntity cart : level.getEntitiesOfClass(WildWestMinecartEntity.class, searchArea, Entity::isAlive)) {
+            if (cart.belongsTo(worldPosition)) {
+                existingCarts.add(cart);
+            }
+        }
+        existingCarts.sort((first, second) -> Integer.compare(first.railIndex(), second.railIndex()));
+
+        for (int index = 0; index < patterns.size(); index++) {
+            WildWestCartPattern pattern = patterns.get(index);
+            placeWildWestRail(level, pattern.axis(), pattern.fixedOffset(), pattern.minOffset(), pattern.maxOffset());
+            if (index < existingCarts.size()) {
+                existingCarts.get(index).configure(worldPosition, pattern.axis(), index, pattern.fixedOffset(), pattern.currentOffset(), pattern.minOffset(), pattern.maxOffset());
+            } else {
+                WildWestMinecartEntity cart = WildWestMinecartEntity.create(level, worldPosition, pattern.axis(), index, pattern.fixedOffset(), pattern.currentOffset(), pattern.minOffset(), pattern.maxOffset());
+                level.addFreshEntity(cart);
+            }
+        }
+
+        for (int index = patterns.size(); index < existingCarts.size(); index++) {
+            existingCarts.get(index).discard();
+        }
+    }
+
+    private List<WildWestCartPattern> wildWestCartPatternsForWave(int wave, List<WaveSpawnDirection> directions) {
+        int railsPerDirection = wildWestRailsPerDirection(wave);
+        if (railsPerDirection <= 0 || directions.isEmpty()) {
+            return List.of();
+        }
+
+        List<WildWestCartPattern> patterns = new ArrayList<>();
+        for (WaveSpawnDirection direction : directions.stream().distinct().toList()) {
+            addWildWestDirectionPattern(patterns, direction, railsPerDirection);
+        }
+        return List.copyOf(patterns);
+    }
+
+    private int wildWestRailsPerDirection(int wave) {
+        if (wave <= 2) {
+            return 0;
+        }
+        if (wave <= 5) {
+            return 1;
+        }
+        if (wave <= 8) {
+            return 2;
+        }
+        if (wave <= 14) {
+            return 3;
+        }
+        if (wave <= 20) {
+            return 4;
+        }
+        return 5;
+    }
+
+    private void addWildWestDirectionPattern(List<WildWestCartPattern> patterns, WaveSpawnDirection direction, int railCount) {
+        int[] sideOffsets = {2, 3, 4, 5, 6};
+        int[] startingOffsets = {-4, 0, 4, -2, 2};
+        Direction.Axis axis = direction == WaveSpawnDirection.NORTH || direction == WaveSpawnDirection.SOUTH
+                ? Direction.Axis.X
+                : Direction.Axis.Z;
+        int sign = direction == WaveSpawnDirection.NORTH || direction == WaveSpawnDirection.WEST ? -1 : 1;
+
+        for (int index = 0; index < Math.min(railCount, sideOffsets.length); index++) {
+            patterns.add(new WildWestCartPattern(axis, sideOffsets[index] * sign, startingOffsets[index], -5, 5));
+        }
+    }
+
+    private void clearWildWestRails(ServerLevel level) {
+        for (int x = -GARDEN_RADIUS; x <= GARDEN_RADIUS; x++) {
+            for (int z = -GARDEN_RADIUS; z <= GARDEN_RADIUS; z++) {
+                BlockPos pos = worldPosition.offset(x, 0, z);
+                if (level.getBlockState(pos).is(Blocks.RAIL)) {
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), 3);
+                }
+            }
+        }
+    }
+
+    private void placeWildWestRail(ServerLevel level, Direction.Axis axis, int fixedOffset, int minOffset, int maxOffset) {
+        RailShape shape = axis == Direction.Axis.X ? RailShape.EAST_WEST : RailShape.NORTH_SOUTH;
+        for (int offset = minOffset; offset <= maxOffset; offset++) {
+            BlockPos railPos = axis == Direction.Axis.X
+                    ? worldPosition.offset(offset, 0, fixedOffset)
+                    : worldPosition.offset(fixedOffset, 0, offset);
+            BlockState current = level.getBlockState(railPos);
+            if (current.isAir() || current.is(Blocks.RAIL)) {
+                level.setBlock(railPos, Blocks.RAIL.defaultBlockState().setValue(RailBlock.SHAPE, shape), 3);
+            }
+        }
+    }
+
+    private record WildWestCartPattern(Direction.Axis axis, int fixedOffset, int currentOffset, int minOffset, int maxOffset) {
     }
 
     private void placeTotemColumn(ServerLevel level, BlockPos pos) {

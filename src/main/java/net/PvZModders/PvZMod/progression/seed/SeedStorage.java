@@ -211,7 +211,9 @@ public final class SeedStorage {
             return;
         }
 
-        if (definition.isEmpty() || target == null || !PlantEntityManager.placePlant(serverPlayer, target, definition.get())) {
+        if (definition.isEmpty()
+                || (!PlantEntityManager.placePlantInTargetMinecart(serverPlayer, definition.get())
+                && (target == null || !PlantEntityManager.placePlant(serverPlayer, target, definition.get())))) {
             player.displayClientMessage(Component.literal("Cannot plant there.").withStyle(ChatFormatting.RED), true);
             sync(player);
             return;

@@ -8,6 +8,7 @@ import net.PvZModders.PvZMod.client.seed.ClientSeedStorage;
 import net.PvZModders.PvZMod.client.screen.BiomeDetectorScreen;
 import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
+import net.PvZModders.PvZMod.entity.client.WildWestMinecartRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
@@ -122,6 +123,7 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.WILD_WEST_MINECART.get(), WildWestMinecartRenderer::new);
                 for (var plantEntityType : ModEntities.plantEntityTypes()) {
                     net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
                 }

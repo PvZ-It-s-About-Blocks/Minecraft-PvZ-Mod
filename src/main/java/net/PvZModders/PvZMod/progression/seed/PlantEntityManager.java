@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.progression.seed;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.ModEntities;
+import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
@@ -128,6 +129,15 @@ public final class PlantEntityManager {
         }
 
         return level.addFreshEntity(plant);
+    }
+
+    public static boolean placePlantInTargetMinecart(ServerPlayer player, PlantSeedDefinition definition) {
+        Optional<WildWestMinecartEntity> target = findTargetMinecart(player);
+        if (target.isEmpty()) {
+            return false;
+        }
+
+        return placePlantInMinecart(player, target.get(), definition);
     }
 
     public static void initializeSummonedPlant(SnowGolem plant) {
@@ -472,6 +482,63 @@ public final class PlantEntityManager {
         AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
         List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive);
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
+    }
+
+    private static boolean placePlantInMinecart(ServerPlayer player, WildWestMinecartEntity cart, PlantSeedDefinition definition) {
+        Optional<SnowGolem> existingPlant = cart.getPassengers()
+                .stream()
+                .filter(entity -> entity instanceof SnowGolem && isPlant(entity))
+                .map(entity -> (SnowGolem) entity)
+                .findFirst();
+
+        if (existingPlant.isPresent()) {
+            if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD
+                    && behaviorFor(existingPlant.get()) == PlantSeedDefinition.PlantBehavior.PEA_POD) {
+                return upgradePeaPod(player, existingPlant.get());
+            }
+            player.displayClientMessage(Component.literal("Minecart already has a plant.").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+
+        EntityType<? extends SnowGolem> plantType = ModEntities.PLANTS.containsKey(definition.plantId())
+                ? ModEntities.PLANTS.get(definition.plantId()).get()
+                : EntityType.SNOW_GOLEM;
+        SnowGolem plant = plantType.create(player.serverLevel());
+        if (plant == null) {
+            return false;
+        }
+
+        Vec3 plantPos = cart.plantPosition();
+        plant.moveTo(plantPos.x, plantPos.y, plantPos.z, player.getYRot(), 0.0F);
+        initializePlantEntity(plant, definition, player.serverLevel().getGameTime());
+        if (!player.serverLevel().addFreshEntity(plant)) {
+            return false;
+        }
+        plant.startRiding(cart, true);
+        return true;
+    }
+
+    private static Optional<WildWestMinecartEntity> findTargetMinecart(ServerPlayer player) {
+        double reach = player.getBlockReach();
+        Vec3 eye = player.getEyePosition();
+        Vec3 look = player.getViewVector(1.0F);
+        Vec3 end = eye.add(look.scale(reach));
+        AABB searchArea = new AABB(eye, end).inflate(1.0D);
+
+        WildWestMinecartEntity nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (WildWestMinecartEntity cart : player.serverLevel().getEntitiesOfClass(WildWestMinecartEntity.class, searchArea, Entity::isAlive)) {
+            if (cart.getBoundingBox().inflate(0.35D).clip(eye, end).isEmpty()) {
+                continue;
+            }
+            double distance = eye.distanceToSqr(cart.position());
+            if (distance < nearestDistance) {
+                nearest = cart;
+                nearestDistance = distance;
+            }
+        }
+
+        return Optional.ofNullable(nearest);
     }
 
     private static Optional<Zombie> selectDirectionalZombie(ServerLevel level, SnowGolem plant, double range, boolean forward) {
