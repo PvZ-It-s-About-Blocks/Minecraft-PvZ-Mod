@@ -64,11 +64,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.FAR_FUTURE, "infi_nut", "Infi-nut", 75);
         register(GardenId.FAR_FUTURE, "magnifying_grass", "Magnifying Grass", 50);
         register(GardenId.FAR_FUTURE, "tile_turnip", "Tile Turnip", 0);
-        register(GardenId.DARK_AGES, "sun_shroom", "Sun-shroom", 25);
-        register(GardenId.DARK_AGES, "puff_shroom", "Puff-shroom", 0);
-        register(GardenId.DARK_AGES, "fume_shroom", "Fume-shroom", 125);
-        register(GardenId.DARK_AGES, "sun_bean", "Sun Bean", 50);
-        register(GardenId.DARK_AGES, "magnet_shroom", "Magnet-shroom", 100);
+        register(GardenId.DARK_AGES, ModItems.SUN_SHROOM_SEED_PACKET.getId(), "sun_shroom", "Sun-shroom", 25, PlantBehavior.SUN_SHROOM);
+        register(GardenId.DARK_AGES, ModItems.PUFF_SHROOM_SEED_PACKET.getId(), "puff_shroom", "Puff-shroom", 0, PlantBehavior.PUFF_SHROOM);
+        register(GardenId.DARK_AGES, ModItems.FUME_SHROOM_SEED_PACKET.getId(), "fume_shroom", "Fume-shroom", 125, PlantBehavior.FUME_SHROOM);
+        register(GardenId.DARK_AGES, ModItems.SUN_BEAN_SEED_PACKET.getId(), "sun_bean", "Sun Bean", 50, PlantBehavior.SUN_BEAN);
+        register(GardenId.DARK_AGES, ModItems.MAGNET_SHROOM_SEED_PACKET.getId(), "magnet_shroom", "Magnet-shroom", 100, PlantBehavior.MAGNET_SHROOM);
         register(GardenId.NEON_MIXTAPE, "phat_beet", "Phat Beet", 150);
         register(GardenId.NEON_MIXTAPE, "celery_stalker", "Celery Stalker", 50);
         register(GardenId.NEON_MIXTAPE, "thyme_warp", "Thyme Warp", 100);
@@ -165,6 +165,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         AKEE,
         ENDURIAN,
         STALLIA,
-        GOLD_LEAF
+        GOLD_LEAF,
+        SUN_SHROOM,
+        PUFF_SHROOM,
+        FUME_SHROOM,
+        SUN_BEAN,
+        MAGNET_SHROOM
     }
 }

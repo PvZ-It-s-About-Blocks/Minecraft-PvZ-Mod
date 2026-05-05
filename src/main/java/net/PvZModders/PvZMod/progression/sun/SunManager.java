@@ -230,13 +230,21 @@ public final class SunManager {
     }
 
     private static void spawnSun(ServerLevel level, BlockPos pos) {
-        ExperienceOrb sun = new PvZSunEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, DEFAULT_SUN_VALUE);
+        spawnSun(level, pos, DEFAULT_SUN_VALUE);
+    }
+
+    private static void spawnSun(ServerLevel level, BlockPos pos, int value) {
+        ExperienceOrb sun = new PvZSunEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, value);
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
         level.addFreshEntity(sun);
     }
 
     public static void spawnSunAt(ServerLevel level, BlockPos pos) {
         spawnSun(level, pos);
+    }
+
+    public static void spawnSunAt(ServerLevel level, BlockPos pos, int value) {
+        spawnSun(level, pos, value);
     }
 
     public static void initializeSunOrb(ExperienceOrb sun, ServerLevel level, int value) {

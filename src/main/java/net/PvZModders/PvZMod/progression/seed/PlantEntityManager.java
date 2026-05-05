@@ -23,6 +23,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -30,6 +31,7 @@ import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
@@ -37,6 +39,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.Mth;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -60,17 +63,37 @@ public final class PlantEntityManager {
     private static final String PEA_POD_STACK_TAG = "PvZPeaPodStack";
     private static final String PROJECTILE_KIND_TAG = "PvZProjectileKind";
     private static final String RED_STINGER_MODE_TAG = "PvZRedStingerMode";
+    private static final String PLANT_PLACED_TICK_TAG = "PvZPlantPlacedTick";
+    private static final String SUN_SHROOM_STAGE_TAG = "PvZSunShroomStage";
+    private static final String SUN_BEAN_INFECTED_TAG = "PvZSunBeanInfected";
+    private static final String SUN_BEAN_EXPIRES_TICK_TAG = "PvZSunBeanExpiresTick";
+    private static final String SUN_BEAN_NEXT_SUN_TICK_TAG = "PvZSunBeanNextSunTick";
+    private static final String ARMOR_STRIPPED_TAG = "PvZArmorStripped";
+    private static final String METAL_ZOMBIE_TAG = "PvZMetalZombie";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
+    private static final double PUFF_SHROOM_RANGE = 4.0D;
+    private static final double FUME_SHROOM_RANGE = 6.0D;
+    private static final double MAGNET_SHROOM_RANGE = 8.0D;
     private static final int SHOOTER_INTERVAL_TICKS = 30;
     private static final int SUNFLOWER_INTERVAL_TICKS = 60;
+    private static final int SUN_SHROOM_INTERVAL_TICKS = 80;
+    private static final int SUN_SHROOM_STAGE_TWO_TICKS = 20 * 60;
+    private static final int SUN_SHROOM_STAGE_THREE_TICKS = 20 * 120;
+    private static final int PUFF_SHROOM_LIFETIME_TICKS = 20 * 60;
+    private static final int FUME_SHROOM_INTERVAL_TICKS = 35;
     private static final int BONK_CHOY_INTERVAL_TICKS = 10;
     private static final int GRAVE_BUSTER_EAT_TICKS = 60;
     private static final int CHOMPER_COOLDOWN_TICKS = 100;
     private static final int LIGHTNING_REED_INTERVAL_TICKS = 25;
     private static final int MELON_PULT_INTERVAL_TICKS = 45;
+    private static final int SUN_BEAN_INFECTED_TICKS = 20 * 15;
+    private static final int SUN_BEAN_SUN_COOLDOWN_TICKS = 10;
+    private static final int MAGNET_SHROOM_COOLDOWN_TICKS = 20 * 10;
     private static final float PEA_DAMAGE = 4.0F;
+    private static final float PUFF_SHROOM_DAMAGE = 2.0F;
+    private static final float FUME_SHROOM_DAMAGE = 4.0F;
     private static final float POTATO_MINE_DAMAGE = 24.0F;
     private static final float CHOMPER_DAMAGE = 40.0F;
     private static final float BLOOMERANG_DAMAGE = 5.0F;
@@ -85,6 +108,7 @@ public final class PlantEntityManager {
     private static final float RED_STINGER_NORMAL_DAMAGE = 4.0F;
     private static final float AKEE_DAMAGE = 6.0F;
     private static final float ENDURIAN_THORN_DAMAGE = 3.0F;
+    private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
     private static final float TALL_NUT_HEALTH = 150.0F;
@@ -177,6 +201,7 @@ public final class PlantEntityManager {
         tag.putBoolean(PLANT_TAG, true);
         tag.putString(PLANT_ID_TAG, definition.plantId());
         tag.putString(PLANT_BEHAVIOR_TAG, definition.behavior().name());
+        tag.putLong(PLANT_PLACED_TICK_TAG, gameTime);
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
             tag.putInt(PEA_POD_STACK_TAG, 1);
@@ -228,6 +253,35 @@ public final class PlantEntityManager {
         }
     }
 
+    @SubscribeEvent
+    public static void onLivingHurt(LivingHurtEvent event) {
+        if (!(event.getEntity() instanceof Zombie zombie) || !(zombie.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        CompoundTag tag = zombie.getPersistentData();
+        if (!tag.getBoolean(SUN_BEAN_INFECTED_TAG)) {
+            return;
+        }
+
+        long gameTime = level.getGameTime();
+        if (gameTime > tag.getLong(SUN_BEAN_EXPIRES_TICK_TAG)) {
+            tag.remove(SUN_BEAN_INFECTED_TAG);
+            return;
+        }
+
+        if (gameTime < tag.getLong(SUN_BEAN_NEXT_SUN_TICK_TAG)) {
+            return;
+        }
+
+        Player nearestPlayer = level.getNearestPlayer(zombie, 64.0D);
+        if (nearestPlayer != null) {
+            SunManager.addSun(nearestPlayer, SUN_BEAN_SUN_VALUE);
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 4, 0.25D, 0.25D, 0.25D, 0.02D);
+            tag.putLong(SUN_BEAN_NEXT_SUN_TICK_TAG, gameTime + SUN_BEAN_SUN_COOLDOWN_TICKS);
+        }
+    }
+
     private static void tickPlant(ServerLevel level, SnowGolem plant) {
         PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
         switch (behavior) {
@@ -252,6 +306,11 @@ public final class PlantEntityManager {
             case ENDURIAN -> tickEndurian(level, plant);
             case STALLIA -> tickStallia(level, plant);
             case GOLD_LEAF -> tickGoldLeaf(level, plant);
+            case SUN_SHROOM -> tickSunShroom(level, plant);
+            case PUFF_SHROOM -> tickPuffShroom(level, plant);
+            case FUME_SHROOM -> tickFumeShroom(level, plant);
+            case SUN_BEAN -> tickSunBean(level, plant);
+            case MAGNET_SHROOM -> tickMagnetShroom(level, plant);
             case WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
             }
         }
@@ -297,6 +356,115 @@ public final class PlantEntityManager {
         SunManager.spawnSunAt(level, plant.blockPosition().above(3));
         SunManager.spawnSunAt(level, plant.blockPosition().above(3).east());
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
+    }
+
+    private static void tickSunShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        updateSunShroomStage(plant, gameTime);
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        int stage = Math.max(1, tag.getInt(SUN_SHROOM_STAGE_TAG));
+        int sunValue = switch (stage) {
+            case 1 -> 15;
+            case 2 -> 25;
+            default -> 50;
+        };
+        SunManager.spawnSunAt(level, plant.blockPosition().above(3), sunValue);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUN_SHROOM_INTERVAL_TICKS);
+    }
+
+    private static void tickPuffShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime - tag.getLong(PLANT_PLACED_TICK_TAG) >= PUFF_SHROOM_LIFETIME_TICKS) {
+            level.sendParticles(ParticleTypes.POOF, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 8, 0.25D, 0.25D, 0.25D, 0.02D);
+            plant.discard();
+            return;
+        }
+
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, PUFF_SHROOM_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        shootSnowballVisual(level, plant, target.get(), false, "spore");
+        target.get().hurt(level.damageSources().mobAttack(plant), PUFF_SHROOM_DAMAGE);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickFumeShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 facing = facingVector(plant);
+        List<Zombie> targets = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(FUME_SHROOM_RANGE, 2.0D, FUME_SHROOM_RANGE), Zombie::isAlive)
+                .stream()
+                .filter(zombie -> isInFrontCone(plant, zombie, facing, FUME_SHROOM_RANGE))
+                .toList();
+        if (targets.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        for (Zombie zombie : targets) {
+            zombie.hurt(level.damageSources().mobAttack(plant), FUME_SHROOM_DAMAGE);
+        }
+        Vec3 center = plant.position().add(facing.scale(2.5D)).add(0.0D, 0.8D, 0.0D);
+        level.sendParticles(ParticleTypes.CLOUD, center.x, center.y, center.z, 32, 1.2D, 0.35D, 1.2D, 0.04D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + FUME_SHROOM_INTERVAL_TICKS);
+    }
+
+    private static void tickSunBean(ServerLevel level, SnowGolem plant) {
+        Optional<Zombie> trigger = selectZombie(level, plant, 1.35D);
+        if (trigger.isEmpty()) {
+            return;
+        }
+
+        Zombie zombie = trigger.get();
+        long gameTime = level.getGameTime();
+        CompoundTag tag = zombie.getPersistentData();
+        tag.putBoolean(SUN_BEAN_INFECTED_TAG, true);
+        tag.putLong(SUN_BEAN_EXPIRES_TICK_TAG, gameTime + SUN_BEAN_INFECTED_TICKS);
+        tag.putLong(SUN_BEAN_NEXT_SUN_TICK_TAG, gameTime);
+        zombie.addEffect(new MobEffectInstance(MobEffects.GLOWING, SUN_BEAN_INFECTED_TICKS, 0));
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 20, 0.5D, 0.45D, 0.5D, 0.03D);
+        plant.discard();
+    }
+
+    private static void tickMagnetShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(MAGNET_SHROOM_RANGE, 3.0D, MAGNET_SHROOM_RANGE), Zombie::isAlive)
+                .stream()
+                .filter(PlantEntityManager::hasMetalOrArmor)
+                .min((first, second) -> Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second)));
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+            return;
+        }
+
+        if (stripOneMetalOrArmorItem(target.get())) {
+            level.sendParticles(ParticleTypes.CRIT, target.get().getX(), target.get().getY() + 1.0D, target.get().getZ(), 24, 0.35D, 0.45D, 0.35D, 0.05D);
+            level.sendParticles(ParticleTypes.ENCHANT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 16, 0.35D, 0.45D, 0.35D, 0.05D);
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MAGNET_SHROOM_COOLDOWN_TICKS);
+        } else {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+        }
     }
 
     private static void tickPotatoMine(ServerLevel level, SnowGolem plant) {
@@ -670,6 +838,62 @@ public final class PlantEntityManager {
                 })
                 .toList();
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
+    }
+
+    private static void updateSunShroomStage(SnowGolem plant, long gameTime) {
+        CompoundTag tag = plant.getPersistentData();
+        long age = gameTime - tag.getLong(PLANT_PLACED_TICK_TAG);
+        int stage = age >= SUN_SHROOM_STAGE_THREE_TICKS ? 3 : age >= SUN_SHROOM_STAGE_TWO_TICKS ? 2 : 1;
+        if (tag.getInt(SUN_SHROOM_STAGE_TAG) == stage) {
+            return;
+        }
+
+        tag.putInt(SUN_SHROOM_STAGE_TAG, stage);
+        plant.setCustomName(Component.literal("Sun-shroom " + stage).withStyle(style -> style.withColor(TextColor.fromRgb(
+                PlantSeedDefinition.getByPlantId("sun_shroom").map(PlantSeedDefinition::gardenColor).orElse(0x59407A)
+        ))));
+    }
+
+    private static boolean isInFrontCone(SnowGolem plant, Zombie zombie, Vec3 facing, double range) {
+        Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+        double distanceSqr = toZombie.lengthSqr();
+        if (distanceSqr < 1.0E-4D || distanceSqr > range * range) {
+            return false;
+        }
+
+        double dot = toZombie.normalize().dot(facing);
+        return dot >= 0.35D;
+    }
+
+    private static boolean hasMetalOrArmor(Zombie zombie) {
+        if (zombie.getPersistentData().getBoolean(METAL_ZOMBIE_TAG)) {
+            return true;
+        }
+
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            if (!zombie.getItemBySlot(slot).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean stripOneMetalOrArmorItem(Zombie zombie) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            ItemStack equipped = zombie.getItemBySlot(slot);
+            if (!equipped.isEmpty()) {
+                zombie.setItemSlot(slot, ItemStack.EMPTY);
+                zombie.getPersistentData().putBoolean(ARMOR_STRIPPED_TAG, true);
+                return true;
+            }
+        }
+
+        if (zombie.getPersistentData().getBoolean(METAL_ZOMBIE_TAG)) {
+            zombie.getPersistentData().putBoolean(METAL_ZOMBIE_TAG, false);
+            zombie.getPersistentData().putBoolean(ARMOR_STRIPPED_TAG, true);
+            return true;
+        }
+        return false;
     }
 
     private static void shootSnowball(ServerLevel level, SnowGolem plant, LivingEntity target, double sideOffset) {

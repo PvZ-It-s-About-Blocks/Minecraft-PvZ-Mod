@@ -41,6 +41,11 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.ENDURIAN_SEED_PACKET.get());
                         output.accept(ModItems.STALLIA_SEED_PACKET.get());
                         output.accept(ModItems.GOLD_LEAF_SEED_PACKET.get());
+                        output.accept(ModItems.SUN_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.PUFF_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.FUME_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.SUN_BEAN_SEED_PACKET.get());
+                        output.accept(ModItems.MAGNET_SHROOM_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());

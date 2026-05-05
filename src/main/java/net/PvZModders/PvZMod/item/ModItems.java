@@ -67,6 +67,16 @@ public class ModItems {
             () -> new SeedPacketItem("stallia", new Item.Properties()));
     public static final RegistryObject<Item> GOLD_LEAF_SEED_PACKET = ITEMS.register("gold_leaf_seed_packet",
             () -> new SeedPacketItem("gold_leaf", new Item.Properties()));
+    public static final RegistryObject<Item> SUN_SHROOM_SEED_PACKET = ITEMS.register("sun_shroom_seed_packet",
+            () -> new SeedPacketItem("sun_shroom", new Item.Properties()));
+    public static final RegistryObject<Item> PUFF_SHROOM_SEED_PACKET = ITEMS.register("puff_shroom_seed_packet",
+            () -> new SeedPacketItem("puff_shroom", new Item.Properties()));
+    public static final RegistryObject<Item> FUME_SHROOM_SEED_PACKET = ITEMS.register("fume_shroom_seed_packet",
+            () -> new SeedPacketItem("fume_shroom", new Item.Properties()));
+    public static final RegistryObject<Item> SUN_BEAN_SEED_PACKET = ITEMS.register("sun_bean_seed_packet",
+            () -> new SeedPacketItem("sun_bean", new Item.Properties()));
+    public static final RegistryObject<Item> MAGNET_SHROOM_SEED_PACKET = ITEMS.register("magnet_shroom_seed_packet",
+            () -> new SeedPacketItem("magnet_shroom", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",

@@ -50,20 +50,25 @@ public record GardenPlantDefinition(
         return LostCityPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> darkAgesPlants() {
+        return DarkAgesPlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
             case DESERT -> ancientEgyptPlants();
             case WILD_WEST -> wildWestPlants();
             case LOST_CITY -> lostCityPlants();
+            case DARK_AGES -> darkAgesPlants();
             default -> List.of();
         };
     }
 
     public static int maxKnownGardenPlantCount() {
         return Math.max(
-                Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()),
-                Math.max(wildWestPlants().size(), lostCityPlants().size())
+                Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
+                darkAgesPlants().size()
         );
     }
 
@@ -97,6 +102,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.LOST_CITY, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition darkAges(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.DARK_AGES, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -140,6 +153,16 @@ public record GardenPlantDefinition(
                 lostCity("endurian", "Endurian", "Sturdy blocker that damages touching zombies.", 100, 10),
                 lostCity("stallia", "Stallia", "Releases a slowing perfume cloud, then disappears.", 0, 19),
                 lostCity("gold_leaf", "Gold Leaf", "Creates a Gold Tile on a valid garden tile.", 80, 26)
+        );
+    }
+
+    private static final class DarkAgesPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                darkAges("sun_shroom", "Sun-shroom", "Grows over time and produces stronger Sun.", 25, 1),
+                darkAges("puff_shroom", "Puff-shroom", "Temporary free shooter with short range.", 0, 2),
+                darkAges("fume_shroom", "Fume-shroom", "Damages all zombies in a forward fume cloud.", 125, 4),
+                darkAges("sun_bean", "Sun Bean", "Infects one zombie so damage creates Sun.", 50, 6),
+                darkAges("magnet_shroom", "Magnet-shroom", "Strips armor or metal equipment from nearby zombies.", 100, 15)
         );
     }
 }

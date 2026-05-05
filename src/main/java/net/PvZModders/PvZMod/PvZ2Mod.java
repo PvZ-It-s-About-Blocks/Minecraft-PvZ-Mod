@@ -96,6 +96,11 @@ public class PvZ2Mod {
             event.accept(ModItems.ENDURIAN_SEED_PACKET);
             event.accept(ModItems.STALLIA_SEED_PACKET);
             event.accept(ModItems.GOLD_LEAF_SEED_PACKET);
+            event.accept(ModItems.SUN_SHROOM_SEED_PACKET);
+            event.accept(ModItems.PUFF_SHROOM_SEED_PACKET);
+            event.accept(ModItems.FUME_SHROOM_SEED_PACKET);
+            event.accept(ModItems.SUN_BEAN_SEED_PACKET);
+            event.accept(ModItems.MAGNET_SHROOM_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
