@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.entity;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.AllPlantsDevSummonEntity;
+import net.PvZModders.PvZMod.entity.custom.FlyingPlaneEntity;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZPlantEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
@@ -56,6 +57,11 @@ public class ModEntities {
                     .sized(0.98F, 0.35F)
                     .clientTrackingRange(10)
                     .build(PvZ2Mod.MOD_ID + ":wild_west_minecart"));
+    public static final RegistryObject<EntityType<FlyingPlaneEntity>> FLYING_PLANE =
+            ENTITY_TYPES.register("flying_plane", () -> EntityType.Builder.<FlyingPlaneEntity>of(FlyingPlaneEntity::new, MobCategory.MISC)
+                    .sized(1.4F, 0.6F)
+                    .clientTrackingRange(10)
+                    .build(PvZ2Mod.MOD_ID + ":flying_plane"));
     public static final Map<String, RegistryObject<EntityType<PvZPlantEntity>>> PLANTS = registerPlantEntities();
 
     public static void register(IEventBus eventBus) {

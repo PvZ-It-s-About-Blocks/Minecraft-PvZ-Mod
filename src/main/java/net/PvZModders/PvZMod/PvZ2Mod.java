@@ -91,11 +91,17 @@ public class PvZ2Mod {
             event.accept(ModItems.MELON_PULT_SEED_PACKET);
             event.accept(ModItems.TALL_NUT_SEED_PACKET);
             event.accept(ModItems.WINTER_MELON_SEED_PACKET);
+            event.accept(ModItems.RED_STINGER_SEED_PACKET);
+            event.accept(ModItems.AKEE_SEED_PACKET);
+            event.accept(ModItems.ENDURIAN_SEED_PACKET);
+            event.accept(ModItems.STALLIA_SEED_PACKET);
+            event.accept(ModItems.GOLD_LEAF_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
             event.accept(ModItems.TARGETING_PRIORITY_CHANGER);
             event.accept(ModItems.SPEEDY_MINECART);
+            event.accept(ModItems.FLYING_PLANE);
         }
     }
 
@@ -124,6 +130,7 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.WILD_WEST_MINECART.get(), WildWestMinecartRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.FLYING_PLANE.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 for (var plantEntityType : ModEntities.plantEntityTypes()) {
                     net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
                 }

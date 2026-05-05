@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.item;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
+import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
@@ -56,6 +57,16 @@ public class ModItems {
             () -> new SeedPacketItem("tall_nut", new Item.Properties()));
     public static final RegistryObject<Item> WINTER_MELON_SEED_PACKET = ITEMS.register("winter_melon_seed_packet",
             () -> new SeedPacketItem("winter_melon", new Item.Properties()));
+    public static final RegistryObject<Item> RED_STINGER_SEED_PACKET = ITEMS.register("red_stinger_seed_packet",
+            () -> new SeedPacketItem("red_stinger", new Item.Properties()));
+    public static final RegistryObject<Item> AKEE_SEED_PACKET = ITEMS.register("akee_seed_packet",
+            () -> new SeedPacketItem("akee", new Item.Properties()));
+    public static final RegistryObject<Item> ENDURIAN_SEED_PACKET = ITEMS.register("endurian_seed_packet",
+            () -> new SeedPacketItem("endurian", new Item.Properties()));
+    public static final RegistryObject<Item> STALLIA_SEED_PACKET = ITEMS.register("stallia_seed_packet",
+            () -> new SeedPacketItem("stallia", new Item.Properties()));
+    public static final RegistryObject<Item> GOLD_LEAF_SEED_PACKET = ITEMS.register("gold_leaf_seed_packet",
+            () -> new SeedPacketItem("gold_leaf", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
@@ -70,6 +81,8 @@ public class ModItems {
             () -> new TargetingPriorityChangerItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> SPEEDY_MINECART = ITEMS.register("speedy_minecart",
             () -> new SpeedyMinecartItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> FLYING_PLANE = ITEMS.register("flying_plane",
+            () -> new FlyingPlaneItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

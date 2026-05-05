@@ -46,17 +46,25 @@ public record GardenPlantDefinition(
         return WildWestPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> lostCityPlants() {
+        return LostCityPlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
             case DESERT -> ancientEgyptPlants();
             case WILD_WEST -> wildWestPlants();
+            case LOST_CITY -> lostCityPlants();
             default -> List.of();
         };
     }
 
     public static int maxKnownGardenPlantCount() {
-        return Math.max(originalGardenPlants().size(), Math.max(ancientEgyptPlants().size(), wildWestPlants().size()));
+        return Math.max(
+                Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()),
+                Math.max(wildWestPlants().size(), lostCityPlants().size())
+        );
     }
 
     private static GardenPlantDefinition ancient(String plantId, String displayName, String description, int sunCost, int unlockWave) {
@@ -81,6 +89,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.WILD_WEST, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition lostCity(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.LOST_CITY, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -114,6 +130,16 @@ public record GardenPlantDefinition(
                 wildWest("melon_pult", "Melon-pult", "Lobs heavy splash-damage melons.", 325, 11),
                 wildWest("tall_nut", "Tall-nut", "Very sturdy blocker for tough waves.", 125, 18),
                 wildWest("winter_melon", "Winter Melon", "Lobs chilling splash-damage melons.", 500, 24)
+        );
+    }
+
+    private static final class LostCityPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                lostCity("red_stinger", "Red Stinger", "Changes offense or defense based on garden position.", 150, 1),
+                lostCity("akee", "A.K.E.E.", "Bounces seed shots between nearby zombies.", 175, 6),
+                lostCity("endurian", "Endurian", "Sturdy blocker that damages touching zombies.", 100, 10),
+                lostCity("stallia", "Stallia", "Releases a slowing perfume cloud, then disappears.", 0, 19),
+                lostCity("gold_leaf", "Gold Leaf", "Creates a Gold Tile on a valid garden tile.", 80, 26)
         );
     }
 }

@@ -52,11 +52,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.FROSTBITE, "chard_guard", "Chard Guard", 75);
         register(GardenId.FROSTBITE, "stunion", "Stunion", 25);
         register(GardenId.FROSTBITE, "rotobaga", "Rotobaga", 150);
-        register(GardenId.LOST_CITY, "red_stinger", "Red Stinger", 150);
-        register(GardenId.LOST_CITY, "akee", "A.K.E.E.", 175);
-        register(GardenId.LOST_CITY, "endurian", "Endurian", 100);
-        register(GardenId.LOST_CITY, "stallia", "Stallia", 0);
-        register(GardenId.LOST_CITY, "gold_leaf", "Gold Leaf", 80);
+        register(GardenId.LOST_CITY, ModItems.RED_STINGER_SEED_PACKET.getId(), "red_stinger", "Red Stinger", 150, PlantBehavior.RED_STINGER);
+        register(GardenId.LOST_CITY, ModItems.AKEE_SEED_PACKET.getId(), "akee", "A.K.E.E.", 175, PlantBehavior.AKEE);
+        register(GardenId.LOST_CITY, ModItems.ENDURIAN_SEED_PACKET.getId(), "endurian", "Endurian", 100, PlantBehavior.ENDURIAN);
+        register(GardenId.LOST_CITY, ModItems.STALLIA_SEED_PACKET.getId(), "stallia", "Stallia", 0, PlantBehavior.STALLIA);
+        register(GardenId.LOST_CITY, ModItems.GOLD_LEAF_SEED_PACKET.getId(), "gold_leaf", "Gold Leaf", 80, PlantBehavior.GOLD_LEAF);
         register(GardenId.FAR_FUTURE, "laser_bean", "Laser Bean", 200);
         register(GardenId.FAR_FUTURE, "blover", "Blover", 50);
         register(GardenId.FAR_FUTURE, "citron", "Citron", 350);
@@ -160,6 +160,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         LIGHTNING_REED,
         MELON_PULT,
         TALL_NUT,
-        WINTER_MELON
+        WINTER_MELON,
+        RED_STINGER,
+        AKEE,
+        ENDURIAN,
+        STALLIA,
+        GOLD_LEAF
     }
 }

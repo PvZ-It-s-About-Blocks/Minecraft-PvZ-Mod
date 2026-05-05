@@ -53,6 +53,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
@@ -67,8 +68,10 @@ import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -110,6 +113,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveTotalZombies;
     private int activeWaveSpawned;
     private boolean activeWaveFinalPushStarted;
+    private final Set<BlockPos> goldTilePositions = new HashSet<>();
+    private final Map<BlockPos, UUID> goldTileDisplayIds = new HashMap<>();
+    private final Map<BlockPos, Long> goldTileNextSunTicks = new HashMap<>();
 
     public GardenTotemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.GARDEN_TOTEM_BE.get(), pos, state);
@@ -124,6 +130,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         be.ensureInitialized(serverLevel, pos);
         be.tickGardenPlantProduction(serverLevel);
+        be.tickGoldTileSunProduction(serverLevel);
         be.tickSinkingPlotter(serverLevel, pos);
         be.syncHealthBar(serverLevel, pos);
         be.ensureWildWestMinecarts(serverLevel);
@@ -408,6 +415,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
         activeWaveDirections.addAll(waveDirections.stream().distinct().toList());
         arrangeWildWestMinecartsForWave(level);
+        generateGoldTilesForWave(level, definition.wave());
         return List.copyOf(activeWaveDirections);
     }
 
@@ -743,6 +751,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("flying_plane")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.FLYING_PLANE.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
                 }
             }
         }
@@ -811,6 +825,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveFinalPushStarted = false;
         activeWaveDirections.clear();
         waveBossBar.removeAllPlayers();
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.LOST_CITY) {
+            clearGoldTiles(serverLevel);
+        }
     }
 
     private GardenWaveProgress getWaveProgress() {
@@ -828,6 +845,33 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private void markWaveProgressDirty(ServerLevel level) {
         GardenProgressSavedData.get(level).setDirty();
+    }
+
+    public boolean addGoldTile(ServerLevel level, BlockPos tilePos) {
+        if (!isInsideGardenArea(tilePos) || level.getBlockState(tilePos.above()).is(ModBlocks.GARDEN_TOTEM.get())) {
+            return false;
+        }
+
+        BlockPos normalized = new BlockPos(tilePos.getX(), worldPosition.getY() - 1, tilePos.getZ());
+        if (!isInsideGardenArea(normalized)) {
+            return false;
+        }
+
+        goldTilePositions.add(normalized);
+        goldTileNextSunTicks.putIfAbsent(normalized, level.getGameTime() + 20L * 5);
+        syncGoldTileOverlay(level, normalized);
+        setChanged();
+        return true;
+    }
+
+    public boolean isGoldTile(BlockPos tilePos) {
+        return goldTilePositions.contains(new BlockPos(tilePos.getX(), worldPosition.getY() - 1, tilePos.getZ()));
+    }
+
+    private boolean isInsideGardenArea(BlockPos pos) {
+        return Math.abs(pos.getX() - worldPosition.getX()) <= GARDEN_RADIUS
+                && Math.abs(pos.getZ() - worldPosition.getZ()) <= GARDEN_RADIUS
+                && Math.abs(pos.getY() - (worldPosition.getY() - 1)) <= 2;
     }
 
     private void migrateLegacyWaveProgress(ServerLevel level) {
@@ -949,6 +993,99 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private record WildWestCartPattern(Direction.Axis axis, int fixedOffset, int currentOffset, int minOffset, int maxOffset) {
+    }
+
+    private void generateGoldTilesForWave(ServerLevel level, int wave) {
+        if (gardenId != GardenId.LOST_CITY) {
+            return;
+        }
+
+        clearGoldTiles(level);
+        int count = goldTileCountForWave(wave);
+        if (count <= 0) {
+            return;
+        }
+
+        int[][] pattern = {
+                {-3, -3}, {3, -3}, {0, -1}, {-4, 1}, {4, 1}, {-2, 3}, {2, 3}, {0, 5}
+        };
+        int start = Math.floorMod(wave, pattern.length);
+        for (int index = 0; index < count; index++) {
+            int[] offset = pattern[(start + index) % pattern.length];
+            addGoldTile(level, worldPosition.offset(offset[0], -1, offset[1]));
+        }
+    }
+
+    private int goldTileCountForWave(int wave) {
+        if (wave < 3) {
+            return 0;
+        }
+        if (wave <= 8) {
+            return 2;
+        }
+        if (wave <= 15) {
+            return 4;
+        }
+        if (wave <= 23) {
+            return 6;
+        }
+        return 8;
+    }
+
+    private void tickGoldTileSunProduction(ServerLevel level) {
+        if (goldTilePositions.isEmpty()) {
+            return;
+        }
+
+        for (BlockPos tilePos : List.copyOf(goldTilePositions)) {
+            syncGoldTileOverlay(level, tilePos);
+            if (!isGoldTileOccupied(level, tilePos)) {
+                continue;
+            }
+
+            long gameTime = level.getGameTime();
+            long nextSunTick = goldTileNextSunTicks.getOrDefault(tilePos, gameTime + 20L * 5);
+            if (gameTime < nextSunTick) {
+                continue;
+            }
+
+            SunManager.spawnSunAt(level, tilePos.above(3));
+            goldTileNextSunTicks.put(tilePos, gameTime + 20L * 5);
+        }
+    }
+
+    private boolean isGoldTileOccupied(ServerLevel level, BlockPos tilePos) {
+        AABB area = new AABB(tilePos.above()).inflate(0.45D, 1.2D, 0.45D);
+        return !level.getEntitiesOfClass(SnowGolem.class, area, PlantEntityManager::isPlant).isEmpty();
+    }
+
+    private void syncGoldTileOverlay(ServerLevel level, BlockPos tilePos) {
+        UUID displayId = goldTileDisplayIds.get(tilePos);
+        Entity existing = displayId == null ? null : level.getEntity(displayId);
+        if (existing != null) {
+            return;
+        }
+
+        Display.BlockDisplay display = EntityType.BLOCK_DISPLAY.create(level);
+        if (display == null) {
+            return;
+        }
+
+        display.load(createBlockDisplayTag(Blocks.GOLD_BLOCK.defaultBlockState(), 0.0F, 0.01F, 0.0F, 1.0F, 0.04F, 1.0F));
+        display.setNoGravity(true);
+        display.setPos(tilePos.getX(), tilePos.getY() + 1.0D, tilePos.getZ());
+        level.addFreshEntity(display);
+        goldTileDisplayIds.put(tilePos, display.getUUID());
+    }
+
+    private void clearGoldTiles(ServerLevel level) {
+        for (UUID displayId : goldTileDisplayIds.values()) {
+            discardDisplay(level, displayId);
+        }
+        goldTilePositions.clear();
+        goldTileDisplayIds.clear();
+        goldTileNextSunTicks.clear();
+        setChanged();
     }
 
     private void placeTotemColumn(ServerLevel level, BlockPos pos) {
@@ -1131,6 +1268,16 @@ public class GardenTotemBlockEntity extends BlockEntity {
         for (int i = 0; i < activeEntities.size(); i++) {
             activeWaveEntityIds.add(UUID.fromString(activeEntities.getString(i)));
         }
+        goldTilePositions.clear();
+        goldTileDisplayIds.clear();
+        goldTileNextSunTicks.clear();
+        ListTag goldTiles = tag.getList("GoldTiles", net.minecraft.nbt.Tag.TAG_COMPOUND);
+        for (int i = 0; i < goldTiles.size(); i++) {
+            CompoundTag tileTag = goldTiles.getCompound(i);
+            BlockPos tilePos = new BlockPos(tileTag.getInt("X"), tileTag.getInt("Y"), tileTag.getInt("Z"));
+            goldTilePositions.add(tilePos);
+            goldTileNextSunTicks.put(tilePos, tileTag.getLong("NextSunTick"));
+        }
     }
 
     @Override
@@ -1161,6 +1308,16 @@ public class GardenTotemBlockEntity extends BlockEntity {
             activeEntities.add(net.minecraft.nbt.StringTag.valueOf(entityId.toString()));
         }
         tag.put("ActiveWaveEntities", activeEntities);
+        ListTag goldTiles = new ListTag();
+        for (BlockPos tilePos : goldTilePositions) {
+            CompoundTag tileTag = new CompoundTag();
+            tileTag.putInt("X", tilePos.getX());
+            tileTag.putInt("Y", tilePos.getY());
+            tileTag.putInt("Z", tilePos.getZ());
+            tileTag.putLong("NextSunTick", goldTileNextSunTicks.getOrDefault(tilePos, 0L));
+            goldTiles.add(tileTag);
+        }
+        tag.put("GoldTiles", goldTiles);
     }
 
     @Override
@@ -1169,6 +1326,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
             discardDisplay(serverLevel, totemDisplayId);
             discardDisplay(serverLevel, sinkingPlotterDisplayId);
             discardDisplay(serverLevel, healthBarDisplayId);
+            for (UUID displayId : goldTileDisplayIds.values()) {
+                discardDisplay(serverLevel, displayId);
+            }
             waveBossBar.removeAllPlayers();
         }
         super.setRemoved();

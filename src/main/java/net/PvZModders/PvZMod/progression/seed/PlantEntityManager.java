@@ -1,8 +1,10 @@
 package net.PvZModders.PvZMod.progression.seed;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
+import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
@@ -57,6 +59,7 @@ public final class PlantEntityManager {
     private static final String TORCHWOOD_BUFFED_TAG = "PvZTorchwoodBuffed";
     private static final String PEA_POD_STACK_TAG = "PvZPeaPodStack";
     private static final String PROJECTILE_KIND_TAG = "PvZProjectileKind";
+    private static final String RED_STINGER_MODE_TAG = "PvZRedStingerMode";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -78,9 +81,15 @@ public final class PlantEntityManager {
     private static final float MELON_SPLASH_DAMAGE = 5.0F;
     private static final float WINTER_MELON_DIRECT_DAMAGE = 12.0F;
     private static final float WINTER_MELON_SPLASH_DAMAGE = 7.0F;
+    private static final float RED_STINGER_STRONG_DAMAGE = 7.0F;
+    private static final float RED_STINGER_NORMAL_DAMAGE = 4.0F;
+    private static final float AKEE_DAMAGE = 6.0F;
+    private static final float ENDURIAN_THORN_DAMAGE = 3.0F;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
     private static final float TALL_NUT_HEALTH = 150.0F;
+    private static final float ENDURIAN_HEALTH = 100.0F;
+    private static final float RED_STINGER_DEFENSIVE_HEALTH = 55.0F;
 
     private PlantEntityManager() {
     }
@@ -98,6 +107,10 @@ public final class PlantEntityManager {
         }
 
         BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.GOLD_LEAF) {
+            return GoldTileManager.addGoldTileNear(level, target.getBlockPos());
+        }
+
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
             Optional<SnowGolem> existingPeaPod = findPlantAt(level, placePos, PlantSeedDefinition.PlantBehavior.PEA_POD)
                     .or(() -> findPlantAt(level, target.getBlockPos(), PlantSeedDefinition.PlantBehavior.PEA_POD));
@@ -120,6 +133,9 @@ public final class PlantEntityManager {
 
         plant.moveTo(placePos.getX() + 0.5D, placePos.getY(), placePos.getZ() + 0.5D, player.getYRot(), 0.0F);
         initializePlantEntity(plant, definition, level.getGameTime());
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.RED_STINGER) {
+            updateRedStingerMode(level, plant);
+        }
         if (graveBuster) {
             CompoundTag tag = plant.getPersistentData();
             tag.putInt(GRAVE_X_TAG, graveTargetPos.getX());
@@ -165,6 +181,9 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
             tag.putInt(PEA_POD_STACK_TAG, 1);
         }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.RED_STINGER) {
+            tag.putString(RED_STINGER_MODE_TAG, "NORMAL");
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -179,6 +198,9 @@ public final class PlantEntityManager {
         if ((level.getGameTime() + mob.getId()) % 20 == 0) {
             mob.swing(InteractionHand.MAIN_HAND);
             target.hurt(level.damageSources().mobAttack(mob), damage);
+            if (behaviorFor(target) == PlantSeedDefinition.PlantBehavior.ENDURIAN) {
+                mob.hurt(level.damageSources().thorns(target), ENDURIAN_THORN_DAMAGE);
+            }
         }
         return true;
     }
@@ -225,6 +247,11 @@ public final class PlantEntityManager {
             case LIGHTNING_REED -> tickLightningReed(level, plant);
             case MELON_PULT -> tickMelonPult(level, plant, false);
             case WINTER_MELON -> tickMelonPult(level, plant, true);
+            case RED_STINGER -> tickRedStinger(level, plant);
+            case AKEE -> tickAkee(level, plant);
+            case ENDURIAN -> tickEndurian(level, plant);
+            case STALLIA -> tickStallia(level, plant);
+            case GOLD_LEAF -> tickGoldLeaf(level, plant);
             case WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
             }
         }
@@ -471,6 +498,93 @@ public final class PlantEntityManager {
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MELON_PULT_INTERVAL_TICKS);
     }
 
+    private static void tickRedStinger(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        updateRedStingerMode(level, plant);
+        String mode = tag.getString(RED_STINGER_MODE_TAG);
+        if ("DEFENSIVE".equals(mode)) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        float damage = "STRONG".equals(mode) ? RED_STINGER_STRONG_DAMAGE : RED_STINGER_NORMAL_DAMAGE;
+        shootSnowballVisual(level, plant, target.get(), hasTorchwoodBetween(level, plant.position(), target.get().position()), "red_stinger");
+        target.get().hurt(level.damageSources().mobAttack(plant), damage);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickAkee(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> firstTarget = selectZombie(level, plant, SHOOTER_RANGE);
+        if (firstTarget.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Set<UUID> hitTargets = new HashSet<>();
+        Zombie current = firstTarget.get();
+        for (int bounce = 0; bounce < 4 && current != null; bounce++) {
+            current.hurt(level.damageSources().mobAttack(plant), AKEE_DAMAGE);
+            shootSnowballVisual(level, plant, current, false, "akee_seed");
+            hitTargets.add(current.getUUID());
+            Zombie previous = current;
+            current = level.getEntitiesOfClass(Zombie.class, previous.getBoundingBox().inflate(5.0D), Zombie::isAlive)
+                    .stream()
+                    .filter(zombie -> !hitTargets.contains(zombie.getUUID()))
+                    .min((first, second) -> Double.compare(previous.distanceToSqr(first), previous.distanceToSqr(second)))
+                    .orElse(null);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickEndurian(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(0.8D, 0.5D, 0.8D), Zombie::isAlive)) {
+            zombie.hurt(level.damageSources().thorns(plant), ENDURIAN_THORN_DAMAGE);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+    }
+
+    private static void tickStallia(ServerLevel level, SnowGolem plant) {
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(3.0D, 1.0D, 3.0D), Zombie::isAlive);
+        if (zombies.isEmpty()) {
+            return;
+        }
+
+        for (Zombie zombie : zombies) {
+            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 8, 5));
+        }
+        level.sendParticles(ParticleTypes.SPORE_BLOSSOM_AIR, plant.getX(), plant.getY() + 0.6D, plant.getZ(), 28, 1.5D, 0.5D, 1.5D, 0.02D);
+        plant.discard();
+    }
+
+    private static void tickGoldLeaf(ServerLevel level, SnowGolem plant) {
+        if (GoldTileManager.addGoldTileNear(level, plant.blockPosition().below())) {
+            plant.discard();
+        }
+    }
+
     private static Optional<LivingEntity> findPlantInAttackRange(ServerLevel level, Mob mob) {
         AABB attackArea = mob.getBoundingBox().inflate(0.65D, 0.5D, 0.65D);
         return level.getEntitiesOfClass(LivingEntity.class, attackArea, entity -> entity.isAlive() && isPlant(entity))
@@ -642,6 +756,38 @@ public final class PlantEntityManager {
         return true;
     }
 
+    private static void updateRedStingerMode(ServerLevel level, SnowGolem plant) {
+        double distanceToTotem = distanceToNearestTotem(level, plant.blockPosition());
+        String mode = distanceToTotem <= 3.5D ? "STRONG" : distanceToTotem <= 5.5D ? "NORMAL" : "DEFENSIVE";
+        CompoundTag tag = plant.getPersistentData();
+        if (mode.equals(tag.getString(RED_STINGER_MODE_TAG))) {
+            return;
+        }
+
+        tag.putString(RED_STINGER_MODE_TAG, mode);
+        if ("DEFENSIVE".equals(mode)) {
+            setPlantHealth(plant, RED_STINGER_DEFENSIVE_HEALTH);
+        } else {
+            setPlantHealth(plant, DEFAULT_PLANT_HEALTH);
+        }
+        plant.setCustomName(Component.literal("Red Stinger (" + mode + ")").withStyle(style -> style.withColor(TextColor.fromRgb(
+                PlantSeedDefinition.getByPlantId("red_stinger").map(PlantSeedDefinition::gardenColor).orElse(0x237C2F)
+        ))));
+    }
+
+    private static double distanceToNearestTotem(ServerLevel level, BlockPos pos) {
+        double nearest = Double.MAX_VALUE;
+        for (int x = -7; x <= 7; x++) {
+            for (int z = -7; z <= 7; z++) {
+                BlockPos candidate = pos.offset(x, 0, z);
+                if (level.getBlockState(candidate).is(ModBlocks.GARDEN_TOTEM.get())) {
+                    nearest = Math.min(nearest, Math.sqrt(candidate.distSqr(pos)));
+                }
+            }
+        }
+        return nearest == Double.MAX_VALUE ? 4.5D : nearest;
+    }
+
     private static Vec3 facingVector(SnowGolem plant) {
         float yaw = plant.getYRot() * Mth.DEG_TO_RAD;
         return new Vec3(-Mth.sin(yaw), 0.0D, Mth.cos(yaw)).normalize();
@@ -651,6 +797,7 @@ public final class PlantEntityManager {
         return switch (behavior) {
             case WALL_NUT -> WALL_NUT_HEALTH;
             case TALL_NUT -> TALL_NUT_HEALTH;
+            case ENDURIAN -> ENDURIAN_HEALTH;
             default -> DEFAULT_PLANT_HEALTH;
         };
     }

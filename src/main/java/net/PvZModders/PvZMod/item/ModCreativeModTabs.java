@@ -36,11 +36,17 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.MELON_PULT_SEED_PACKET.get());
                         output.accept(ModItems.TALL_NUT_SEED_PACKET.get());
                         output.accept(ModItems.WINTER_MELON_SEED_PACKET.get());
+                        output.accept(ModItems.RED_STINGER_SEED_PACKET.get());
+                        output.accept(ModItems.AKEE_SEED_PACKET.get());
+                        output.accept(ModItems.ENDURIAN_SEED_PACKET.get());
+                        output.accept(ModItems.STALLIA_SEED_PACKET.get());
+                        output.accept(ModItems.GOLD_LEAF_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
                         output.accept(ModItems.TARGETING_PRIORITY_CHANGER.get());
                         output.accept(ModItems.SPEEDY_MINECART.get());
+                        output.accept(ModItems.FLYING_PLANE.get());
                     })
                     .build());
 
