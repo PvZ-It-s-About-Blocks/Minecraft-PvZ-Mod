@@ -50,6 +50,14 @@ public final class ModMessages {
                 SeedHotbarActionC2SPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+        CHANNEL.registerMessage(
+                nextPacketId(),
+                JetpackThrustC2SPacket.class,
+                JetpackThrustC2SPacket::encode,
+                JetpackThrustC2SPacket::decode,
+                JetpackThrustC2SPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 
     public static void sendGardenTeleportOverlay(ServerPlayer player) {
@@ -62,6 +70,10 @@ public final class ModMessages {
 
     public static void sendSeedActionToServer(int action, int value) {
         CHANNEL.sendToServer(new SeedHotbarActionC2SPacket(action, value));
+    }
+
+    public static void sendJetpackThrustToServer(boolean thrusting) {
+        CHANNEL.sendToServer(new JetpackThrustC2SPacket(thrusting));
     }
 
     private static int nextPacketId() {

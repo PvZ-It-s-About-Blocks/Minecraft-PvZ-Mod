@@ -7,6 +7,7 @@ import net.PvZModders.PvZMod.item.custom.DinoWhistleItem;
 import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
+import net.PvZModders.PvZMod.item.custom.JetpackItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
@@ -112,6 +113,20 @@ public class ModItems {
             () -> new SeedPacketItem("spore_shroom", new Item.Properties()));
     public static final RegistryObject<Item> INTENSIVE_CARROT_SEED_PACKET = ITEMS.register("intensive_carrot_seed_packet",
             () -> new SeedPacketItem("intensive_carrot", new Item.Properties()));
+    public static final RegistryObject<Item> LASER_BEAN_SEED_PACKET = ITEMS.register("laser_bean_seed_packet",
+            () -> new SeedPacketItem("laser_bean", new Item.Properties()));
+    public static final RegistryObject<Item> BLOVER_SEED_PACKET = ITEMS.register("blover_seed_packet",
+            () -> new SeedPacketItem("blover", new Item.Properties()));
+    public static final RegistryObject<Item> CITRON_SEED_PACKET = ITEMS.register("citron_seed_packet",
+            () -> new SeedPacketItem("citron", new Item.Properties()));
+    public static final RegistryObject<Item> EM_PEACH_SEED_PACKET = ITEMS.register("em_peach_seed_packet",
+            () -> new SeedPacketItem("em_peach", new Item.Properties()));
+    public static final RegistryObject<Item> INFI_NUT_SEED_PACKET = ITEMS.register("infi_nut_seed_packet",
+            () -> new SeedPacketItem("infi_nut", new Item.Properties()));
+    public static final RegistryObject<Item> MAGNIFYING_GRASS_SEED_PACKET = ITEMS.register("magnifying_grass_seed_packet",
+            () -> new SeedPacketItem("magnifying_grass", new Item.Properties()));
+    public static final RegistryObject<Item> TILE_TURNIP_SEED_PACKET = ITEMS.register("tile_turnip_seed_packet",
+            () -> new SeedPacketItem("tile_turnip", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
@@ -134,6 +149,16 @@ public class ModItems {
             () -> new TotemShieldItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> FREEZE_RAY = ITEMS.register("freeze_ray",
             () -> new FreezeRayItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> JETPACK = ITEMS.register("jetpack",
+            () -> new JetpackItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CITRON_HELMET = ITEMS.register("citron_helmet",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CITRON_CHESTPLATE = ITEMS.register("citron_chestplate",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CITRON_LEGGINGS = ITEMS.register("citron_leggings",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CITRON_BOOTS = ITEMS.register("citron_boots",
+            () -> new Item(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

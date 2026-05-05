@@ -120,6 +120,13 @@ public class PvZ2Mod {
             event.accept(ModItems.GARLIC_SEED_PACKET);
             event.accept(ModItems.SPORE_SHROOM_SEED_PACKET);
             event.accept(ModItems.INTENSIVE_CARROT_SEED_PACKET);
+            event.accept(ModItems.LASER_BEAN_SEED_PACKET);
+            event.accept(ModItems.BLOVER_SEED_PACKET);
+            event.accept(ModItems.CITRON_SEED_PACKET);
+            event.accept(ModItems.EM_PEACH_SEED_PACKET);
+            event.accept(ModItems.INFI_NUT_SEED_PACKET);
+            event.accept(ModItems.MAGNIFYING_GRASS_SEED_PACKET);
+            event.accept(ModItems.TILE_TURNIP_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
@@ -129,6 +136,11 @@ public class PvZ2Mod {
             event.accept(ModItems.DINO_WHISTLE);
             event.accept(ModItems.TOTEM_SHIELD);
             event.accept(ModItems.FREEZE_RAY);
+            event.accept(ModItems.JETPACK);
+            event.accept(ModItems.CITRON_HELMET);
+            event.accept(ModItems.CITRON_CHESTPLATE);
+            event.accept(ModItems.CITRON_LEGGINGS);
+            event.accept(ModItems.CITRON_BOOTS);
         }
     }
 

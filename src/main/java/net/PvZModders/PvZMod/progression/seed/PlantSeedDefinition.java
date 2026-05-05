@@ -57,13 +57,14 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.LOST_CITY, ModItems.ENDURIAN_SEED_PACKET.getId(), "endurian", "Endurian", 100, PlantBehavior.ENDURIAN);
         register(GardenId.LOST_CITY, ModItems.STALLIA_SEED_PACKET.getId(), "stallia", "Stallia", 0, PlantBehavior.STALLIA);
         register(GardenId.LOST_CITY, ModItems.GOLD_LEAF_SEED_PACKET.getId(), "gold_leaf", "Gold Leaf", 80, PlantBehavior.GOLD_LEAF);
-        register(GardenId.FAR_FUTURE, "laser_bean", "Laser Bean", 200, PlantBehavior.LASER_BEAN);
-        register(GardenId.FAR_FUTURE, "blover", "Blover", 50);
-        register(GardenId.FAR_FUTURE, "citron", "Citron", 350);
-        register(GardenId.FAR_FUTURE, "empeach", "E.M.Peach", 25);
-        register(GardenId.FAR_FUTURE, "infi_nut", "Infi-nut", 75);
-        register(GardenId.FAR_FUTURE, "magnifying_grass", "Magnifying Grass", 50, PlantBehavior.MAGNIFYING_GRASS);
-        register(GardenId.FAR_FUTURE, "tile_turnip", "Tile Turnip", 0);
+        register(GardenId.FAR_FUTURE, ModItems.LASER_BEAN_SEED_PACKET.getId(), "laser_bean", "Laser Bean", 200, PlantBehavior.LASER_BEAN);
+        register(GardenId.FAR_FUTURE, ModItems.BLOVER_SEED_PACKET.getId(), "blover", "Blover", 50, PlantBehavior.BLOVER);
+        register(GardenId.FAR_FUTURE, ModItems.CITRON_SEED_PACKET.getId(), "citron", "Citron", 350, PlantBehavior.CITRON);
+        PlantSeedDefinition emPeach = register(GardenId.FAR_FUTURE, ModItems.EM_PEACH_SEED_PACKET.getId(), "em_peach", "E.M.Peach", 25, PlantBehavior.EM_PEACH);
+        DEFINITIONS_BY_PLANT_ID.put("empeach", emPeach);
+        register(GardenId.FAR_FUTURE, ModItems.INFI_NUT_SEED_PACKET.getId(), "infi_nut", "Infi-nut", 75, PlantBehavior.INFI_NUT);
+        register(GardenId.FAR_FUTURE, ModItems.MAGNIFYING_GRASS_SEED_PACKET.getId(), "magnifying_grass", "Magnifying Grass", 50, PlantBehavior.MAGNIFYING_GRASS);
+        register(GardenId.FAR_FUTURE, ModItems.TILE_TURNIP_SEED_PACKET.getId(), "tile_turnip", "Tile Turnip", 0, PlantBehavior.TILE_TURNIP);
         register(GardenId.DARK_AGES, ModItems.SUN_SHROOM_SEED_PACKET.getId(), "sun_shroom", "Sun-shroom", 25, PlantBehavior.SUN_SHROOM);
         register(GardenId.DARK_AGES, ModItems.PUFF_SHROOM_SEED_PACKET.getId(), "puff_shroom", "Puff-shroom", 0, PlantBehavior.PUFF_SHROOM);
         register(GardenId.DARK_AGES, ModItems.FUME_SHROOM_SEED_PACKET.getId(), "fume_shroom", "Fume-shroom", 125, PlantBehavior.FUME_SHROOM);
@@ -128,11 +129,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(gardenId, new ResourceLocation("pvz2mod", plantId + "_seed_packet"), plantId, displayName, sunCost, behavior);
     }
 
-    private static void register(GardenId gardenId, ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
+    private static PlantSeedDefinition register(GardenId gardenId, ResourceLocation seedPacketId, String plantId, String displayName, int sunCost, PlantBehavior behavior) {
         PlantSeedDefinition definition = new PlantSeedDefinition(seedPacketId, plantId, displayName, sunCost, behavior, gardenId);
         DEFINITIONS.put(seedPacketId, definition);
         DEFINITIONS_BY_PLANT_ID.put(plantId, definition);
         ORDERED_DEFINITIONS.add(definition);
+        return definition;
     }
 
     private static final class BuiltInIds {
@@ -183,7 +185,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         SPORE_SHROOM,
         INTENSIVE_CARROT,
         LASER_BEAN,
+        BLOVER,
+        CITRON,
+        EM_PEACH,
+        INFI_NUT,
         MAGNIFYING_GRASS,
+        TILE_TURNIP,
         HOT_POTATO,
         PEPPER_PULT,
         CHARD_GUARD,

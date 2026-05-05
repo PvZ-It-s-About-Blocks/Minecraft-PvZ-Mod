@@ -12,6 +12,7 @@ import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
+import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
@@ -461,6 +462,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveDirections.addAll(waveDirections.stream().distinct().toList());
         ensureWildWestMinecarts(level);
         generateGoldTilesForWave(level, definition.wave());
+        generatePowerTilesForWave(level, definition.wave());
         return List.copyOf(activeWaveDirections);
     }
 
@@ -965,6 +967,25 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("jetpack")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.JETPACK.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("citron_armor_set")) {
+                    List<ItemStack> armorStacks = List.of(
+                            new ItemStack(ModItems.CITRON_HELMET.get()),
+                            new ItemStack(ModItems.CITRON_CHESTPLATE.get()),
+                            new ItemStack(ModItems.CITRON_LEGGINGS.get()),
+                            new ItemStack(ModItems.CITRON_BOOTS.get())
+                    );
+                    for (ItemStack rewardStack : armorStacks) {
+                        if (!player.getInventory().add(rewardStack)) {
+                            player.drop(rewardStack, false);
+                        }
+                    }
                 }
             }
         }
@@ -1089,6 +1110,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.LOST_CITY) {
             clearGoldTiles(serverLevel);
+        }
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.FAR_FUTURE) {
+            FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
         }
     }
 
@@ -1281,6 +1305,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
             int[] offset = pattern[(start + index) % pattern.length];
             addGoldTile(level, worldPosition.offset(offset[0], -1, offset[1]));
         }
+    }
+
+    private void generatePowerTilesForWave(ServerLevel level, int wave) {
+        if (gardenId != GardenId.FAR_FUTURE) {
+            return;
+        }
+
+        FarFuturePowerTileManager.generatePowerTilesForWave(level, worldPosition, wave);
     }
 
     private int goldTileCountForWave(int wave) {
@@ -1614,6 +1646,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             for (UUID displayId : goldTileDisplayIds.values()) {
                 discardDisplay(serverLevel, displayId);
             }
+            FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
             waveBossBar.removeAllPlayers();
         }
         super.setRemoved();

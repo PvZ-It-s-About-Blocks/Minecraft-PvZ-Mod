@@ -57,6 +57,13 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.GARLIC_SEED_PACKET.get());
                         output.accept(ModItems.SPORE_SHROOM_SEED_PACKET.get());
                         output.accept(ModItems.INTENSIVE_CARROT_SEED_PACKET.get());
+                        output.accept(ModItems.LASER_BEAN_SEED_PACKET.get());
+                        output.accept(ModItems.BLOVER_SEED_PACKET.get());
+                        output.accept(ModItems.CITRON_SEED_PACKET.get());
+                        output.accept(ModItems.EM_PEACH_SEED_PACKET.get());
+                        output.accept(ModItems.INFI_NUT_SEED_PACKET.get());
+                        output.accept(ModItems.MAGNIFYING_GRASS_SEED_PACKET.get());
+                        output.accept(ModItems.TILE_TURNIP_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
@@ -65,6 +72,12 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.FLYING_PLANE.get());
                         output.accept(ModItems.DINO_WHISTLE.get());
                         output.accept(ModItems.TOTEM_SHIELD.get());
+                        output.accept(ModItems.FREEZE_RAY.get());
+                        output.accept(ModItems.JETPACK.get());
+                        output.accept(ModItems.CITRON_HELMET.get());
+                        output.accept(ModItems.CITRON_CHESTPLATE.get());
+                        output.accept(ModItems.CITRON_LEGGINGS.get());
+                        output.accept(ModItems.CITRON_BOOTS.get());
                     })
                     .build());
 

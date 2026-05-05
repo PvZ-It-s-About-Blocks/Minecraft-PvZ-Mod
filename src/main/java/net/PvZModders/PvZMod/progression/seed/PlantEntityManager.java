@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
+import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
@@ -94,6 +95,9 @@ public final class PlantEntityManager {
     private static final String FREEZE_NEXT_STAGE_TICK_TAG = "PvZFreezeNextStageTick";
     private static final String FREEZE_OVERLAY_UUID_TAG = "PvZFreezeOverlayUuid";
     private static final String CHARD_GUARD_CHARGES_TAG = "PvZChardGuardCharges";
+    private static final String INFI_NUT_LAST_HURT_TICK_TAG = "PvZInfiNutLastHurtTick";
+    private static final String MECHANICAL_ZOMBIE_TAG = "PvZMechanicalZombie";
+    private static final String FLYING_ZOMBIE_TAG = "PvZFlyingZombie";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -122,6 +126,10 @@ public final class PlantEntityManager {
     private static final int SUN_BEAN_INFECTED_TICKS = 20 * 15;
     private static final int SUN_BEAN_SUN_COOLDOWN_TICKS = 10;
     private static final int MAGNET_SHROOM_COOLDOWN_TICKS = 20 * 10;
+    private static final int CITRON_INTERVAL_TICKS = 20 * 5;
+    private static final int INFI_NUT_REGEN_INTERVAL_TICKS = 20 * 4;
+    private static final int INFI_NUT_RECENT_DAMAGE_TICKS = 20 * 3;
+    private static final int MAGNIFYING_GRASS_SUN_COST = 50;
     private static final int RECENT_PLANT_DEATH_WINDOW_TICKS = 20 * 60;
     private static final int MAX_SPORE_SHROOM_CLONES_NEARBY = 12;
     private static final int FREEZE_STAGE_INTERVAL_TICKS = 20 * 5;
@@ -153,6 +161,7 @@ public final class PlantEntityManager {
     private static final float SPORE_SHROOM_DAMAGE = 5.0F;
     private static final float LASER_BEAN_DAMAGE = 6.0F;
     private static final float MAGNIFYING_GRASS_DAMAGE = 12.0F;
+    private static final float CITRON_DAMAGE = 32.0F;
     private static final float PEPPER_PULT_DIRECT_DAMAGE = 9.0F;
     private static final float PEPPER_PULT_SPLASH_DAMAGE = 4.5F;
     private static final float ROTOBAGA_DAMAGE = 4.0F;
@@ -163,6 +172,7 @@ public final class PlantEntityManager {
     private static final float TALL_NUT_HEALTH = 150.0F;
     private static final float ENDURIAN_HEALTH = 100.0F;
     private static final float RED_STINGER_DEFENSIVE_HEALTH = 55.0F;
+    private static final float INFI_NUT_HEALTH = 55.0F;
     private static final List<RecentPlantDeath> RECENT_PLANT_DEATHS = new ArrayList<>();
 
     private PlantEntityManager() {
@@ -187,6 +197,14 @@ public final class PlantEntityManager {
         BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.GOLD_LEAF) {
             return GoldTileManager.addGoldTileNear(level, target.getBlockPos());
+        }
+
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.TILE_TURNIP) {
+            boolean added = FarFuturePowerTileManager.addPowerTile(level, target.getBlockPos());
+            if (added) {
+                level.sendParticles(ParticleTypes.END_ROD, target.getBlockPos().getX() + 0.5D, target.getBlockPos().getY() + 1.1D, target.getBlockPos().getZ() + 0.5D, 18, 0.35D, 0.2D, 0.35D, 0.02D);
+            }
+            return added;
         }
 
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.INTENSIVE_CARROT) {
@@ -274,6 +292,9 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.CHARD_GUARD) {
             tag.putInt(CHARD_GUARD_CHARGES_TAG, 3);
         }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.INFI_NUT) {
+            tag.putLong(INFI_NUT_LAST_HURT_TICK_TAG, gameTime);
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -336,6 +357,11 @@ public final class PlantEntityManager {
         if (isPlant(event.getEntity()) && event.getEntity().level() instanceof ServerLevel level
                 && event.getEntity().getHealth() - event.getAmount() <= 0.0F) {
             recordPlantDeath(level, event.getEntity());
+        }
+
+        if (isPlant(event.getEntity()) && event.getEntity().level() instanceof ServerLevel level
+                && behaviorFor(event.getEntity()) == PlantSeedDefinition.PlantBehavior.INFI_NUT) {
+            event.getEntity().getPersistentData().putLong(INFI_NUT_LAST_HURT_TICK_TAG, level.getGameTime());
         }
 
         if (!(event.getEntity() instanceof Zombie zombie) || !(zombie.level() instanceof ServerLevel level)) {
@@ -449,7 +475,12 @@ public final class PlantEntityManager {
             case SPORE_SHROOM -> tickSporeShroom(level, plant);
             case INTENSIVE_CARROT -> tickIntensiveCarrot(level, plant);
             case LASER_BEAN -> tickLaserBean(level, plant);
+            case BLOVER -> tickBlover(level, plant);
+            case CITRON -> tickCitron(level, plant);
+            case EM_PEACH -> tickEmPeach(level, plant);
+            case INFI_NUT -> tickInfiNut(level, plant);
             case MAGNIFYING_GRASS -> tickMagnifyingGrass(level, plant);
+            case TILE_TURNIP -> tickTileTurnip(level, plant);
             case HOT_POTATO -> plant.discard();
             case PEPPER_PULT -> tickPepperPult(level, plant);
             case CHARD_GUARD -> tickChardGuard(level, plant);
@@ -1104,9 +1135,83 @@ public final class PlantEntityManager {
         Vec3 end = start.add(facing.scale(SHOOTER_RANGE));
         renderGuardianStyleLaser(level, start, end);
         for (Zombie zombie : targets) {
-            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), LASER_BEAN_DAMAGE);
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, LASER_BEAN_DAMAGE));
         }
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickBlover(ServerLevel level, SnowGolem plant) {
+        AABB gustArea = plant.getBoundingBox().inflate(7.0D, 5.0D, 7.0D);
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, gustArea, entity -> entity.isAlive() && isHostileTarget(entity) && isFlyingZombie(entity))) {
+            Vec3 away = target.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+            if (away.lengthSqr() < 1.0E-4D) {
+                away = facingVector(plant);
+            }
+            target.setDeltaMovement(target.getDeltaMovement().add(away.normalize().scale(1.2D)).add(0.0D, 0.45D, 0.0D));
+            hurtWithoutKnockback(target, level.damageSources().mobAttack(plant), 12.0F);
+        }
+        level.sendParticles(ParticleTypes.CLOUD, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 42, 2.0D, 0.6D, 2.0D, 0.08D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.PHANTOM_FLAP, SoundSource.HOSTILE, 0.7F, 1.5F);
+        plant.discard();
+    }
+
+    private static void tickCitron(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            if (gameTime % 10L == 0L) {
+                level.sendParticles(ParticleTypes.ELECTRIC_SPARK, plant.getX(), plant.getY() + 1.15D, plant.getZ(), 3, 0.25D, 0.15D, 0.25D, 0.01D);
+            }
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie zombie = target.get();
+        shootSnowballVisual(level, plant, zombie, false, "citron_plasma");
+        level.sendParticles(ParticleTypes.END_ROD, zombie.getX(), zombie.getY() + 0.9D, zombie.getZ(), 24, 0.35D, 0.35D, 0.35D, 0.04D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 0.65F, 1.2F);
+        hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, CITRON_DAMAGE));
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + CITRON_INTERVAL_TICKS);
+    }
+
+    private static void tickEmPeach(ServerLevel level, SnowGolem plant) {
+        AABB empArea = plant.getBoundingBox().inflate(4.0D, 2.0D, 4.0D);
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, empArea, entity -> entity.isAlive() && isHostileTarget(entity))) {
+            int duration = isMechanicalZombie(target) ? 20 * 5 : 30;
+            target.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, duration, 8));
+            target.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, duration, 1));
+            if (target instanceof Mob mob) {
+                mob.getNavigation().stop();
+            }
+        }
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 60, 2.5D, 0.8D, 2.5D, 0.08D);
+        level.sendParticles(ParticleTypes.SONIC_BOOM, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.55F, 1.8F);
+        plant.discard();
+    }
+
+    private static void tickInfiNut(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + INFI_NUT_REGEN_INTERVAL_TICKS);
+        if (gameTime - tag.getLong(INFI_NUT_LAST_HURT_TICK_TAG) < INFI_NUT_RECENT_DAMAGE_TICKS) {
+            return;
+        }
+
+        float maxHealth = plant.getMaxHealth();
+        if (plant.getHealth() < maxHealth) {
+            plant.heal(6.0F);
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.25D, 0.25D, 0.02D);
+        }
     }
 
     private static void tickMagnifyingGrass(ServerLevel level, SnowGolem plant) {
@@ -1124,10 +1229,22 @@ public final class PlantEntityManager {
 
         Vec3 start = plant.position().add(0.0D, 1.15D, 0.0D);
         Vec3 end = target.get().position().add(0.0D, target.get().getBbHeight() * 0.55D, 0.0D);
+        Optional<Player> sunSource = nearestPlayerWithSun(level, plant, MAGNIFYING_GRASS_SUN_COST);
+        if (sunSource.isEmpty() || !SunManager.spendSun(sunSource.get(), MAGNIFYING_GRASS_SUN_COST)) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+            return;
+        }
         renderGuardianStyleLaser(level, start, end);
         level.sendParticles(ParticleTypes.END_ROD, end.x, end.y, end.z, 10, 0.15D, 0.15D, 0.15D, 0.03D);
-        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), MAGNIFYING_GRASS_DAMAGE);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, MAGNIFYING_GRASS_DAMAGE));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickTileTurnip(ServerLevel level, SnowGolem plant) {
+        if (FarFuturePowerTileManager.addPowerTile(level, plant.blockPosition().below())) {
+            level.sendParticles(ParticleTypes.END_ROD, plant.getX(), plant.getY() + 0.5D, plant.getZ(), 18, 0.35D, 0.2D, 0.35D, 0.02D);
+            plant.discard();
+        }
     }
 
     private static void tickPepperPult(ServerLevel level, SnowGolem plant) {
@@ -1436,6 +1553,21 @@ public final class PlantEntityManager {
 
     private static boolean isHostileTarget(LivingEntity entity) {
         return entity instanceof Monster && !isPlant(entity);
+    }
+
+    private static boolean isFlyingZombie(LivingEntity entity) {
+        return entity.getPersistentData().getBoolean(FLYING_ZOMBIE_TAG) || !entity.onGround();
+    }
+
+    private static boolean isMechanicalZombie(LivingEntity entity) {
+        return entity.getPersistentData().getBoolean(MECHANICAL_ZOMBIE_TAG);
+    }
+
+    private static Optional<Player> nearestPlayerWithSun(ServerLevel level, SnowGolem plant, int sunCost) {
+        AABB area = plant.getBoundingBox().inflate(64.0D);
+        return level.getEntitiesOfClass(Player.class, area, player -> player.isAlive() && SunManager.getSun(player) >= sunCost)
+                .stream()
+                .min((first, second) -> Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second)));
     }
 
     private static void lookAtNearestHostile(ServerLevel level, SnowGolem plant) {
@@ -1754,6 +1886,10 @@ public final class PlantEntityManager {
         return hurt;
     }
 
+    private static float scaledPlantDamage(ServerLevel level, SnowGolem plant, float amount) {
+        return amount * FarFuturePowerTileManager.getDamageMultiplier(level, plant);
+    }
+
     private static CompoundTag createIceOverlayTag() {
         CompoundTag tag = new CompoundTag();
         tag.put("block_state", NbtUtils.writeBlockState(Blocks.ICE.defaultBlockState()));
@@ -1797,7 +1933,7 @@ public final class PlantEntityManager {
         level.addFreshEntity(snowball);
 
         DamageSource source = level.damageSources().mobProjectile(snowball, plant);
-        hurtWithoutKnockback(target, source, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE);
+        hurtWithoutKnockback(target, source, scaledPlantDamage(level, plant, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE));
     }
 
     private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed) {
@@ -1947,6 +2083,7 @@ public final class PlantEntityManager {
             case PRIMAL_WALL_NUT -> PRIMAL_WALL_NUT_HEALTH;
             case TALL_NUT -> TALL_NUT_HEALTH;
             case ENDURIAN -> ENDURIAN_HEALTH;
+            case INFI_NUT -> INFI_NUT_HEALTH;
             default -> DEFAULT_PLANT_HEALTH;
         };
     }

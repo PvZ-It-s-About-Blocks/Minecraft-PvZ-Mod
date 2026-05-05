@@ -66,6 +66,10 @@ public record GardenPlantDefinition(
         return NeonMixtapePlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> farFuturePlants() {
+        return FarFuturePlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
@@ -76,6 +80,7 @@ public record GardenPlantDefinition(
             case DARK_AGES -> darkAgesPlants();
             case JURASSIC_MARSH -> jurassicMarshPlants();
             case NEON_MIXTAPE -> neonMixtapePlants();
+            case FAR_FUTURE -> farFuturePlants();
             default -> List.of();
         };
     }
@@ -83,7 +88,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), neonMixtapePlants().size()), frostbitePlants().size())
+                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(neonMixtapePlants().size(), farFuturePlants().size())), frostbitePlants().size())
         );
     }
 
@@ -149,6 +154,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.NEON_MIXTAPE, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition farFuture(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.FAR_FUTURE, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -233,6 +246,18 @@ public record GardenPlantDefinition(
                 neon("garlic", "Garlic", "Diverts zombies sideways and disrupts their path.", 50, 17),
                 neon("spore_shroom", "Spore-shroom", "Shoots spores that can sprout new Spore-shrooms.", 150, 21),
                 neon("intensive_carrot", "Intensive Carrot", "Revives a recently destroyed plant.", 100, 26)
+        );
+    }
+
+    private static final class FarFuturePlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                farFuture("laser_bean", "Laser Bean", "Pierces a whole line with a laser beam.", 200, 1),
+                farFuture("blover", "Blover", "Blows away airborne hostile mobs, then disappears.", 50, 3),
+                farFuture("citron", "Citron", "Charges a powerful plasma shot.", 350, 6),
+                farFuture("em_peach", "E.M.Peach", "Releases an EMP burst that stuns hostile mobs.", 25, 9),
+                farFuture("infi_nut", "Infi-nut", "Regenerating defensive blocker.", 75, 13),
+                farFuture("magnifying_grass", "Magnifying Grass", "Spends Sun to fire a high-damage beam.", 50, 17),
+                farFuture("tile_turnip", "Tile Turnip", "Creates a Power Tile on a valid garden tile.", 0, 24)
         );
     }
 }

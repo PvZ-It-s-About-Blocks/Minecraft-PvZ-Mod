@@ -17,6 +17,7 @@ public final class GardenWaves {
             case DARK_AGES -> DarkAgesWaves.all();
             case JURASSIC_MARSH -> JurassicMarshWaves.all();
             case NEON_MIXTAPE -> NeonMixtapeWaves.all();
+            case FAR_FUTURE -> FarFutureWaves.all();
             default -> OriginalGardenWaves.all();
         };
     }
@@ -30,6 +31,7 @@ public final class GardenWaves {
             case DARK_AGES -> DarkAgesWaves.get(wave);
             case JURASSIC_MARSH -> JurassicMarshWaves.get(wave);
             case NEON_MIXTAPE -> NeonMixtapeWaves.get(wave);
+            case FAR_FUTURE -> FarFutureWaves.get(wave);
             default -> OriginalGardenWaves.get(wave);
         };
     }

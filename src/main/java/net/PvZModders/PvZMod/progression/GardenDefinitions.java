@@ -67,7 +67,7 @@ public final class GardenDefinitions {
                 GardenId.FAR_FUTURE,
                 "Far Future Garden",
                 Biomes.MUSHROOM_FIELDS,
-                List.of("laser_bean", "blover", "citron", "empeach", "infi_nut", "magnifying_grass", "tile_turnip"),
+                List.of("laser_bean", "blover", "citron", "em_peach", "infi_nut", "magnifying_grass", "tile_turnip"),
                 List.of("jetpack"),
                 7
         ));
