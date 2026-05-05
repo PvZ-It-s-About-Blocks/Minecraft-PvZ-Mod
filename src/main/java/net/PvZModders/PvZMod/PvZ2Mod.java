@@ -17,8 +17,10 @@ import net.PvZModders.PvZMod.menu.ModMenuTypes;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.SnowGolemRenderer;
 import net.minecraft.client.renderer.entity.ZombieRenderer;
+import net.minecraft.client.renderer.entity.MinecartRenderer;
 import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
@@ -81,10 +83,18 @@ public class PvZ2Mod {
             event.accept(ModItems.BONK_CHOY_SEED_PACKET);
             event.accept(ModItems.TORCHWOOD_SEED_PACKET);
             event.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET);
+            event.accept(ModItems.SPLIT_PEA_SEED_PACKET);
+            event.accept(ModItems.CHILI_BEAN_SEED_PACKET);
+            event.accept(ModItems.PEA_POD_SEED_PACKET);
+            event.accept(ModItems.LIGHTNING_REED_SEED_PACKET);
+            event.accept(ModItems.MELON_PULT_SEED_PACKET);
+            event.accept(ModItems.TALL_NUT_SEED_PACKET);
+            event.accept(ModItems.WINTER_MELON_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
             event.accept(ModItems.TARGETING_PRIORITY_CHANGER);
+            event.accept(ModItems.SPEEDY_MINECART);
         }
     }
 
@@ -111,6 +121,7 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 for (var plantEntityType : ModEntities.plantEntityTypes()) {
                     net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
                 }

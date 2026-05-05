@@ -731,6 +731,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("speedy_minecart")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.SPEEDY_MINECART.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
                 }
             }
         }
@@ -742,11 +748,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private List<GardenPlantDefinition> gardenPlants() {
-        return switch (gardenId) {
-            case INITIAL_PLAINS -> GardenPlantDefinition.originalGardenPlants();
-            case DESERT -> GardenPlantDefinition.ancientEgyptPlants();
-            default -> List.of();
-        };
+        return GardenPlantDefinition.forGarden(gardenId);
     }
 
     private GardenWaveDefinition waveDefinition(int wave) {

@@ -426,7 +426,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         hoveredPlantTooltip = null;
         guiGraphics.drawString(font, Component.literal("Planter").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
         guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 116, y + 48, 0x2F6F2F, false);
-        List<GardenPlantDefinition> plants = GardenPlantDefinition.originalGardenPlants();
+        List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
         for (int i = 0; i < plants.size(); i++) {
             renderPlantCard(guiGraphics, plants.get(i), i, x, y, mouseX, mouseY);
         }
@@ -519,7 +519,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getHoveredPlant(double mouseX, double mouseY) {
-        for (int i = 0; i < GardenPlantDefinition.originalGardenPlants().size(); i++) {
+        List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
+        for (int i = 0; i < plants.size(); i++) {
             int cardX = getPlantCardX(leftPos, i);
             int cardY = getPlantCardY(topPos, i);
             if (mouseX >= cardX && mouseX < cardX + 238 && mouseY >= cardY && mouseY < cardY + 23) {

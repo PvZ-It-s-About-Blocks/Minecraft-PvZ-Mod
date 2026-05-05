@@ -42,6 +42,23 @@ public record GardenPlantDefinition(
         return AncientEgyptPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> wildWestPlants() {
+        return WildWestPlants.PLANTS;
+    }
+
+    public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
+        return switch (gardenId) {
+            case INITIAL_PLAINS -> originalGardenPlants();
+            case DESERT -> ancientEgyptPlants();
+            case WILD_WEST -> wildWestPlants();
+            default -> List.of();
+        };
+    }
+
+    public static int maxKnownGardenPlantCount() {
+        return Math.max(originalGardenPlants().size(), Math.max(ancientEgyptPlants().size(), wildWestPlants().size()));
+    }
+
     private static GardenPlantDefinition ancient(String plantId, String displayName, String description, int sunCost, int unlockWave) {
         Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
         ResourceLocation seedPacketId = seedDefinition
@@ -56,6 +73,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.INITIAL_PLAINS, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition wildWest(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.WILD_WEST, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -77,6 +102,18 @@ public record GardenPlantDefinition(
                 ancient("bonk_choy", "Bonk Choy", "Rapidly punches zombies in front and behind.", 150, 13),
                 ancient("torchwood", "Torchwood", "Doubles compatible pea projectile damage.", 175, 19),
                 ancient("twin_sunflower", "Twin Sunflower", "Produces 50 sun every few seconds.", 125, 24)
+        );
+    }
+
+    private static final class WildWestPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                wildWest("split_pea", "Split Pea", "Shoots forward and backward.", 125, 1),
+                wildWest("chili_bean", "Chili Bean", "Defeats one zombie and stuns nearby zombies.", 50, 4),
+                wildWest("pea_pod", "Pea Pod", "Stacks up to five shooters on one tile.", 125, 6),
+                wildWest("lightning_reed", "Lightning Reed", "Chains electric damage through nearby zombies.", 125, 9),
+                wildWest("melon_pult", "Melon-pult", "Lobs heavy splash-damage melons.", 325, 11),
+                wildWest("tall_nut", "Tall-nut", "Very sturdy blocker for tough waves.", 125, 18),
+                wildWest("winter_melon", "Winter Melon", "Lobs chilling splash-damage melons.", 500, 24)
         );
     }
 }

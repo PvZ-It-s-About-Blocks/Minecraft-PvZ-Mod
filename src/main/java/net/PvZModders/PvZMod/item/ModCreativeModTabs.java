@@ -29,10 +29,18 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.BONK_CHOY_SEED_PACKET.get());
                         output.accept(ModItems.TORCHWOOD_SEED_PACKET.get());
                         output.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET.get());
+                        output.accept(ModItems.SPLIT_PEA_SEED_PACKET.get());
+                        output.accept(ModItems.CHILI_BEAN_SEED_PACKET.get());
+                        output.accept(ModItems.PEA_POD_SEED_PACKET.get());
+                        output.accept(ModItems.LIGHTNING_REED_SEED_PACKET.get());
+                        output.accept(ModItems.MELON_PULT_SEED_PACKET.get());
+                        output.accept(ModItems.TALL_NUT_SEED_PACKET.get());
+                        output.accept(ModItems.WINTER_MELON_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
                         output.accept(ModItems.TARGETING_PRIORITY_CHANGER.get());
+                        output.accept(ModItems.SPEEDY_MINECART.get());
                     })
                     .build());
 

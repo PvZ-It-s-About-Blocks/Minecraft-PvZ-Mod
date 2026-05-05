@@ -7,6 +7,7 @@ import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -31,6 +32,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.Mth;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -52,6 +54,8 @@ public final class PlantEntityManager {
     private static final String GRAVE_Y_TAG = "PvZGraveY";
     private static final String GRAVE_Z_TAG = "PvZGraveZ";
     private static final String TORCHWOOD_BUFFED_TAG = "PvZTorchwoodBuffed";
+    private static final String PEA_POD_STACK_TAG = "PvZPeaPodStack";
+    private static final String PROJECTILE_KIND_TAG = "PvZProjectileKind";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -60,13 +64,22 @@ public final class PlantEntityManager {
     private static final int BONK_CHOY_INTERVAL_TICKS = 10;
     private static final int GRAVE_BUSTER_EAT_TICKS = 60;
     private static final int CHOMPER_COOLDOWN_TICKS = 100;
+    private static final int LIGHTNING_REED_INTERVAL_TICKS = 25;
+    private static final int MELON_PULT_INTERVAL_TICKS = 45;
     private static final float PEA_DAMAGE = 4.0F;
     private static final float POTATO_MINE_DAMAGE = 24.0F;
     private static final float CHOMPER_DAMAGE = 40.0F;
     private static final float BLOOMERANG_DAMAGE = 5.0F;
     private static final float BONK_CHOY_DAMAGE = 3.0F;
+    private static final float CHILI_BEAN_DAMAGE = 40.0F;
+    private static final float LIGHTNING_REED_DAMAGE = 5.0F;
+    private static final float MELON_DIRECT_DAMAGE = 10.0F;
+    private static final float MELON_SPLASH_DAMAGE = 5.0F;
+    private static final float WINTER_MELON_DIRECT_DAMAGE = 12.0F;
+    private static final float WINTER_MELON_SPLASH_DAMAGE = 7.0F;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
+    private static final float TALL_NUT_HEALTH = 150.0F;
 
     private PlantEntityManager() {
     }
@@ -84,6 +97,14 @@ public final class PlantEntityManager {
         }
 
         BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
+            Optional<SnowGolem> existingPeaPod = findPlantAt(level, placePos, PlantSeedDefinition.PlantBehavior.PEA_POD)
+                    .or(() -> findPlantAt(level, target.getBlockPos(), PlantSeedDefinition.PlantBehavior.PEA_POD));
+            if (existingPeaPod.isPresent()) {
+                return upgradePeaPod(player, existingPeaPod.get());
+            }
+        }
+
         if (!level.getBlockState(placePos).isAir() || level.getBlockState(placePos.below()).isAir()) {
             return false;
         }
@@ -124,13 +145,16 @@ public final class PlantEntityManager {
         plant.setPersistenceRequired();
         plant.setCustomName(Component.literal(definition.displayName()).withStyle(style -> style.withColor(TextColor.fromRgb(definition.gardenColor()))));
         plant.setCustomNameVisible(true);
-        setPlantHealth(plant, definition.behavior() == PlantSeedDefinition.PlantBehavior.WALL_NUT ? WALL_NUT_HEALTH : DEFAULT_PLANT_HEALTH);
+        setPlantHealth(plant, maxHealthFor(definition.behavior()));
 
         CompoundTag tag = plant.getPersistentData();
         tag.putBoolean(PLANT_TAG, true);
         tag.putString(PLANT_ID_TAG, definition.plantId());
         tag.putString(PLANT_BEHAVIOR_TAG, definition.behavior().name());
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
+            tag.putInt(PEA_POD_STACK_TAG, 1);
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -185,7 +209,13 @@ public final class PlantEntityManager {
             case ICEBERG_LETTUCE -> tickIcebergLettuce(level, plant);
             case GRAVE_BUSTER -> tickGraveBuster(level, plant);
             case BONK_CHOY -> tickBonkChoy(level, plant);
-            case WALL_NUT, TORCHWOOD, PLACEHOLDER -> {
+            case SPLIT_PEA -> tickSplitPea(level, plant);
+            case CHILI_BEAN -> tickChiliBean(level, plant);
+            case PEA_POD -> tickPeaPod(level, plant);
+            case LIGHTNING_REED -> tickLightningReed(level, plant);
+            case MELON_PULT -> tickMelonPult(level, plant, false);
+            case WINTER_MELON -> tickMelonPult(level, plant, true);
+            case WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
             }
         }
     }
@@ -329,6 +359,108 @@ public final class PlantEntityManager {
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + BONK_CHOY_INTERVAL_TICKS);
     }
 
+    private static void tickSplitPea(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> forwardTarget = selectDirectionalZombie(level, plant, SHOOTER_RANGE, true);
+        Optional<Zombie> backwardTarget = selectDirectionalZombie(level, plant, SHOOTER_RANGE, false);
+        if (forwardTarget.isEmpty() && backwardTarget.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        forwardTarget.ifPresent(zombie -> shootSnowball(level, plant, zombie, -0.08D));
+        backwardTarget.ifPresent(zombie -> shootSnowball(level, plant, zombie, 0.08D));
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickChiliBean(ServerLevel level, SnowGolem plant) {
+        Optional<Zombie> trigger = selectZombie(level, plant, 1.35D);
+        if (trigger.isEmpty()) {
+            return;
+        }
+
+        Zombie triggeringZombie = trigger.get();
+        triggeringZombie.hurt(level.damageSources().mobAttack(plant), CHILI_BEAN_DAMAGE);
+        AABB gasArea = triggeringZombie.getBoundingBox().inflate(3.0D, 1.0D, 3.0D);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, gasArea, Zombie::isAlive)) {
+            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 5, 6));
+        }
+        level.sendParticles(ParticleTypes.CLOUD, triggeringZombie.getX(), triggeringZombie.getY() + 0.6D, triggeringZombie.getZ(), 24, 1.2D, 0.4D, 1.2D, 0.03D);
+        plant.discard();
+    }
+
+    private static void tickPeaPod(ServerLevel level, SnowGolem plant) {
+        int stackLevel = Math.max(1, Math.min(5, plant.getPersistentData().getInt(PEA_POD_STACK_TAG)));
+        tickShooter(level, plant, stackLevel);
+    }
+
+    private static void tickLightningReed(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, 12.0D);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie primary = target.get();
+        primary.hurt(level.damageSources().mobAttack(plant), LIGHTNING_REED_DAMAGE);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, primary.getX(), primary.getY() + 1.0D, primary.getZ(), 16, 0.35D, 0.5D, 0.35D, 0.02D);
+
+        List<Zombie> chainedTargets = level.getEntitiesOfClass(Zombie.class, primary.getBoundingBox().inflate(4.0D), Zombie::isAlive)
+                .stream()
+                .filter(zombie -> zombie != primary)
+                .sorted((first, second) -> Double.compare(primary.distanceToSqr(first), primary.distanceToSqr(second)))
+                .limit(2)
+                .toList();
+        float chainDamage = LIGHTNING_REED_DAMAGE * 0.7F;
+        for (Zombie zombie : chainedTargets) {
+            zombie.hurt(level.damageSources().mobAttack(plant), chainDamage);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 10, 0.3D, 0.45D, 0.3D, 0.02D);
+            chainDamage *= 0.7F;
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + LIGHTNING_REED_INTERVAL_TICKS);
+    }
+
+    private static void tickMelonPult(ServerLevel level, SnowGolem plant, boolean winter) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie directTarget = target.get();
+        float directDamage = winter ? WINTER_MELON_DIRECT_DAMAGE : MELON_DIRECT_DAMAGE;
+        float splashDamage = winter ? WINTER_MELON_SPLASH_DAMAGE : MELON_SPLASH_DAMAGE;
+        directTarget.hurt(level.damageSources().mobAttack(plant), directDamage);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, directTarget.getBoundingBox().inflate(2.25D, 1.0D, 2.25D), Zombie::isAlive)) {
+            if (zombie != directTarget) {
+                zombie.hurt(level.damageSources().mobAttack(plant), splashDamage);
+            }
+            if (winter) {
+                zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 6, 2));
+            }
+        }
+        shootSnowballVisual(level, plant, directTarget, false, winter ? "winter_melon" : "melon");
+        level.levelEvent(2001, directTarget.blockPosition(), 0);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MELON_PULT_INTERVAL_TICKS);
+    }
+
     private static Optional<LivingEntity> findPlantInAttackRange(ServerLevel level, Mob mob) {
         AABB attackArea = mob.getBoundingBox().inflate(0.65D, 0.5D, 0.65D);
         return level.getEntitiesOfClass(LivingEntity.class, attackArea, entity -> entity.isAlive() && isPlant(entity))
@@ -339,6 +471,23 @@ public final class PlantEntityManager {
     private static Optional<Zombie> selectZombie(ServerLevel level, SnowGolem plant, double range) {
         AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
         List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive);
+        return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
+    }
+
+    private static Optional<Zombie> selectDirectionalZombie(ServerLevel level, SnowGolem plant, double range, boolean forward) {
+        Vec3 facing = facingVector(plant);
+        AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive)
+                .stream()
+                .filter(zombie -> {
+                    Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+                    if (toZombie.lengthSqr() < 1.0E-4D) {
+                        return true;
+                    }
+                    double dot = toZombie.normalize().dot(facing);
+                    return forward ? dot >= 0.05D : dot <= -0.05D;
+                })
+                .toList();
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
     }
 
@@ -355,6 +504,7 @@ public final class PlantEntityManager {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
             snowball.setSecondsOnFire(2);
         }
+        snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, "pea");
         level.addFreshEntity(snowball);
 
         DamageSource source = level.damageSources().mobProjectile(snowball, plant);
@@ -362,12 +512,17 @@ public final class PlantEntityManager {
     }
 
     private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed) {
+        shootSnowballVisual(level, plant, target, buffed, "snowball");
+    }
+
+    private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed, String projectileKind) {
         Snowball snowball = new Snowball(level, plant);
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
         Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
         Vec3 direction = targetPos.subtract(start).normalize();
         snowball.setPos(start.x, start.y, start.z);
-        snowball.shoot(direction.x, direction.y + 0.05D, direction.z, 1.1F, 0.0F);
+        snowball.shoot(direction.x, direction.y + 0.18D, direction.z, 1.1F, 0.0F);
+        snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         if (buffed) {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
             snowball.setSecondsOnFire(2);
@@ -395,6 +550,42 @@ public final class PlantEntityManager {
                 || state.is(Blocks.WITHER_SKELETON_SKULL)
                 || state.is(Blocks.SOUL_SAND)
                 || state.is(Blocks.SOUL_SOIL);
+    }
+
+    private static Optional<SnowGolem> findPlantAt(ServerLevel level, BlockPos pos, PlantSeedDefinition.PlantBehavior behavior) {
+        AABB area = new AABB(pos).inflate(0.35D, 0.75D, 0.35D);
+        return level.getEntitiesOfClass(SnowGolem.class, area, plant -> isPlant(plant) && behaviorFor(plant) == behavior)
+                .stream()
+                .findFirst();
+    }
+
+    private static boolean upgradePeaPod(ServerPlayer player, SnowGolem peaPod) {
+        CompoundTag tag = peaPod.getPersistentData();
+        int stackLevel = Math.max(1, tag.getInt(PEA_POD_STACK_TAG));
+        if (stackLevel >= 5) {
+            player.displayClientMessage(Component.literal("Pea Pod is already fully stacked.").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+
+        int nextLevel = stackLevel + 1;
+        tag.putInt(PEA_POD_STACK_TAG, nextLevel);
+        peaPod.setCustomName(Component.literal("Pea Pod x" + nextLevel).withStyle(style -> style.withColor(TextColor.fromRgb(
+                PlantSeedDefinition.getByPlantId("pea_pod").map(PlantSeedDefinition::gardenColor).orElse(0xD87925)
+        ))));
+        return true;
+    }
+
+    private static Vec3 facingVector(SnowGolem plant) {
+        float yaw = plant.getYRot() * Mth.DEG_TO_RAD;
+        return new Vec3(-Mth.sin(yaw), 0.0D, Mth.cos(yaw)).normalize();
+    }
+
+    private static float maxHealthFor(PlantSeedDefinition.PlantBehavior behavior) {
+        return switch (behavior) {
+            case WALL_NUT -> WALL_NUT_HEALTH;
+            case TALL_NUT -> TALL_NUT_HEALTH;
+            default -> DEFAULT_PLANT_HEALTH;
+        };
     }
 
     private static PlantSeedDefinition.PlantBehavior behaviorFor(Entity plant) {

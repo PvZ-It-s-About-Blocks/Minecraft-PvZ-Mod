@@ -9,10 +9,18 @@ public final class GardenWaves {
     }
 
     public static List<GardenWaveDefinition> all(GardenId gardenId) {
-        return gardenId == GardenId.DESERT ? AncientEgyptWaves.all() : OriginalGardenWaves.all();
+        return switch (gardenId) {
+            case DESERT -> AncientEgyptWaves.all();
+            case WILD_WEST -> WildWestWaves.all();
+            default -> OriginalGardenWaves.all();
+        };
     }
 
     public static GardenWaveDefinition get(GardenId gardenId, int wave) {
-        return gardenId == GardenId.DESERT ? AncientEgyptWaves.get(wave) : OriginalGardenWaves.get(wave);
+        return switch (gardenId) {
+            case DESERT -> AncientEgyptWaves.get(wave);
+            case WILD_WEST -> WildWestWaves.get(wave);
+            default -> OriginalGardenWaves.get(wave);
+        };
     }
 }

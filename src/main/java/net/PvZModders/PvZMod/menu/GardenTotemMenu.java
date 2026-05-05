@@ -18,7 +18,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public static final int START_WAVE_BUTTON = 0;
     public static final int PORTAL_BUTTON_OFFSET = 100;
     public static final int PLANT_BUTTON_OFFSET = 200;
-    public static final int PLANT_COUNT = GardenPlantDefinition.originalGardenPlants().size();
+    public static final int PLANT_COUNT = GardenPlantDefinition.maxKnownGardenPlantCount();
     public static final int SEED_STORAGE_SLOT_START = 0;
     public static final int SEED_STORAGE_SLOT_COUNT = 6;
     public static final int GARDEN_SOURCE_SLOT_START = SEED_STORAGE_SLOT_START + SEED_STORAGE_SLOT_COUNT;
@@ -72,8 +72,11 @@ public class GardenTotemMenu extends AbstractContainerMenu {
             addSlot(new SeedStorageSlot(playerInventory.player, index, x, y));
         }
 
+        java.util.List<GardenPlantDefinition> plants = gardenTotem == null
+                ? GardenPlantDefinition.originalGardenPlants()
+                : gardenTotem.getGardenPlants();
         for (int index = 0; index < GARDEN_SOURCE_SLOT_COUNT; index++) {
-            GardenPlantDefinition plant = GardenPlantDefinition.originalGardenPlants().get(index);
+            GardenPlantDefinition plant = index < plants.size() ? plants.get(index) : null;
             int cardX = 24;
             int cardY = 60 + index * 25;
             addSlot(new GardenPlantSourceSlot(gardenTotem, index, plant, cardX + 7, cardY + 6));
@@ -323,7 +326,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         @Override
         public ItemStack getItem() {
-            if (gardenTotem == null || !gardenTotem.isGardenPlantUnlocked(plantIndex) || gardenTotem.getGardenPlantCount(plantIndex) <= 0) {
+            if (plant == null || gardenTotem == null || !gardenTotem.isGardenPlantUnlocked(plantIndex) || gardenTotem.getGardenPlantCount(plantIndex) <= 0) {
                 return ItemStack.EMPTY;
             }
             return new ItemStack(BuiltInRegistries.ITEM.get(plant.seedPacketId()), gardenTotem.getGardenPlantCount(plantIndex));
@@ -349,7 +352,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         @Override
         public boolean isActive() {
-            return planterSlotsVisible;
+            return planterSlotsVisible && plant != null;
         }
     }
 

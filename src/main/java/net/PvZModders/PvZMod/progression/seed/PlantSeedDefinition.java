@@ -40,13 +40,13 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.PIRATE_SEAS, "threepeater", "Threepeater", 300);
         register(GardenId.PIRATE_SEAS, "spikerock", "Spikerock", 250);
         register(GardenId.PIRATE_SEAS, "cherry_bomb", "Cherry Bomb", 150);
-        register(GardenId.WILD_WEST, "split_pea", "Split Pea", 125);
-        register(GardenId.WILD_WEST, "chili_bean", "Chili Bean", 50);
-        register(GardenId.WILD_WEST, "pea_pod", "Pea Pod", 125);
-        register(GardenId.WILD_WEST, "lightning_reed", "Lightning Reed", 125);
-        register(GardenId.WILD_WEST, "melon_pult", "Melon-pult", 325);
-        register(GardenId.WILD_WEST, "tall_nut", "Tall-nut", 125);
-        register(GardenId.WILD_WEST, "winter_melon", "Winter Melon", 500);
+        register(GardenId.WILD_WEST, ModItems.SPLIT_PEA_SEED_PACKET.getId(), "split_pea", "Split Pea", 125, PlantBehavior.SPLIT_PEA);
+        register(GardenId.WILD_WEST, ModItems.CHILI_BEAN_SEED_PACKET.getId(), "chili_bean", "Chili Bean", 50, PlantBehavior.CHILI_BEAN);
+        register(GardenId.WILD_WEST, ModItems.PEA_POD_SEED_PACKET.getId(), "pea_pod", "Pea Pod", 125, PlantBehavior.PEA_POD);
+        register(GardenId.WILD_WEST, ModItems.LIGHTNING_REED_SEED_PACKET.getId(), "lightning_reed", "Lightning Reed", 125, PlantBehavior.LIGHTNING_REED);
+        register(GardenId.WILD_WEST, ModItems.MELON_PULT_SEED_PACKET.getId(), "melon_pult", "Melon-pult", 325, PlantBehavior.MELON_PULT);
+        register(GardenId.WILD_WEST, ModItems.TALL_NUT_SEED_PACKET.getId(), "tall_nut", "Tall-nut", 125, PlantBehavior.TALL_NUT);
+        register(GardenId.WILD_WEST, ModItems.WINTER_MELON_SEED_PACKET.getId(), "winter_melon", "Winter Melon", 500, PlantBehavior.WINTER_MELON);
         register(GardenId.FROSTBITE, "hot_potato", "Hot Potato", 0);
         register(GardenId.FROSTBITE, "pepper_pult", "Pepper-pult", 200);
         register(GardenId.FROSTBITE, "chard_guard", "Chard Guard", 75);
@@ -153,6 +153,13 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         GRAVE_BUSTER,
         BONK_CHOY,
         TORCHWOOD,
-        TWIN_SUNFLOWER
+        TWIN_SUNFLOWER,
+        SPLIT_PEA,
+        CHILI_BEAN,
+        PEA_POD,
+        LIGHTNING_REED,
+        MELON_PULT,
+        TALL_NUT,
+        WINTER_MELON
     }
 }

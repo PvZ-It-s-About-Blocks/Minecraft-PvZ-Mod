@@ -6,6 +6,7 @@ import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZPlantEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.entity.custom.SpeedyMinecartEntity;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
@@ -44,6 +45,11 @@ public class ModEntities {
                     .sized(0.7F, 1.9F)
                     .clientTrackingRange(4)
                     .build(PvZ2Mod.MOD_ID + ":all_plants"));
+    public static final RegistryObject<EntityType<SpeedyMinecartEntity>> SPEEDY_MINECART =
+            ENTITY_TYPES.register("speedy_minecart", () -> EntityType.Builder.<SpeedyMinecartEntity>of(SpeedyMinecartEntity::new, MobCategory.MISC)
+                    .sized(0.98F, 0.7F)
+                    .clientTrackingRange(10)
+                    .build(PvZ2Mod.MOD_ID + ":speedy_minecart"));
     public static final Map<String, RegistryObject<EntityType<PvZPlantEntity>>> PLANTS = registerPlantEntities();
 
     public static void register(IEventBus eventBus) {
