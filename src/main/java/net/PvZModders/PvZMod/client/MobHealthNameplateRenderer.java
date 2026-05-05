@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.client;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
+import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Mob;
 import net.minecraftforge.api.distmarker.Dist;
@@ -17,6 +18,9 @@ public final class MobHealthNameplateRenderer {
     @SubscribeEvent
     public static void renderMobHealth(RenderNameTagEvent event) {
         if (!(event.getEntity() instanceof Mob mob) || !mob.isAlive()) {
+            return;
+        }
+        if (PlantEntityManager.isPlant(mob)) {
             return;
         }
 
