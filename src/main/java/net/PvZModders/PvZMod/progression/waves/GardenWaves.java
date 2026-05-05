@@ -12,6 +12,7 @@ public final class GardenWaves {
         return switch (gardenId) {
             case DESERT -> AncientEgyptWaves.all();
             case WILD_WEST -> WildWestWaves.all();
+            case FROSTBITE -> FrostbiteWaves.all();
             case LOST_CITY -> LostCityWaves.all();
             case DARK_AGES -> DarkAgesWaves.all();
             case JURASSIC_MARSH -> JurassicMarshWaves.all();
@@ -24,6 +25,7 @@ public final class GardenWaves {
         return switch (gardenId) {
             case DESERT -> AncientEgyptWaves.get(wave);
             case WILD_WEST -> WildWestWaves.get(wave);
+            case FROSTBITE -> FrostbiteWaves.get(wave);
             case LOST_CITY -> LostCityWaves.get(wave);
             case DARK_AGES -> DarkAgesWaves.get(wave);
             case JURASSIC_MARSH -> JurassicMarshWaves.get(wave);

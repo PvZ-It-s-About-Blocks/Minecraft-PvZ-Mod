@@ -94,6 +94,11 @@ public class PvZ2Mod {
             event.accept(ModItems.MELON_PULT_SEED_PACKET);
             event.accept(ModItems.TALL_NUT_SEED_PACKET);
             event.accept(ModItems.WINTER_MELON_SEED_PACKET);
+            event.accept(ModItems.HOT_POTATO_SEED_PACKET);
+            event.accept(ModItems.PEPPER_PULT_SEED_PACKET);
+            event.accept(ModItems.CHARD_GUARD_SEED_PACKET);
+            event.accept(ModItems.STUNION_SEED_PACKET);
+            event.accept(ModItems.ROTOBAGA_SEED_PACKET);
             event.accept(ModItems.RED_STINGER_SEED_PACKET);
             event.accept(ModItems.AKEE_SEED_PACKET);
             event.accept(ModItems.ENDURIAN_SEED_PACKET);
@@ -123,6 +128,7 @@ public class PvZ2Mod {
             event.accept(ModItems.FLYING_PLANE);
             event.accept(ModItems.DINO_WHISTLE);
             event.accept(ModItems.TOTEM_SHIELD);
+            event.accept(ModItems.FREEZE_RAY);
         }
     }
 

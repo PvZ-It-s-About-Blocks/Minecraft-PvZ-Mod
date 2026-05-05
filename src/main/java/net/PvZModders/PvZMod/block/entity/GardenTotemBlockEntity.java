@@ -22,6 +22,7 @@ import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.GardenWaves;
+import net.PvZModders.PvZMod.progression.waves.FrostbiteSnowfallSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule.NeonSpeakerPulse;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -158,6 +159,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
         be.tickNeonSpeakerEffects(serverLevel);
+        be.tickFrostbiteSnowfallEffects(serverLevel);
         be.updateWaveBossBar(serverLevel);
         be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
@@ -539,6 +541,25 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     setChanged();
                 }
                 return;
+            }
+        }
+    }
+
+    private void tickFrostbiteSnowfallEffects(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (gardenId != GardenId.FROSTBITE || !waveProgress.waveActive() || activeWaveStartTick < 0L) {
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        boolean heavySnow = FrostbiteSnowfallSchedule.isHeavySnowfallActive(waveProgress.currentWave(), elapsed);
+        PlantEntityManager.tickFrostbiteFreeze(level, worldPosition, GARDEN_RADIUS, heavySnow);
+        if (heavySnow && level.getGameTime() % 10L == 0L) {
+            level.sendParticles(ParticleTypes.SNOWFLAKE, worldPosition.getX() + 0.5D, worldPosition.getY() + 5.0D, worldPosition.getZ() + 0.5D, 80, GARDEN_RADIUS, 2.5D, GARDEN_RADIUS, 0.08D);
+            for (ServerPlayer player : level.players()) {
+                if (isPlayerInsideGarden(player)) {
+                    player.displayClientMessage(Component.literal("Heavy Snowfall").withStyle(ChatFormatting.AQUA), true);
+                }
             }
         }
     }
@@ -935,6 +956,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
                         && reward.id().equals("totem_shield")) {
                     ItemStack rewardStack = new ItemStack(ModItems.TOTEM_SHIELD.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("freeze_ray")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.FREEZE_RAY.get());
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }

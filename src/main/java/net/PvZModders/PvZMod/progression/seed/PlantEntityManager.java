@@ -15,8 +15,12 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -30,6 +34,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
@@ -85,6 +90,10 @@ public final class PlantEntityManager {
     private static final String PLANT_PROJECTILE_TAG = "PvZPlantProjectile";
     private static final String REPEATER_PENDING_SECOND_SHOT_TAG = "PvZRepeaterPendingSecondShot";
     private static final String REPEATER_TARGET_UUID_TAG = "PvZRepeaterTargetUuid";
+    private static final String FREEZE_STAGE_TAG = "PvZFreezeStage";
+    private static final String FREEZE_NEXT_STAGE_TICK_TAG = "PvZFreezeNextStageTick";
+    private static final String FREEZE_OVERLAY_UUID_TAG = "PvZFreezeOverlayUuid";
+    private static final String CHARD_GUARD_CHARGES_TAG = "PvZChardGuardCharges";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -115,6 +124,11 @@ public final class PlantEntityManager {
     private static final int MAGNET_SHROOM_COOLDOWN_TICKS = 20 * 10;
     private static final int RECENT_PLANT_DEATH_WINDOW_TICKS = 20 * 60;
     private static final int MAX_SPORE_SHROOM_CLONES_NEARBY = 12;
+    private static final int FREEZE_STAGE_INTERVAL_TICKS = 20 * 5;
+    private static final int FREEZE_DECAY_INTERVAL_TICKS = 20 * 9;
+    private static final int WARMED_THAW_INTERVAL_TICKS = 20 * 2;
+    private static final double PEPPER_WARM_RADIUS = 3.0D;
+    private static final double ROTOBAGA_RANGE = 14.0D;
     private static final float PEA_DAMAGE = 4.0F;
     private static final float PRIMAL_PEA_DAMAGE = 7.0F;
     private static final float PUFF_SHROOM_DAMAGE = 2.0F;
@@ -139,6 +153,9 @@ public final class PlantEntityManager {
     private static final float SPORE_SHROOM_DAMAGE = 5.0F;
     private static final float LASER_BEAN_DAMAGE = 6.0F;
     private static final float MAGNIFYING_GRASS_DAMAGE = 12.0F;
+    private static final float PEPPER_PULT_DIRECT_DAMAGE = 9.0F;
+    private static final float PEPPER_PULT_SPLASH_DAMAGE = 4.5F;
+    private static final float ROTOBAGA_DAMAGE = 4.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
@@ -161,6 +178,10 @@ public final class PlantEntityManager {
         BlockPos graveTargetPos = target.getBlockPos();
         if (graveBuster && !isGraveTarget(level.getBlockState(graveTargetPos))) {
             return false;
+        }
+
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.HOT_POTATO) {
+            return thawPlantNear(player, target.getBlockPos());
         }
 
         BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
@@ -249,6 +270,9 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.CELERY_STALKER) {
             tag.putBoolean(CELERY_ACTIVATED_TAG, false);
             plant.setInvisible(true);
+        }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.CHARD_GUARD) {
+            tag.putInt(CHARD_GUARD_CHARGES_TAG, 3);
         }
     }
 
@@ -349,6 +373,7 @@ public final class PlantEntityManager {
 
         if (isPlant(event.getEntity())) {
             recordPlantDeath(level, event.getEntity());
+            cleanupFreezeOverlay(level, event.getEntity());
             return;
         }
 
@@ -378,6 +403,14 @@ public final class PlantEntityManager {
     private static void tickPlant(ServerLevel level, SnowGolem plant) {
         ensurePlantNameVisible(plant);
         lookAtNearestHostile(level, plant);
+        if (isPlantFrozen(plant)) {
+            syncFreezeOverlay(level, plant);
+            if (level.getGameTime() % 20L == 0L) {
+                level.sendParticles(ParticleTypes.SNOWFLAKE, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 4, 0.25D, 0.35D, 0.25D, 0.01D);
+            }
+            return;
+        }
+
         PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
         switch (behavior) {
             case PEASHOOTER -> tickShooter(level, plant, 1);
@@ -417,6 +450,11 @@ public final class PlantEntityManager {
             case INTENSIVE_CARROT -> tickIntensiveCarrot(level, plant);
             case LASER_BEAN -> tickLaserBean(level, plant);
             case MAGNIFYING_GRASS -> tickMagnifyingGrass(level, plant);
+            case HOT_POTATO -> plant.discard();
+            case PEPPER_PULT -> tickPepperPult(level, plant);
+            case CHARD_GUARD -> tickChardGuard(level, plant);
+            case STUNION -> tickStunion(level, plant);
+            case ROTOBAGA -> tickRotobaga(level, plant);
             case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, PLACEHOLDER -> {
             }
         }
@@ -1092,6 +1130,103 @@ public final class PlantEntityManager {
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
     }
 
+    private static void tickPepperPult(ServerLevel level, SnowGolem plant) {
+        thawNearbyPlants(level, plant);
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie directTarget = target.get();
+        hurtWithoutKnockback(directTarget, level.damageSources().mobAttack(plant), PEPPER_PULT_DIRECT_DAMAGE);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, directTarget.getBoundingBox().inflate(2.0D, 1.0D, 2.0D), Zombie::isAlive)) {
+            if (zombie != directTarget) {
+                hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), PEPPER_PULT_SPLASH_DAMAGE);
+            }
+        }
+        shootLobbedSnowballVisual(level, plant, directTarget, "pepper_pult");
+        level.sendParticles(ParticleTypes.FLAME, directTarget.getX(), directTarget.getY() + 0.6D, directTarget.getZ(), 16, 0.45D, 0.25D, 0.45D, 0.02D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 0.45F, 1.3F);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MELON_PULT_INTERVAL_TICKS);
+    }
+
+    private static void tickChardGuard(ServerLevel level, SnowGolem plant) {
+        CompoundTag tag = plant.getPersistentData();
+        int charges = Math.max(0, tag.getInt(CHARD_GUARD_CHARGES_TAG));
+        if (charges <= 0 || level.getGameTime() < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 facing = facingVector(plant);
+        Optional<Zombie> target = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(1.75D, 0.75D, 1.75D), Zombie::isAlive)
+                .stream()
+                .filter(zombie -> isInFrontCone(plant, zombie, facing, 1.75D))
+                .findFirst();
+        if (target.isEmpty()) {
+            return;
+        }
+
+        Zombie zombie = target.get();
+        Vec3 shove = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (shove.lengthSqr() < 1.0E-4D) {
+            shove = facing;
+        }
+        zombie.setDeltaMovement(zombie.getDeltaMovement().add(shove.normalize().scale(1.15D)).add(0.0D, 0.22D, 0.0D));
+        zombie.getNavigation().stop();
+        tag.putInt(CHARD_GUARD_CHARGES_TAG, charges - 1);
+        tag.putLong(NEXT_ACTION_TICK_TAG, level.getGameTime() + 20L);
+        level.sendParticles(ParticleTypes.CRIT, zombie.getX(), zombie.getY() + 0.8D, zombie.getZ(), 12, 0.35D, 0.25D, 0.35D, 0.03D);
+    }
+
+    private static void tickStunion(ServerLevel level, SnowGolem plant) {
+        Optional<Zombie> trigger = selectZombie(level, plant, 1.5D);
+        if (trigger.isEmpty()) {
+            return;
+        }
+
+        AABB gasArea = plant.getBoundingBox().inflate(3.0D, 1.0D, 3.0D);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, gasArea, Zombie::isAlive)) {
+            int duration = isGargantuarLike(zombie) ? 30 : 60;
+            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, duration, 8));
+            zombie.getNavigation().stop();
+        }
+        level.sendParticles(ParticleTypes.SNEEZE, plant.getX(), plant.getY() + 0.7D, plant.getZ(), 32, 1.2D, 0.45D, 1.2D, 0.04D);
+        plant.discard();
+    }
+
+    private static void tickRotobaga(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Vec3[] diagonals = {
+                new Vec3(1.0D, 0.0D, 1.0D).normalize(),
+                new Vec3(1.0D, 0.0D, -1.0D).normalize(),
+                new Vec3(-1.0D, 0.0D, 1.0D).normalize(),
+                new Vec3(-1.0D, 0.0D, -1.0D).normalize()
+        };
+        int shots = 0;
+        for (Vec3 diagonal : diagonals) {
+            Optional<Zombie> target = selectDiagonalZombie(level, plant, diagonal);
+            if (target.isPresent()) {
+                shootSnowballVisual(level, plant, target.get(), false, "rotobaga");
+                hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), ROTOBAGA_DAMAGE);
+                shots++;
+            }
+        }
+
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + (shots == 0 ? 10L : SHOOTER_INTERVAL_TICKS));
+    }
+
     private static void tickEndurian(ServerLevel level, SnowGolem plant) {
         long gameTime = level.getGameTime();
         CompoundTag tag = plant.getPersistentData();
@@ -1135,6 +1270,150 @@ public final class PlantEntityManager {
         AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
         List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive);
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
+    }
+
+    public static void tickFrostbiteFreeze(ServerLevel level, BlockPos totemPos, int radius, boolean heavySnowfallActive) {
+        AABB area = new AABB(totemPos).inflate(radius + 1.0D, 4.0D, radius + 1.0D);
+        for (SnowGolem plant : level.getEntitiesOfClass(SnowGolem.class, area, plant -> plant.isAlive() && isPlant(plant))) {
+            tickPlantFreezeState(level, plant, heavySnowfallActive);
+        }
+    }
+
+    private static void tickPlantFreezeState(ServerLevel level, SnowGolem plant, boolean heavySnowfallActive) {
+        PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
+        if (isHotPlant(behavior)) {
+            if (getFreezeStage(plant) > 0) {
+                thawPlant(level, plant);
+            }
+            return;
+        }
+
+        boolean warmed = isPlantWarmedByHotPlant(level, plant);
+        CompoundTag tag = plant.getPersistentData();
+        long gameTime = level.getGameTime();
+        long nextChange = tag.getLong(FREEZE_NEXT_STAGE_TICK_TAG);
+        if (gameTime < nextChange) {
+            syncFreezeOverlay(level, plant);
+            return;
+        }
+
+        int stage = getFreezeStage(plant);
+        if (heavySnowfallActive && !warmed) {
+            if (stage < 3) {
+                setFreezeStage(level, plant, stage + 1);
+                level.sendParticles(ParticleTypes.SNOWFLAKE, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 12, 0.35D, 0.45D, 0.35D, 0.02D);
+            }
+            tag.putLong(FREEZE_NEXT_STAGE_TICK_TAG, gameTime + FREEZE_STAGE_INTERVAL_TICKS);
+        } else if (stage > 0) {
+            setFreezeStage(level, plant, stage - 1);
+            tag.putLong(FREEZE_NEXT_STAGE_TICK_TAG, gameTime + (warmed ? WARMED_THAW_INTERVAL_TICKS : FREEZE_DECAY_INTERVAL_TICKS));
+        } else {
+            cleanupFreezeOverlay(level, plant);
+            tag.putLong(FREEZE_NEXT_STAGE_TICK_TAG, gameTime + 20L);
+        }
+    }
+
+    private static boolean thawPlantNear(ServerPlayer player, BlockPos pos) {
+        Optional<SnowGolem> plant = findAnyPlantAt(player.serverLevel(), pos)
+                .or(() -> findAnyPlantAt(player.serverLevel(), pos.above()))
+                .filter(candidate -> getFreezeStage(candidate) > 0);
+        if (plant.isEmpty() || getFreezeStage(plant.get()) <= 0) {
+            player.displayClientMessage(Component.literal("No frozen plant to thaw.").withStyle(ChatFormatting.AQUA), true);
+            return false;
+        }
+
+        thawPlant(player.serverLevel(), plant.get());
+        player.serverLevel().sendParticles(ParticleTypes.FLAME, plant.get().getX(), plant.get().getY() + 0.8D, plant.get().getZ(), 12, 0.35D, 0.35D, 0.35D, 0.02D);
+        player.displayClientMessage(Component.literal("Plant thawed.").withStyle(ChatFormatting.AQUA), true);
+        return true;
+    }
+
+    private static Optional<SnowGolem> findAnyPlantAt(ServerLevel level, BlockPos pos) {
+        AABB area = new AABB(pos).inflate(0.45D, 0.9D, 0.45D);
+        return level.getEntitiesOfClass(SnowGolem.class, area, plant -> isPlant(plant) && plant.isAlive())
+                .stream()
+                .findFirst();
+    }
+
+    private static void thawNearbyPlants(ServerLevel level, SnowGolem hotPlant) {
+        if (level.getGameTime() % WARMED_THAW_INTERVAL_TICKS != 0L) {
+            return;
+        }
+
+        for (SnowGolem plant : level.getEntitiesOfClass(SnowGolem.class, hotPlant.getBoundingBox().inflate(PEPPER_WARM_RADIUS), PlantEntityManager::isPlant)) {
+            int stage = getFreezeStage(plant);
+            if (stage > 0) {
+                setFreezeStage(level, plant, stage - 1);
+            }
+        }
+    }
+
+    private static boolean isPlantFrozen(SnowGolem plant) {
+        return getFreezeStage(plant) >= 3;
+    }
+
+    private static int getFreezeStage(Entity plant) {
+        return Math.max(0, Math.min(3, plant.getPersistentData().getInt(FREEZE_STAGE_TAG)));
+    }
+
+    private static void setFreezeStage(ServerLevel level, SnowGolem plant, int stage) {
+        int clamped = Math.max(0, Math.min(3, stage));
+        plant.getPersistentData().putInt(FREEZE_STAGE_TAG, clamped);
+        syncFreezeOverlay(level, plant);
+    }
+
+    private static void thawPlant(ServerLevel level, SnowGolem plant) {
+        plant.getPersistentData().putInt(FREEZE_STAGE_TAG, 0);
+        plant.getPersistentData().putLong(FREEZE_NEXT_STAGE_TICK_TAG, level.getGameTime() + 20L);
+        cleanupFreezeOverlay(level, plant);
+    }
+
+    private static boolean isPlantWarmedByHotPlant(ServerLevel level, SnowGolem plant) {
+        return level.getEntitiesOfClass(SnowGolem.class, plant.getBoundingBox().inflate(PEPPER_WARM_RADIUS), other -> other != plant && isPlant(other) && isHotPlant(behaviorFor(other)))
+                .stream()
+                .findAny()
+                .isPresent();
+    }
+
+    private static boolean isHotPlant(PlantSeedDefinition.PlantBehavior behavior) {
+        return behavior == PlantSeedDefinition.PlantBehavior.HOT_POTATO
+                || behavior == PlantSeedDefinition.PlantBehavior.PEPPER_PULT
+                || behavior == PlantSeedDefinition.PlantBehavior.TORCHWOOD;
+    }
+
+    private static void syncFreezeOverlay(ServerLevel level, SnowGolem plant) {
+        if (getFreezeStage(plant) < 3) {
+            cleanupFreezeOverlay(level, plant);
+            return;
+        }
+
+        CompoundTag tag = plant.getPersistentData();
+        Entity existing = tag.hasUUID(FREEZE_OVERLAY_UUID_TAG) ? level.getEntity(tag.getUUID(FREEZE_OVERLAY_UUID_TAG)) : null;
+        Display.BlockDisplay overlay = existing instanceof Display.BlockDisplay blockDisplay ? blockDisplay : null;
+        if (overlay == null) {
+            overlay = EntityType.BLOCK_DISPLAY.create(level);
+            if (overlay == null) {
+                return;
+            }
+            overlay.load(createIceOverlayTag());
+            overlay.setNoGravity(true);
+            level.addFreshEntity(overlay);
+            tag.putUUID(FREEZE_OVERLAY_UUID_TAG, overlay.getUUID());
+        }
+        overlay.setPos(plant.getX() - 0.45D, plant.getY(), plant.getZ() - 0.45D);
+    }
+
+    private static void cleanupFreezeOverlay(ServerLevel level, Entity plant) {
+        CompoundTag tag = plant.getPersistentData();
+        if (!tag.hasUUID(FREEZE_OVERLAY_UUID_TAG)) {
+            return;
+        }
+
+        Entity overlay = level.getEntity(tag.getUUID(FREEZE_OVERLAY_UUID_TAG));
+        if (overlay != null) {
+            overlay.discard();
+        }
+        tag.remove(FREEZE_OVERLAY_UUID_TAG);
     }
 
     private static void ensurePlantNameVisible(SnowGolem plant) {
@@ -1244,6 +1523,21 @@ public final class PlantEntityManager {
                     }
                     double dot = toZombie.normalize().dot(facing);
                     return forward ? dot >= 0.05D : dot <= -0.05D;
+                })
+                .toList();
+        return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
+    }
+
+    private static Optional<Zombie> selectDiagonalZombie(ServerLevel level, SnowGolem plant, Vec3 diagonal) {
+        AABB area = plant.getBoundingBox().inflate(ROTOBAGA_RANGE, 3.0D, ROTOBAGA_RANGE);
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive)
+                .stream()
+                .filter(zombie -> {
+                    Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+                    if (toZombie.lengthSqr() < 1.0E-4D || toZombie.length() > ROTOBAGA_RANGE) {
+                        return false;
+                    }
+                    return toZombie.normalize().dot(diagonal) >= 0.9D;
                 })
                 .toList();
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
@@ -1399,6 +1693,12 @@ public final class PlantEntityManager {
         return dot >= 0.35D;
     }
 
+    private static boolean isGargantuarLike(Mob mob) {
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        String path = id == null ? "" : id.getPath();
+        return path.contains("gargantuar") || mob.getMaxHealth() >= 80.0F;
+    }
+
     private static boolean hasMetalOrArmor(Zombie zombie) {
         if (zombie.getPersistentData().getBoolean(METAL_ZOMBIE_TAG)) {
             return true;
@@ -1452,6 +1752,31 @@ public final class PlantEntityManager {
         boolean hurt = target.hurt(source, amount);
         target.setDeltaMovement(movement);
         return hurt;
+    }
+
+    private static CompoundTag createIceOverlayTag() {
+        CompoundTag tag = new CompoundTag();
+        tag.put("block_state", NbtUtils.writeBlockState(Blocks.ICE.defaultBlockState()));
+
+        CompoundTag transformation = new CompoundTag();
+        transformation.put("translation", floatList(0.0F, 0.0F, 0.0F));
+        transformation.put("scale", floatList(0.9F, 1.7F, 0.9F));
+        transformation.put("left_rotation", floatList(0.0F, 0.0F, 0.0F, 1.0F));
+        transformation.put("right_rotation", floatList(0.0F, 0.0F, 0.0F, 1.0F));
+        tag.put("transformation", transformation);
+
+        tag.putFloat("view_range", 32.0F);
+        tag.putFloat("shadow_radius", 0.0F);
+        tag.putFloat("shadow_strength", 0.0F);
+        return tag;
+    }
+
+    private static ListTag floatList(float... values) {
+        ListTag list = new ListTag();
+        for (float value : values) {
+            list.add(FloatTag.valueOf(value));
+        }
+        return list;
     }
 
     private static void shootSnowball(ServerLevel level, SnowGolem plant, LivingEntity target, double sideOffset) {

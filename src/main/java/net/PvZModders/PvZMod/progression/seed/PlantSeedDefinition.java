@@ -47,11 +47,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.WILD_WEST, ModItems.MELON_PULT_SEED_PACKET.getId(), "melon_pult", "Melon-pult", 325, PlantBehavior.MELON_PULT);
         register(GardenId.WILD_WEST, ModItems.TALL_NUT_SEED_PACKET.getId(), "tall_nut", "Tall-nut", 125, PlantBehavior.TALL_NUT);
         register(GardenId.WILD_WEST, ModItems.WINTER_MELON_SEED_PACKET.getId(), "winter_melon", "Winter Melon", 500, PlantBehavior.WINTER_MELON);
-        register(GardenId.FROSTBITE, "hot_potato", "Hot Potato", 0);
-        register(GardenId.FROSTBITE, "pepper_pult", "Pepper-pult", 200);
-        register(GardenId.FROSTBITE, "chard_guard", "Chard Guard", 75);
-        register(GardenId.FROSTBITE, "stunion", "Stunion", 25);
-        register(GardenId.FROSTBITE, "rotobaga", "Rotobaga", 150);
+        register(GardenId.FROSTBITE, ModItems.HOT_POTATO_SEED_PACKET.getId(), "hot_potato", "Hot Potato", 0, PlantBehavior.HOT_POTATO);
+        register(GardenId.FROSTBITE, ModItems.PEPPER_PULT_SEED_PACKET.getId(), "pepper_pult", "Pepper-pult", 200, PlantBehavior.PEPPER_PULT);
+        register(GardenId.FROSTBITE, ModItems.CHARD_GUARD_SEED_PACKET.getId(), "chard_guard", "Chard Guard", 75, PlantBehavior.CHARD_GUARD);
+        register(GardenId.FROSTBITE, ModItems.STUNION_SEED_PACKET.getId(), "stunion", "Stunion", 25, PlantBehavior.STUNION);
+        register(GardenId.FROSTBITE, ModItems.ROTOBAGA_SEED_PACKET.getId(), "rotobaga", "Rotobaga", 150, PlantBehavior.ROTOBAGA);
         register(GardenId.LOST_CITY, ModItems.RED_STINGER_SEED_PACKET.getId(), "red_stinger", "Red Stinger", 150, PlantBehavior.RED_STINGER);
         register(GardenId.LOST_CITY, ModItems.AKEE_SEED_PACKET.getId(), "akee", "A.K.E.E.", 175, PlantBehavior.AKEE);
         register(GardenId.LOST_CITY, ModItems.ENDURIAN_SEED_PACKET.getId(), "endurian", "Endurian", 100, PlantBehavior.ENDURIAN);
@@ -183,6 +183,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         SPORE_SHROOM,
         INTENSIVE_CARROT,
         LASER_BEAN,
-        MAGNIFYING_GRASS
+        MAGNIFYING_GRASS,
+        HOT_POTATO,
+        PEPPER_PULT,
+        CHARD_GUARD,
+        STUNION,
+        ROTOBAGA
     }
 }

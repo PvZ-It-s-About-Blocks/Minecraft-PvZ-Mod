@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
 import net.PvZModders.PvZMod.item.custom.DinoWhistleItem;
 import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
+import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
@@ -59,6 +60,16 @@ public class ModItems {
             () -> new SeedPacketItem("tall_nut", new Item.Properties()));
     public static final RegistryObject<Item> WINTER_MELON_SEED_PACKET = ITEMS.register("winter_melon_seed_packet",
             () -> new SeedPacketItem("winter_melon", new Item.Properties()));
+    public static final RegistryObject<Item> HOT_POTATO_SEED_PACKET = ITEMS.register("hot_potato_seed_packet",
+            () -> new SeedPacketItem("hot_potato", new Item.Properties()));
+    public static final RegistryObject<Item> PEPPER_PULT_SEED_PACKET = ITEMS.register("pepper_pult_seed_packet",
+            () -> new SeedPacketItem("pepper_pult", new Item.Properties()));
+    public static final RegistryObject<Item> CHARD_GUARD_SEED_PACKET = ITEMS.register("chard_guard_seed_packet",
+            () -> new SeedPacketItem("chard_guard", new Item.Properties()));
+    public static final RegistryObject<Item> STUNION_SEED_PACKET = ITEMS.register("stunion_seed_packet",
+            () -> new SeedPacketItem("stunion", new Item.Properties()));
+    public static final RegistryObject<Item> ROTOBAGA_SEED_PACKET = ITEMS.register("rotobaga_seed_packet",
+            () -> new SeedPacketItem("rotobaga", new Item.Properties()));
     public static final RegistryObject<Item> RED_STINGER_SEED_PACKET = ITEMS.register("red_stinger_seed_packet",
             () -> new SeedPacketItem("red_stinger", new Item.Properties()));
     public static final RegistryObject<Item> AKEE_SEED_PACKET = ITEMS.register("akee_seed_packet",
@@ -121,6 +132,8 @@ public class ModItems {
             () -> new DinoWhistleItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> TOTEM_SHIELD = ITEMS.register("totem_shield",
             () -> new TotemShieldItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> FREEZE_RAY = ITEMS.register("freeze_ray",
+            () -> new FreezeRayItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

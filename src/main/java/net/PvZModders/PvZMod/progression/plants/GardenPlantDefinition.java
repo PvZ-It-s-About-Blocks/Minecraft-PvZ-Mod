@@ -54,6 +54,10 @@ public record GardenPlantDefinition(
         return DarkAgesPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> frostbitePlants() {
+        return FrostbitePlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> jurassicMarshPlants() {
         return JurassicMarshPlants.PLANTS;
     }
@@ -67,6 +71,7 @@ public record GardenPlantDefinition(
             case INITIAL_PLAINS -> originalGardenPlants();
             case DESERT -> ancientEgyptPlants();
             case WILD_WEST -> wildWestPlants();
+            case FROSTBITE -> frostbitePlants();
             case LOST_CITY -> lostCityPlants();
             case DARK_AGES -> darkAgesPlants();
             case JURASSIC_MARSH -> jurassicMarshPlants();
@@ -78,7 +83,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), neonMixtapePlants().size())
+                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), neonMixtapePlants().size()), frostbitePlants().size())
         );
     }
 
@@ -112,6 +117,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.LOST_CITY, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition frostbite(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.FROSTBITE, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static GardenPlantDefinition darkAges(String plantId, String displayName, String description, int sunCost, int unlockWave) {
@@ -179,6 +192,16 @@ public record GardenPlantDefinition(
                 lostCity("endurian", "Endurian", "Sturdy blocker that damages touching zombies.", 100, 10),
                 lostCity("stallia", "Stallia", "Releases a slowing perfume cloud, then disappears.", 0, 19),
                 lostCity("gold_leaf", "Gold Leaf", "Creates a Gold Tile on a valid garden tile.", 80, 26)
+        );
+    }
+
+    private static final class FrostbitePlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                frostbite("hot_potato", "Hot Potato", "Thaws a frozen, iced, or frosted plant.", 0, 1),
+                frostbite("pepper_pult", "Pepper-pult", "Lobs flaming peppers and warms nearby plants.", 200, 6),
+                frostbite("chard_guard", "Chard Guard", "Blocks zombies and shoves them back three times.", 75, 11),
+                frostbite("stunion", "Stunion", "Releases stunning gas when zombies get close.", 25, 19),
+                frostbite("rotobaga", "Rotobaga", "Shoots diagonally in up to four directions.", 150, 26)
         );
     }
 
