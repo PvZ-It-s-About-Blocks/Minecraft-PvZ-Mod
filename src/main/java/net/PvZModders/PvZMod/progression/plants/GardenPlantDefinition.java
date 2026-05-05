@@ -58,6 +58,10 @@ public record GardenPlantDefinition(
         return JurassicMarshPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> neonMixtapePlants() {
+        return NeonMixtapePlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
@@ -66,6 +70,7 @@ public record GardenPlantDefinition(
             case LOST_CITY -> lostCityPlants();
             case DARK_AGES -> darkAgesPlants();
             case JURASSIC_MARSH -> jurassicMarshPlants();
+            case NEON_MIXTAPE -> neonMixtapePlants();
             default -> List.of();
         };
     }
@@ -73,7 +78,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(darkAgesPlants().size(), jurassicMarshPlants().size())
+                Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), neonMixtapePlants().size())
         );
     }
 
@@ -123,6 +128,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.JURASSIC_MARSH, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition neon(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.NEON_MIXTAPE, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -186,6 +199,17 @@ public record GardenPlantDefinition(
                 jurassic("perfume_shroom", "Perfume-shroom", "Charms a nearby dinosaur for your defense.", 150, 8),
                 jurassic("primal_sunflower", "Primal Sunflower", "Produces 50 sun every few seconds.", 75, 17),
                 jurassic("primal_potato_mine", "Primal Potato Mine", "Fast-arming mine with a larger blast.", 50, 23)
+        );
+    }
+
+    private static final class NeonMixtapePlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                neon("phat_beet", "Phat Beet", "Thumps nearby zombies with area damage.", 150, 1),
+                neon("celery_stalker", "Celery Stalker", "Hides until zombies pass, then ambushes them.", 50, 5),
+                neon("thyme_warp", "Thyme Warp", "Warps nearby zombies backward while healing them slightly.", 100, 9),
+                neon("garlic", "Garlic", "Diverts zombies sideways and disrupts their path.", 50, 17),
+                neon("spore_shroom", "Spore-shroom", "Shoots spores that can sprout new Spore-shrooms.", 150, 21),
+                neon("intensive_carrot", "Intensive Carrot", "Revives a recently destroyed plant.", 100, 26)
         );
     }
 }

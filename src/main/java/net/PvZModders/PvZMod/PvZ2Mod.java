@@ -109,6 +109,12 @@ public class PvZ2Mod {
             event.accept(ModItems.PERFUME_SHROOM_SEED_PACKET);
             event.accept(ModItems.PRIMAL_SUNFLOWER_SEED_PACKET);
             event.accept(ModItems.PRIMAL_POTATO_MINE_SEED_PACKET);
+            event.accept(ModItems.PHAT_BEET_SEED_PACKET);
+            event.accept(ModItems.CELERY_STALKER_SEED_PACKET);
+            event.accept(ModItems.THYME_WARP_SEED_PACKET);
+            event.accept(ModItems.GARLIC_SEED_PACKET);
+            event.accept(ModItems.SPORE_SHROOM_SEED_PACKET);
+            event.accept(ModItems.INTENSIVE_CARROT_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
@@ -116,6 +122,7 @@ public class PvZ2Mod {
             event.accept(ModItems.SPEEDY_MINECART);
             event.accept(ModItems.FLYING_PLANE);
             event.accept(ModItems.DINO_WHISTLE);
+            event.accept(ModItems.TOTEM_SHIELD);
         }
     }
 

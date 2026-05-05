@@ -35,15 +35,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.Mth;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +74,8 @@ public final class PlantEntityManager {
     private static final String SUN_BEAN_NEXT_SUN_TICK_TAG = "PvZSunBeanNextSunTick";
     private static final String ARMOR_STRIPPED_TAG = "PvZArmorStripped";
     private static final String METAL_ZOMBIE_TAG = "PvZMetalZombie";
+    private static final String CELERY_ACTIVATED_TAG = "PvZCeleryActivated";
+    private static final String SPORE_SHROOM_SOURCE_TAG = "PvZSporeShroomSource";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -78,7 +83,11 @@ public final class PlantEntityManager {
     private static final double FUME_SHROOM_RANGE = 6.0D;
     private static final double MAGNET_SHROOM_RANGE = 8.0D;
     private static final double PERFUME_SHROOM_RANGE = 8.0D;
+    private static final double PHAT_BEET_RADIUS = 3.0D;
+    private static final double SPORE_SHROOM_RANGE = 12.0D;
     private static final int SHOOTER_INTERVAL_TICKS = 30;
+    private static final int PHAT_BEET_INTERVAL_TICKS = 40;
+    private static final int CELERY_STALKER_INTERVAL_TICKS = 12;
     private static final int SUNFLOWER_INTERVAL_TICKS = 60;
     private static final int SUN_SHROOM_INTERVAL_TICKS = 80;
     private static final int SUN_SHROOM_STAGE_TWO_TICKS = 20 * 60;
@@ -94,6 +103,8 @@ public final class PlantEntityManager {
     private static final int SUN_BEAN_INFECTED_TICKS = 20 * 15;
     private static final int SUN_BEAN_SUN_COOLDOWN_TICKS = 10;
     private static final int MAGNET_SHROOM_COOLDOWN_TICKS = 20 * 10;
+    private static final int RECENT_PLANT_DEATH_WINDOW_TICKS = 20 * 60;
+    private static final int MAX_SPORE_SHROOM_CLONES_NEARBY = 12;
     private static final float PEA_DAMAGE = 4.0F;
     private static final float PRIMAL_PEA_DAMAGE = 7.0F;
     private static final float PUFF_SHROOM_DAMAGE = 2.0F;
@@ -113,6 +124,9 @@ public final class PlantEntityManager {
     private static final float RED_STINGER_NORMAL_DAMAGE = 4.0F;
     private static final float AKEE_DAMAGE = 6.0F;
     private static final float ENDURIAN_THORN_DAMAGE = 3.0F;
+    private static final float PHAT_BEET_DAMAGE = 4.0F;
+    private static final float CELERY_STALKER_DAMAGE = 8.0F;
+    private static final float SPORE_SHROOM_DAMAGE = 5.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
@@ -120,6 +134,7 @@ public final class PlantEntityManager {
     private static final float TALL_NUT_HEALTH = 150.0F;
     private static final float ENDURIAN_HEALTH = 100.0F;
     private static final float RED_STINGER_DEFENSIVE_HEALTH = 55.0F;
+    private static final List<RecentPlantDeath> RECENT_PLANT_DEATHS = new ArrayList<>();
 
     private PlantEntityManager() {
     }
@@ -139,6 +154,10 @@ public final class PlantEntityManager {
         BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.GOLD_LEAF) {
             return GoldTileManager.addGoldTileNear(level, target.getBlockPos());
+        }
+
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.INTENSIVE_CARROT) {
+            return reviveRecentPlant(player, target.getBlockPos());
         }
 
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.PEA_POD) {
@@ -215,6 +234,10 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.RED_STINGER) {
             tag.putString(RED_STINGER_MODE_TAG, "NORMAL");
         }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.CELERY_STALKER) {
+            tag.putBoolean(CELERY_ACTIVATED_TAG, false);
+            plant.setInvisible(true);
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -231,6 +254,9 @@ public final class PlantEntityManager {
             target.hurt(level.damageSources().mobAttack(mob), damage);
             if (behaviorFor(target) == PlantSeedDefinition.PlantBehavior.ENDURIAN) {
                 mob.hurt(level.damageSources().thorns(target), ENDURIAN_THORN_DAMAGE);
+            }
+            if (behaviorFor(target) == PlantSeedDefinition.PlantBehavior.GARLIC) {
+                divertGarlicZombie(level, mob, target);
             }
         }
         return true;
@@ -261,6 +287,11 @@ public final class PlantEntityManager {
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
+        if (isPlant(event.getEntity()) && event.getEntity().level() instanceof ServerLevel level
+                && event.getEntity().getHealth() - event.getAmount() <= 0.0F) {
+            recordPlantDeath(level, event.getEntity());
+        }
+
         if (!(event.getEntity() instanceof Zombie zombie) || !(zombie.level() instanceof ServerLevel level)) {
             return;
         }
@@ -285,6 +316,26 @@ public final class PlantEntityManager {
             SunManager.addSun(nearestPlayer, SUN_BEAN_SUN_VALUE);
             level.sendParticles(ParticleTypes.HAPPY_VILLAGER, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 4, 0.25D, 0.25D, 0.25D, 0.02D);
             tag.putLong(SUN_BEAN_NEXT_SUN_TICK_TAG, gameTime + SUN_BEAN_SUN_COOLDOWN_TICKS);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLivingDeath(LivingDeathEvent event) {
+        if (!(event.getEntity().level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        if (isPlant(event.getEntity())) {
+            recordPlantDeath(level, event.getEntity());
+            return;
+        }
+
+        if (event.getEntity() instanceof Zombie zombie && zombie.getPersistentData().contains(SPORE_SHROOM_SOURCE_TAG)) {
+            UUID sourceId = zombie.getPersistentData().getUUID(SPORE_SHROOM_SOURCE_TAG);
+            Entity source = level.getEntity(sourceId);
+            if (source instanceof SnowGolem sporeShroom && isPlant(sporeShroom)) {
+                spawnSporeShroomClone(level, sporeShroom, zombie.blockPosition());
+            }
         }
     }
 
@@ -321,7 +372,12 @@ public final class PlantEntityManager {
             case PERFUME_SHROOM -> tickPerfumeShroom(level, plant);
             case PRIMAL_SUNFLOWER -> tickPrimalSunflower(level, plant);
             case PRIMAL_POTATO_MINE -> tickPrimalPotatoMine(level, plant);
-            case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, PLACEHOLDER -> {
+            case PHAT_BEET -> tickPhatBeet(level, plant);
+            case CELERY_STALKER -> tickCeleryStalker(level, plant);
+            case THYME_WARP -> tickThymeWarp(level, plant);
+            case SPORE_SHROOM -> tickSporeShroom(level, plant);
+            case INTENSIVE_CARROT -> tickIntensiveCarrot(level, plant);
+            case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, PLACEHOLDER -> {
             }
         }
     }
@@ -546,6 +602,105 @@ public final class PlantEntityManager {
         level.sendParticles(ParticleTypes.EXPLOSION, plant.getX(), plant.getY() + 0.5D, plant.getZ(), 6, 1.2D, 0.4D, 1.2D, 0.0D);
         level.levelEvent(2001, plant.blockPosition(), 0);
         plant.discard();
+    }
+
+    private static void tickPhatBeet(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(PHAT_BEET_RADIUS, 1.5D, PHAT_BEET_RADIUS), Zombie::isAlive);
+        if (zombies.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        for (Zombie zombie : zombies) {
+            zombie.hurt(level.damageSources().mobAttack(plant), PHAT_BEET_DAMAGE);
+        }
+        level.sendParticles(ParticleTypes.NOTE, plant.getX(), plant.getY() + 1.1D, plant.getZ(), 8, 0.8D, 0.2D, 0.8D, 0.0D);
+        level.sendParticles(ParticleTypes.SONIC_BOOM, plant.getX(), plant.getY() + 0.3D, plant.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + PHAT_BEET_INTERVAL_TICKS);
+    }
+
+    private static void tickCeleryStalker(ServerLevel level, SnowGolem plant) {
+        CompoundTag tag = plant.getPersistentData();
+        boolean activated = tag.getBoolean(CELERY_ACTIVATED_TAG);
+        if (!activated) {
+            Optional<Zombie> passedZombie = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(1.6D, 1.0D, 1.6D), Zombie::isAlive)
+                    .stream()
+                    .filter(zombie -> isBehindPlant(plant, zombie))
+                    .findFirst();
+            if (passedZombie.isEmpty()) {
+                return;
+            }
+
+            tag.putBoolean(CELERY_ACTIVATED_TAG, true);
+            plant.setInvisible(false);
+            level.sendParticles(ParticleTypes.POOF, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 12, 0.3D, 0.3D, 0.3D, 0.02D);
+        }
+
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        List<Zombie> targets = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(1.6D, 0.75D, 1.6D), Zombie::isAlive);
+        for (Zombie zombie : targets) {
+            zombie.hurt(level.damageSources().mobAttack(plant), CELERY_STALKER_DAMAGE);
+        }
+        if (!targets.isEmpty()) {
+            level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 10, 0.5D, 0.3D, 0.5D, 0.04D);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + CELERY_STALKER_INTERVAL_TICKS);
+    }
+
+    private static void tickThymeWarp(ServerLevel level, SnowGolem plant) {
+        AABB area = plant.getBoundingBox().inflate(8.0D, 3.0D, 8.0D);
+        List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive);
+        if (zombies.isEmpty()) {
+            return;
+        }
+
+        for (Zombie zombie : zombies) {
+            Vec3 away = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+            if (away.lengthSqr() < 1.0E-4D) {
+                away = facingVector(plant).scale(-1.0D);
+            }
+            moveZombieSafely(level, zombie, away.normalize(), 7.0D);
+            zombie.heal(4.0F);
+        }
+        level.sendParticles(ParticleTypes.PORTAL, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 36, 1.5D, 0.6D, 1.5D, 0.05D);
+        plant.discard();
+    }
+
+    private static void tickSporeShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SPORE_SHROOM_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Zombie zombie = target.get();
+        zombie.getPersistentData().putUUID(SPORE_SHROOM_SOURCE_TAG, plant.getUUID());
+        shootSnowballVisual(level, plant, zombie, false, "spore_shroom");
+        zombie.hurt(level.damageSources().mobAttack(plant), SPORE_SHROOM_DAMAGE);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickIntensiveCarrot(ServerLevel level, SnowGolem plant) {
+        if (reviveRecentPlantAt(level, plant.blockPosition().below())) {
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 16, 0.4D, 0.4D, 0.4D, 0.02D);
+            plant.discard();
+        }
     }
 
     private static void tickPotatoMine(ServerLevel level, SnowGolem plant) {
@@ -935,6 +1090,131 @@ public final class PlantEntityManager {
         ))));
     }
 
+    private static boolean isBehindPlant(SnowGolem plant, Zombie zombie) {
+        Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+        if (toZombie.lengthSqr() < 1.0E-4D) {
+            return false;
+        }
+        return toZombie.normalize().dot(facingVector(plant)) <= -0.1D;
+    }
+
+    private static void moveZombieSafely(ServerLevel level, Zombie zombie, Vec3 direction, double distance) {
+        Vec3 safeDirection = direction.lengthSqr() < 1.0E-4D ? new Vec3(0.0D, 0.0D, 1.0D) : direction.normalize();
+        BlockPos raw = BlockPos.containing(zombie.position().add(safeDirection.scale(distance)));
+        BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, raw);
+        if (level.getBlockState(surface).isAir() && level.getBlockState(surface.above()).isAir()) {
+            zombie.teleportTo(surface.getX() + 0.5D, surface.getY(), surface.getZ() + 0.5D);
+        }
+    }
+
+    private static void divertGarlicZombie(ServerLevel level, Mob mob, LivingEntity garlic) {
+        Vec3 toMob = mob.position().subtract(garlic.position()).multiply(1.0D, 0.0D, 1.0D);
+        Vec3 side = toMob.lengthSqr() < 1.0E-4D ? new Vec3(1.0D, 0.0D, 0.0D) : new Vec3(-toMob.z, 0.0D, toMob.x).normalize();
+        if (level.random.nextBoolean()) {
+            side = side.scale(-1.0D);
+        }
+        mob.setDeltaMovement(mob.getDeltaMovement().add(side.scale(0.65D)).add(0.0D, 0.12D, 0.0D));
+        mob.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 20 * 2, 0));
+        mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 2, 1));
+        mob.getNavigation().stop();
+        level.sendParticles(ParticleTypes.SNEEZE, mob.getX(), mob.getY() + 1.0D, mob.getZ(), 6, 0.35D, 0.25D, 0.35D, 0.02D);
+    }
+
+    private static boolean reviveRecentPlant(ServerPlayer player, BlockPos targetPos) {
+        cleanupRecentPlantDeaths(player.serverLevel());
+        if (!reviveRecentPlantAt(player.serverLevel(), targetPos) && !reviveRecentPlantAt(player.serverLevel(), targetPos.above())) {
+            player.displayClientMessage(Component.literal("No plant to revive.").withStyle(ChatFormatting.RED), true);
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean reviveRecentPlantAt(ServerLevel level, BlockPos targetPos) {
+        cleanupRecentPlantDeaths(level);
+        Optional<RecentPlantDeath> death = RECENT_PLANT_DEATHS.stream()
+                .filter(entry -> entry.dimension().equals(level.dimension().location().toString()))
+                .filter(entry -> entry.position().distSqr(targetPos) <= 2.0D)
+                .findFirst();
+        if (death.isEmpty()) {
+            return false;
+        }
+
+        Optional<PlantSeedDefinition> definition = PlantSeedDefinition.getByPlantId(death.get().plantId());
+        if (definition.isEmpty() || !canSpawnPlantAt(level, death.get().position())) {
+            return false;
+        }
+
+        EntityType<? extends SnowGolem> plantType = ModEntities.PLANTS.containsKey(definition.get().plantId())
+                ? ModEntities.PLANTS.get(definition.get().plantId()).get()
+                : EntityType.SNOW_GOLEM;
+        SnowGolem plant = plantType.create(level);
+        if (plant == null) {
+            return false;
+        }
+
+        BlockPos pos = death.get().position();
+        plant.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        initializePlantEntity(plant, definition.get(), level.getGameTime());
+        if (level.addFreshEntity(plant)) {
+            RECENT_PLANT_DEATHS.remove(death.get());
+            return true;
+        }
+        return false;
+    }
+
+    private static void recordPlantDeath(ServerLevel level, Entity plant) {
+        String plantId = plant.getPersistentData().getString(PLANT_ID_TAG);
+        if (plantId.isEmpty()) {
+            return;
+        }
+
+        RECENT_PLANT_DEATHS.add(new RecentPlantDeath(level.dimension().location().toString(), plantId, plant.blockPosition(), level.getGameTime()));
+        cleanupRecentPlantDeaths(level);
+        while (RECENT_PLANT_DEATHS.size() > 128) {
+            RECENT_PLANT_DEATHS.remove(0);
+        }
+    }
+
+    private static void cleanupRecentPlantDeaths(ServerLevel level) {
+        long oldestAllowed = level.getGameTime() - RECENT_PLANT_DEATH_WINDOW_TICKS;
+        RECENT_PLANT_DEATHS.removeIf(entry -> entry.gameTime() < oldestAllowed);
+    }
+
+    private static void spawnSporeShroomClone(ServerLevel level, SnowGolem source, BlockPos rawPos) {
+        PlantSeedDefinition definition = PlantSeedDefinition.getByPlantId("spore_shroom").orElse(null);
+        if (definition == null) {
+            return;
+        }
+
+        int nearbySpores = level.getEntitiesOfClass(SnowGolem.class, source.getBoundingBox().inflate(32.0D), plant -> isPlant(plant) && behaviorFor(plant) == PlantSeedDefinition.PlantBehavior.SPORE_SHROOM).size();
+        if (nearbySpores >= MAX_SPORE_SHROOM_CLONES_NEARBY) {
+            return;
+        }
+
+        BlockPos surface = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, rawPos);
+        if (!canSpawnPlantAt(level, surface)) {
+            return;
+        }
+
+        EntityType<? extends SnowGolem> plantType = ModEntities.PLANTS.containsKey("spore_shroom")
+                ? ModEntities.PLANTS.get("spore_shroom").get()
+                : EntityType.SNOW_GOLEM;
+        SnowGolem clone = plantType.create(level);
+        if (clone == null) {
+            return;
+        }
+
+        clone.moveTo(surface.getX() + 0.5D, surface.getY(), surface.getZ() + 0.5D, source.getYRot(), 0.0F);
+        initializePlantEntity(clone, definition, level.getGameTime());
+        level.addFreshEntity(clone);
+    }
+
+    private static boolean canSpawnPlantAt(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).isAir()
+                && level.getBlockState(pos.above()).isAir()
+                && !level.getBlockState(pos.below()).isAir();
+    }
+
     private static boolean isInFrontCone(SnowGolem plant, Zombie zombie, Vec3 facing, double range) {
         Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
         double distanceSqr = toZombie.lengthSqr();
@@ -1121,5 +1401,8 @@ public final class PlantEntityManager {
             plant.getAttribute(Attributes.MAX_HEALTH).setBaseValue(maxHealth);
         }
         plant.setHealth(maxHealth);
+    }
+
+    private record RecentPlantDeath(String dimension, String plantId, BlockPos position, long gameTime) {
     }
 }

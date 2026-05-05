@@ -10,6 +10,7 @@ import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
 import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
+import net.PvZModders.PvZMod.item.custom.TotemShieldItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -88,6 +89,18 @@ public class ModItems {
             () -> new SeedPacketItem("primal_sunflower", new Item.Properties()));
     public static final RegistryObject<Item> PRIMAL_POTATO_MINE_SEED_PACKET = ITEMS.register("primal_potato_mine_seed_packet",
             () -> new SeedPacketItem("primal_potato_mine", new Item.Properties()));
+    public static final RegistryObject<Item> PHAT_BEET_SEED_PACKET = ITEMS.register("phat_beet_seed_packet",
+            () -> new SeedPacketItem("phat_beet", new Item.Properties()));
+    public static final RegistryObject<Item> CELERY_STALKER_SEED_PACKET = ITEMS.register("celery_stalker_seed_packet",
+            () -> new SeedPacketItem("celery_stalker", new Item.Properties()));
+    public static final RegistryObject<Item> THYME_WARP_SEED_PACKET = ITEMS.register("thyme_warp_seed_packet",
+            () -> new SeedPacketItem("thyme_warp", new Item.Properties()));
+    public static final RegistryObject<Item> GARLIC_SEED_PACKET = ITEMS.register("garlic_seed_packet",
+            () -> new SeedPacketItem("garlic", new Item.Properties()));
+    public static final RegistryObject<Item> SPORE_SHROOM_SEED_PACKET = ITEMS.register("spore_shroom_seed_packet",
+            () -> new SeedPacketItem("spore_shroom", new Item.Properties()));
+    public static final RegistryObject<Item> INTENSIVE_CARROT_SEED_PACKET = ITEMS.register("intensive_carrot_seed_packet",
+            () -> new SeedPacketItem("intensive_carrot", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
@@ -106,6 +119,8 @@ public class ModItems {
             () -> new FlyingPlaneItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> DINO_WHISTLE = ITEMS.register("dino_whistle",
             () -> new DinoWhistleItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TOTEM_SHIELD = ITEMS.register("totem_shield",
+            () -> new TotemShieldItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

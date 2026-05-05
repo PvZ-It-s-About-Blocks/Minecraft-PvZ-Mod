@@ -22,6 +22,8 @@ import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.GardenWaves;
+import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule;
+import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule.NeonSpeakerPulse;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
@@ -45,7 +47,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.BossEvent;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.SimpleMenuProvider;
@@ -118,6 +124,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveTotalZombies;
     private int activeWaveSpawned;
     private boolean activeWaveFinalPushStarted;
+    private int activeWaveSpeakerCursor;
+    private boolean totemShieldUnlocked;
+    private boolean totemShieldActive;
+    private int totemShieldHealth;
     private final Set<BlockPos> goldTilePositions = new HashSet<>();
     private final Map<BlockPos, UUID> goldTileDisplayIds = new HashMap<>();
     private final Map<BlockPos, Long> goldTileNextSunTicks = new HashMap<>();
@@ -141,6 +151,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.absorbSunFromPlayersDuringWave(serverLevel, false);
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
+        be.tickNeonSpeakerEffects(serverLevel);
         be.updateWaveBossBar(serverLevel);
         be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
@@ -429,6 +440,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveTotalZombies = totalSpawnCount(definition);
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
+        activeWaveSpeakerCursor = 0;
         List<WaveSpawnDirection> waveDirections = new ArrayList<>();
 
         for (WaveSpawnGroup group : definition.spawnGroups()) {
@@ -486,6 +498,49 @@ public class GardenTotemBlockEntity extends BlockEntity {
             if (spawnScheduledZombie(level, definition, activeWaveSpawned)) {
                 activeWaveSpawned++;
                 scheduleNormalNextSpawn(level);
+            }
+        }
+    }
+
+    private void tickNeonSpeakerEffects(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (gardenId != GardenId.NEON_MIXTAPE || !waveProgress.waveActive() || activeWaveStartTick < 0L) {
+            return;
+        }
+
+        List<NeonSpeakerPulse> pulses = NeonSpeakerSchedule.pulsesForWave(waveProgress.currentWave());
+        if (pulses.isEmpty()) {
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        int cursor = 0;
+        for (NeonSpeakerPulse pulse : pulses) {
+            for (int pulseIndex = 0; pulseIndex < pulse.count(); pulseIndex++) {
+                if (cursor++ < activeWaveSpeakerCursor) {
+                    continue;
+                }
+                if (elapsed >= pulse.activationTick(pulseIndex)) {
+                    applyNeonSpeakerPulse(level, pulse);
+                    activeWaveSpeakerCursor = cursor;
+                    setChanged();
+                }
+                return;
+            }
+        }
+    }
+
+    private void applyNeonSpeakerPulse(ServerLevel level, NeonSpeakerPulse pulse) {
+        AABB pulseArea = new AABB(worldPosition).inflate(GARDEN_RADIUS + 4.0D, 4.0D, GARDEN_RADIUS + 4.0D);
+        for (net.minecraft.world.entity.monster.Zombie zombie : level.getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class, pulseArea, net.minecraft.world.entity.monster.Zombie::isAlive)) {
+            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 3, 1));
+        }
+        level.sendParticles(ParticleTypes.NOTE, worldPosition.getX() + 0.5D, worldPosition.getY() + 2.0D, worldPosition.getZ() + 0.5D, 32, 4.0D, 1.0D, 4.0D, 0.0D);
+        level.sendParticles(ParticleTypes.SONIC_BOOM, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.0D, worldPosition.getZ() + 0.5D, 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.playSound(null, worldPosition, SoundEvents.NOTE_BLOCK_BASS.get(), SoundSource.BLOCKS, 1.0F, 0.7F);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("Speaker pulse: " + pulse.effectType()).withStyle(ChatFormatting.LIGHT_PURPLE), true);
             }
         }
     }
@@ -713,6 +768,20 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void damageTotem(ServerLevel level, int amount) {
+        if (totemShieldActive && totemShieldHealth > 0) {
+            int absorbed = Math.min(amount, totemShieldHealth);
+            totemShieldHealth -= absorbed;
+            amount -= absorbed;
+            if (totemShieldHealth <= 0) {
+                totemShieldActive = false;
+                breakTotemShield(level);
+            }
+            if (amount <= 0) {
+                setChanged();
+                return;
+            }
+        }
+
         totemHealth = Math.max(0, totemHealth - amount);
         if (totemHealth > 0) {
             setChanged();
@@ -729,6 +798,39 @@ public class GardenTotemBlockEntity extends BlockEntity {
             }
         }
         setChanged();
+    }
+
+    public void activateTotemShield(ServerPlayer player) {
+        totemShieldUnlocked = true;
+        totemShieldActive = true;
+        totemShieldHealth = TOTEM_MAX_HEALTH;
+        setChanged();
+    }
+
+    private void breakTotemShield(ServerLevel level) {
+        AABB shockwave = new AABB(worldPosition).inflate(GARDEN_RADIUS + 5.0D, 4.0D, GARDEN_RADIUS + 5.0D);
+        for (Mob mob : level.getEntitiesOfClass(Mob.class, shockwave, Mob::isAlive)) {
+            if (PlantEntityManager.isPlant(mob)) {
+                continue;
+            }
+            int duration = isGargantuarLike(mob) ? 30 : 60;
+            mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, duration, 8));
+            mob.getNavigation().stop();
+        }
+        level.sendParticles(ParticleTypes.SONIC_BOOM, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.3D, worldPosition.getZ() + 0.5D, 2, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.sendParticles(ParticleTypes.ELECTRIC_SPARK, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.3D, worldPosition.getZ() + 0.5D, 48, 3.0D, 1.0D, 3.0D, 0.08D);
+        level.playSound(null, worldPosition, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 1.0F, 0.6F);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("Totem Shield shattered!").withStyle(ChatFormatting.AQUA), true);
+            }
+        }
+    }
+
+    private boolean isGargantuarLike(Mob mob) {
+        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
+        String path = id == null ? "" : id.getPath();
+        return path.contains("gargantuar") || mob.getMaxHealth() >= 80.0F;
     }
 
     private void completeCurrentWaveForNearbyPlayers(ServerLevel level) {
@@ -801,6 +903,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
                         && reward.id().equals("torchflower_utility")) {
                     ItemStack rewardStack = new ItemStack(Items.TORCHFLOWER);
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("totem_shield")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.TOTEM_SHIELD.get());
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
@@ -912,6 +1020,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveTotalZombies = 0;
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
+        activeWaveSpeakerCursor = 0;
         activeWaveDirections.clear();
         waveBossBar.removeAllPlayers();
         discardActiveWaveDinosaurs();
@@ -1345,6 +1454,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveTotalZombies = tag.getInt("ActiveWaveTotalZombies");
         activeWaveSpawned = tag.getInt("ActiveWaveSpawned");
         activeWaveFinalPushStarted = tag.getBoolean("ActiveWaveFinalPushStarted");
+        activeWaveSpeakerCursor = tag.getInt("ActiveWaveSpeakerCursor");
+        totemShieldUnlocked = tag.getBoolean("TotemShieldUnlocked");
+        totemShieldActive = tag.getBoolean("TotemShieldActive");
+        totemShieldHealth = tag.getInt("TotemShieldHealth");
         activeWaveDirections.clear();
         ListTag directionsTag = tag.getList("ActiveWaveDirections", net.minecraft.nbt.Tag.TAG_STRING);
         for (int i = 0; i < directionsTag.size(); i++) {
@@ -1393,6 +1506,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         tag.putInt("ActiveWaveTotalZombies", activeWaveTotalZombies);
         tag.putInt("ActiveWaveSpawned", activeWaveSpawned);
         tag.putBoolean("ActiveWaveFinalPushStarted", activeWaveFinalPushStarted);
+        tag.putInt("ActiveWaveSpeakerCursor", activeWaveSpeakerCursor);
+        tag.putBoolean("TotemShieldUnlocked", totemShieldUnlocked);
+        tag.putBoolean("TotemShieldActive", totemShieldActive);
+        tag.putInt("TotemShieldHealth", totemShieldHealth);
         ListTag directionsTag = new ListTag();
         for (WaveSpawnDirection direction : activeWaveDirections) {
             directionsTag.add(net.minecraft.nbt.StringTag.valueOf(direction.name()));

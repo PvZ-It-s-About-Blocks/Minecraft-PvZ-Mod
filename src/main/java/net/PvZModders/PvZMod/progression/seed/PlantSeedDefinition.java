@@ -69,12 +69,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.DARK_AGES, ModItems.FUME_SHROOM_SEED_PACKET.getId(), "fume_shroom", "Fume-shroom", 125, PlantBehavior.FUME_SHROOM);
         register(GardenId.DARK_AGES, ModItems.SUN_BEAN_SEED_PACKET.getId(), "sun_bean", "Sun Bean", 50, PlantBehavior.SUN_BEAN);
         register(GardenId.DARK_AGES, ModItems.MAGNET_SHROOM_SEED_PACKET.getId(), "magnet_shroom", "Magnet-shroom", 100, PlantBehavior.MAGNET_SHROOM);
-        register(GardenId.NEON_MIXTAPE, "phat_beet", "Phat Beet", 150);
-        register(GardenId.NEON_MIXTAPE, "celery_stalker", "Celery Stalker", 50);
-        register(GardenId.NEON_MIXTAPE, "thyme_warp", "Thyme Warp", 100);
-        register(GardenId.NEON_MIXTAPE, "garlic", "Garlic", 50);
-        register(GardenId.NEON_MIXTAPE, "spore_shroom", "Spore-shroom", 150);
-        register(GardenId.NEON_MIXTAPE, "intensive_carrot", "Intensive Carrot", 100);
+        register(GardenId.NEON_MIXTAPE, ModItems.PHAT_BEET_SEED_PACKET.getId(), "phat_beet", "Phat Beet", 150, PlantBehavior.PHAT_BEET);
+        register(GardenId.NEON_MIXTAPE, ModItems.CELERY_STALKER_SEED_PACKET.getId(), "celery_stalker", "Celery Stalker", 50, PlantBehavior.CELERY_STALKER);
+        register(GardenId.NEON_MIXTAPE, ModItems.THYME_WARP_SEED_PACKET.getId(), "thyme_warp", "Thyme Warp", 100, PlantBehavior.THYME_WARP);
+        register(GardenId.NEON_MIXTAPE, ModItems.GARLIC_SEED_PACKET.getId(), "garlic", "Garlic", 50, PlantBehavior.GARLIC);
+        register(GardenId.NEON_MIXTAPE, ModItems.SPORE_SHROOM_SEED_PACKET.getId(), "spore_shroom", "Spore-shroom", 150, PlantBehavior.SPORE_SHROOM);
+        register(GardenId.NEON_MIXTAPE, ModItems.INTENSIVE_CARROT_SEED_PACKET.getId(), "intensive_carrot", "Intensive Carrot", 100, PlantBehavior.INTENSIVE_CARROT);
         register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_PEASHOOTER_SEED_PACKET.getId(), "primal_peashooter", "Primal Peashooter", 175, PlantBehavior.PRIMAL_PEASHOOTER);
         register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_WALL_NUT_SEED_PACKET.getId(), "primal_wall_nut", "Primal Wall-nut", 75, PlantBehavior.PRIMAL_WALL_NUT);
         register(GardenId.JURASSIC_MARSH, ModItems.PERFUME_SHROOM_SEED_PACKET.getId(), "perfume_shroom", "Perfume-shroom", 150, PlantBehavior.PERFUME_SHROOM);
@@ -175,6 +175,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         PRIMAL_WALL_NUT,
         PERFUME_SHROOM,
         PRIMAL_SUNFLOWER,
-        PRIMAL_POTATO_MINE
+        PRIMAL_POTATO_MINE,
+        PHAT_BEET,
+        CELERY_STALKER,
+        THYME_WARP,
+        GARLIC,
+        SPORE_SHROOM,
+        INTENSIVE_CARROT
     }
 }

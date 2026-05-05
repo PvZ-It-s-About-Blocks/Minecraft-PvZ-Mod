@@ -51,6 +51,12 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.PERFUME_SHROOM_SEED_PACKET.get());
                         output.accept(ModItems.PRIMAL_SUNFLOWER_SEED_PACKET.get());
                         output.accept(ModItems.PRIMAL_POTATO_MINE_SEED_PACKET.get());
+                        output.accept(ModItems.PHAT_BEET_SEED_PACKET.get());
+                        output.accept(ModItems.CELERY_STALKER_SEED_PACKET.get());
+                        output.accept(ModItems.THYME_WARP_SEED_PACKET.get());
+                        output.accept(ModItems.GARLIC_SEED_PACKET.get());
+                        output.accept(ModItems.SPORE_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.INTENSIVE_CARROT_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
@@ -58,6 +64,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.SPEEDY_MINECART.get());
                         output.accept(ModItems.FLYING_PLANE.get());
                         output.accept(ModItems.DINO_WHISTLE.get());
+                        output.accept(ModItems.TOTEM_SHIELD.get());
                     })
                     .build());
 
