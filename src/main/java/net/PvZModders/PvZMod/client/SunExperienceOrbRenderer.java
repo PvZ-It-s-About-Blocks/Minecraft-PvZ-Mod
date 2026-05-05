@@ -47,7 +47,9 @@ public class SunExperienceOrbRenderer extends ExperienceOrbRenderer {
     }
 
     private void renderSun(ExperienceOrb orb, float partialTicks, PoseStack poseStack, MultiBufferSource buffer) {
-        renderSunPillar(orb, partialTicks, poseStack, buffer);
+        if (SunManager.shouldRenderSunPillar(orb)) {
+            renderSunPillar(orb, partialTicks, poseStack, buffer);
+        }
         renderItemModel(ModItems.SUNDROP.get().getDefaultInstance(), SUNDROP_SCALE, 90.0F, orb, poseStack, buffer);
     }
 

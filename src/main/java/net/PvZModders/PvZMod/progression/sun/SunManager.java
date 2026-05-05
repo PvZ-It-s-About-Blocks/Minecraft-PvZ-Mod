@@ -43,6 +43,7 @@ public final class SunManager {
     public static final String SUN_SPAWN_TICK_TAG = "PvZSunSpawnTick";
     public static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
     public static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
+    public static final String SUN_PILLAR_VISIBLE_TAG = "PvZSunPillarVisible";
     private static final String TUTORIAL_SUN_GRANTED_TAG = "PvZTutorialSunGranted";
     private static final int SUN_LIFETIME_TICKS = 25 * 20;
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
@@ -218,7 +219,7 @@ public final class SunManager {
     private static void spawnTutorialSun(ServerLevel level, ServerPlayer player) {
         BlockPos front = player.blockPosition().relative(player.getDirection(), 3);
         BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, front);
-        spawnSun(level, ground.above(SUN_DROP_HEIGHT));
+        spawnSun(level, ground.above(SUN_DROP_HEIGHT), DEFAULT_SUN_VALUE, true);
     }
 
     private static void spawnRandomSun(ServerLevel level, ServerPlayer player) {
@@ -226,25 +227,26 @@ public final class SunManager {
         int dz = level.random.nextInt(SUN_DROP_RADIUS * 2 + 1) - SUN_DROP_RADIUS;
         BlockPos xz = player.blockPosition().offset(dx, 0, dz);
         BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, xz);
-        spawnSun(level, ground.above(SUN_DROP_HEIGHT));
+        spawnSun(level, ground.above(SUN_DROP_HEIGHT), DEFAULT_SUN_VALUE, true);
     }
 
     private static void spawnSun(ServerLevel level, BlockPos pos) {
-        spawnSun(level, pos, DEFAULT_SUN_VALUE);
+        spawnSun(level, pos, DEFAULT_SUN_VALUE, true);
     }
 
-    private static void spawnSun(ServerLevel level, BlockPos pos, int value) {
+    private static void spawnSun(ServerLevel level, BlockPos pos, int value, boolean showPillar) {
         ExperienceOrb sun = new PvZSunEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, value);
+        sun.getPersistentData().putBoolean(SUN_PILLAR_VISIBLE_TAG, showPillar);
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
         level.addFreshEntity(sun);
     }
 
     public static void spawnSunAt(ServerLevel level, BlockPos pos) {
-        spawnSun(level, pos);
+        spawnSun(level, pos, DEFAULT_SUN_VALUE, false);
     }
 
     public static void spawnSunAt(ServerLevel level, BlockPos pos, int value) {
-        spawnSun(level, pos, value);
+        spawnSun(level, pos, value, false);
     }
 
     public static void initializeSunOrb(ExperienceOrb sun, ServerLevel level, int value) {
@@ -254,6 +256,9 @@ public final class SunManager {
         sun.getPersistentData().putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
         sun.getPersistentData().putDouble(SUN_ANCHOR_X_TAG, sun.getX());
         sun.getPersistentData().putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
+        if (!sun.getPersistentData().contains(SUN_PILLAR_VISIBLE_TAG)) {
+            sun.getPersistentData().putBoolean(SUN_PILLAR_VISIBLE_TAG, true);
+        }
     }
 
     private static void tickNearbySunOrbs(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunOrbs) {
@@ -308,5 +313,10 @@ public final class SunManager {
             return orb.getPersistentData().getInt(SUN_VALUE_TAG);
         }
         return DEFAULT_SUN_VALUE;
+    }
+
+    public static boolean shouldRenderSunPillar(ExperienceOrb orb) {
+        CompoundTag tag = orb.getPersistentData();
+        return !tag.contains(SUN_PILLAR_VISIBLE_TAG) || tag.getBoolean(SUN_PILLAR_VISIBLE_TAG);
     }
 }

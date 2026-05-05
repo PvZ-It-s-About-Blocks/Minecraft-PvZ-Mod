@@ -30,6 +30,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -43,6 +45,7 @@ import net.minecraft.util.Mth;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.ProjectileImpactEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -76,6 +79,9 @@ public final class PlantEntityManager {
     private static final String METAL_ZOMBIE_TAG = "PvZMetalZombie";
     private static final String CELERY_ACTIVATED_TAG = "PvZCeleryActivated";
     private static final String SPORE_SHROOM_SOURCE_TAG = "PvZSporeShroomSource";
+    private static final String PLANT_PROJECTILE_TAG = "PvZPlantProjectile";
+    private static final String REPEATER_PENDING_SECOND_SHOT_TAG = "PvZRepeaterPendingSecondShot";
+    private static final String REPEATER_TARGET_UUID_TAG = "PvZRepeaterTargetUuid";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -86,6 +92,7 @@ public final class PlantEntityManager {
     private static final double PHAT_BEET_RADIUS = 3.0D;
     private static final double SPORE_SHROOM_RANGE = 12.0D;
     private static final int SHOOTER_INTERVAL_TICKS = 30;
+    private static final int REPEATER_SECOND_SHOT_DELAY_TICKS = 6;
     private static final int PHAT_BEET_INTERVAL_TICKS = 40;
     private static final int CELERY_STALKER_INTERVAL_TICKS = 12;
     private static final int SUNFLOWER_INTERVAL_TICKS = 60;
@@ -287,6 +294,11 @@ public final class PlantEntityManager {
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
+        if (isFriendlyPlantDamage(event.getEntity(), event.getSource())) {
+            event.setCanceled(true);
+            return;
+        }
+
         if (isPlant(event.getEntity()) && event.getEntity().level() instanceof ServerLevel level
                 && event.getEntity().getHealth() - event.getAmount() <= 0.0F) {
             recordPlantDeath(level, event.getEntity());
@@ -339,11 +351,25 @@ public final class PlantEntityManager {
         }
     }
 
+    @SubscribeEvent
+    public static void onProjectileImpact(ProjectileImpactEvent event) {
+        Projectile projectile = event.getProjectile();
+        if (!projectile.getPersistentData().getBoolean(PLANT_PROJECTILE_TAG)) {
+            return;
+        }
+
+        if (event.getRayTraceResult() instanceof net.minecraft.world.phys.EntityHitResult hitResult && isPlant(hitResult.getEntity())) {
+            event.setCanceled(true);
+        }
+    }
+
     private static void tickPlant(ServerLevel level, SnowGolem plant) {
+        ensurePlantNameVisible(plant);
+        lookAtNearestHostile(level, plant);
         PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
         switch (behavior) {
             case PEASHOOTER -> tickShooter(level, plant, 1);
-            case REPEATER -> tickShooter(level, plant, 2);
+            case REPEATER -> tickRepeater(level, plant);
             case SUNFLOWER -> tickSunflower(level, plant);
             case TWIN_SUNFLOWER -> tickTwinSunflower(level, plant);
             case POTATO_MINE -> tickPotatoMine(level, plant);
@@ -389,7 +415,7 @@ public final class PlantEntityManager {
             return;
         }
 
-        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        Optional<LivingEntity> target = selectHostile(level, plant, SHOOTER_RANGE);
         if (target.isEmpty()) {
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
             return;
@@ -399,6 +425,46 @@ public final class PlantEntityManager {
             shootSnowball(level, plant, target.get(), shot * 0.18D);
         }
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickRepeater(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        if (tag.getBoolean(REPEATER_PENDING_SECOND_SHOT_TAG)) {
+            LivingEntity secondTarget = null;
+            if (tag.hasUUID(REPEATER_TARGET_UUID_TAG)) {
+                Entity stored = level.getEntity(tag.getUUID(REPEATER_TARGET_UUID_TAG));
+                if (stored instanceof LivingEntity living && isHostileTarget(living) && living.isAlive() && plant.distanceToSqr(living) <= SHOOTER_RANGE * SHOOTER_RANGE) {
+                    secondTarget = living;
+                }
+            }
+            if (secondTarget == null) {
+                secondTarget = selectHostile(level, plant, SHOOTER_RANGE).orElse(null);
+            }
+
+            if (secondTarget != null) {
+                shootSnowball(level, plant, secondTarget, 0.08D);
+            }
+            tag.putBoolean(REPEATER_PENDING_SECOND_SHOT_TAG, false);
+            tag.remove(REPEATER_TARGET_UUID_TAG);
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+            return;
+        }
+
+        Optional<LivingEntity> target = selectHostile(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        shootSnowball(level, plant, target.get(), -0.08D);
+        tag.putBoolean(REPEATER_PENDING_SECOND_SHOT_TAG, true);
+        tag.putUUID(REPEATER_TARGET_UUID_TAG, target.get().getUUID());
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + REPEATER_SECOND_SHOT_DELAY_TICKS);
     }
 
     private static void tickSunflower(ServerLevel level, SnowGolem plant) {
@@ -1002,6 +1068,44 @@ public final class PlantEntityManager {
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
     }
 
+    private static void ensurePlantNameVisible(SnowGolem plant) {
+        plant.setCustomNameVisible(true);
+        if (plant.getCustomName() != null) {
+            return;
+        }
+
+        String plantId = plant.getPersistentData().getString(PLANT_ID_TAG);
+        PlantSeedDefinition.getByPlantId(plantId).ifPresent(definition ->
+                plant.setCustomName(Component.literal(definition.displayName()).withStyle(style -> style.withColor(TextColor.fromRgb(definition.gardenColor())))));
+    }
+
+    private static Optional<LivingEntity> selectHostile(ServerLevel level, SnowGolem plant, double range) {
+        AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
+        List<LivingEntity> hostiles = level.getEntitiesOfClass(LivingEntity.class, area, entity -> entity.isAlive() && isHostileTarget(entity));
+        return hostiles.stream()
+                .min((first, second) -> Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second)));
+    }
+
+    private static boolean isHostileTarget(LivingEntity entity) {
+        return entity instanceof Monster && !isPlant(entity);
+    }
+
+    private static void lookAtNearestHostile(ServerLevel level, SnowGolem plant) {
+        Optional<LivingEntity> target = selectHostile(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            return;
+        }
+
+        Vec3 toTarget = target.get().position().subtract(plant.position());
+        float yaw = (float) (Mth.atan2(toTarget.z, toTarget.x) * Mth.RAD_TO_DEG) - 90.0F;
+        double horizontal = Math.sqrt(toTarget.x * toTarget.x + toTarget.z * toTarget.z);
+        float pitch = (float) (-(Mth.atan2(toTarget.y + target.get().getBbHeight() * 0.5D - 1.0D, horizontal) * Mth.RAD_TO_DEG));
+        plant.setYRot(yaw);
+        plant.setYHeadRot(yaw);
+        plant.yBodyRot = yaw;
+        plant.setXRot(pitch);
+    }
+
     private static boolean placePlantInMinecart(ServerPlayer player, WildWestMinecartEntity cart, PlantSeedDefinition definition) {
         Optional<SnowGolem> existingPlant = cart.getPassengers()
                 .stream()
@@ -1257,6 +1361,19 @@ public final class PlantEntityManager {
         return false;
     }
 
+    private static boolean isFriendlyPlantDamage(LivingEntity target, DamageSource source) {
+        if (!isPlant(target)) {
+            return false;
+        }
+
+        Entity direct = source.getDirectEntity();
+        Entity attacker = source.getEntity();
+        if (direct != null && direct.getPersistentData().getBoolean(PLANT_PROJECTILE_TAG)) {
+            return true;
+        }
+        return isPlant(attacker);
+    }
+
     private static void shootSnowball(ServerLevel level, SnowGolem plant, LivingEntity target, double sideOffset) {
         boolean buffed = hasTorchwoodBetween(level, plant.position(), target.position());
         Snowball snowball = new Snowball(level, plant);
@@ -1270,6 +1387,7 @@ public final class PlantEntityManager {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
             snowball.setSecondsOnFire(2);
         }
+        snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, "pea");
         level.addFreshEntity(snowball);
 
@@ -1288,6 +1406,7 @@ public final class PlantEntityManager {
         Vec3 direction = targetPos.subtract(start).normalize();
         snowball.setPos(start.x, start.y, start.z);
         snowball.shoot(direction.x, direction.y + 0.18D, direction.z, 1.1F, 0.0F);
+        snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         if (buffed) {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
