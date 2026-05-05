@@ -113,3 +113,17 @@
 [05May2026 15:33:28.706] [Render thread/INFO] [net.minecraft.client.gui.components.ChatComponent/]: [System] [CHAT] penny spawned
 [05May2026 15:34:40.827] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: [Dev: Summoned new entity.pvz2mod.wall_nut]
 [05May2026 15:34:40.835] [Render thread/INFO] [net.minecraft.client.gui.components.ChatComponent/]: [System] [CHAT] Summoned new entity.pvz2mod.wall_nut
+[05May2026 15:51:25.663] [Render thread/INFO] [net.minecraft.client.Minecraft/]: Stopping!
+[05May2026 15:51:25.687] [Server thread/INFO] [net.minecraft.server.network.ServerGamePacketListenerImpl/]: Dev lost connection: Disconnected
+[05May2026 15:51:25.687] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Dev left the game
+[05May2026 15:51:25.697] [Server thread/INFO] [net.minecraft.server.network.ServerGamePacketListenerImpl/]: Stopping singleplayer server as player logged out
+[05May2026 15:51:25.741] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Stopping server
+[05May2026 15:51:25.741] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving players
+[05May2026 15:51:25.741] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving worlds
+[05May2026 15:51:26.328] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[New Worldssss]'/minecraft:overworld
+[05May2026 15:51:31.416] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[New Worldssss]'/minecraft:the_nether
+[05May2026 15:51:31.417] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: Saving chunks for level 'ServerLevel[New Worldssss]'/minecraft:the_end
+[05May2026 15:51:31.430] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (New Worldssss (1)): All chunks are saved
+[05May2026 15:51:31.430] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[05May2026 15:51:31.430] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[05May2026 15:51:31.430] [Server thread/INFO] [net.minecraft.server.MinecraftServer/]: ThreadedAnvilChunkStorage: All dimensions are saved
