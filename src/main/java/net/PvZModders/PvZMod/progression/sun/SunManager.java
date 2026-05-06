@@ -48,7 +48,7 @@ public final class SunManager {
     public static final String SUN_ANCHOR_X_TAG = "PvZSunAnchorX";
     public static final String SUN_ANCHOR_Z_TAG = "PvZSunAnchorZ";
     public static final String SUN_PILLAR_VISIBLE_TAG = "PvZSunPillarVisible";
-    private static final String TUTORIAL_SUN_GRANTED_TAG = "PvZTutorialSunGranted";
+    private static final String FIRST_WAVE_SUN_GRANTED_TAG = "PvZFirstWaveSunGranted";
     private static final int SUN_LIFETIME_TICKS = 25 * 20;
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
     private static final int SUN_DROP_RADIUS = 32;
@@ -66,10 +66,10 @@ public final class SunManager {
         sunData.unlockSun();
         syncSunBar(player);
 
-        if (!player.getPersistentData().getBoolean(TUTORIAL_SUN_GRANTED_TAG)) {
+        if (!player.getPersistentData().getBoolean(FIRST_WAVE_SUN_GRANTED_TAG)) {
             player.sendSystemMessage(Component.literal("Penny: Sun is your main currency. Pick it up before it fades!").withStyle(ChatFormatting.YELLOW));
-            spawnTutorialSun(level, player);
-            player.getPersistentData().putBoolean(TUTORIAL_SUN_GRANTED_TAG, true);
+            spawnFirstWaveSun(level, player);
+            player.getPersistentData().putBoolean(FIRST_WAVE_SUN_GRANTED_TAG, true);
         } else if (!wasUnlocked) {
             player.sendSystemMessage(Component.literal("Penny: Sun will now fall during the day.").withStyle(ChatFormatting.YELLOW));
         }
@@ -242,7 +242,7 @@ public final class SunManager {
         player.getPersistentData().putLong(NEXT_SUN_DROP_TICK_TAG, gameTime);
     }
 
-    private static void spawnTutorialSun(ServerLevel level, ServerPlayer player) {
+    private static void spawnFirstWaveSun(ServerLevel level, ServerPlayer player) {
         BlockPos front = player.blockPosition().relative(player.getDirection(), 3);
         BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, front);
         spawnSun(level, ground.above(SUN_DROP_HEIGHT), DEFAULT_SUN_VALUE, true);

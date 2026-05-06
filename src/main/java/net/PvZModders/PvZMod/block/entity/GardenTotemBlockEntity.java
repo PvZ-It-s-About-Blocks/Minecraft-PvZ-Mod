@@ -433,7 +433,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private void grantStarterPlants(ServerPlayer player) {
         grantSeedHolder(player);
         unlockSeedHolderRecipe(player);
-        player.sendSystemMessage(Component.literal("Tutorial unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
+        player.sendSystemMessage(Component.literal("Starter unlocks: Sunflower and Peashooter").withStyle(ChatFormatting.GREEN));
     }
 
     private void grantSeedHolder(ServerPlayer player) {

@@ -41,7 +41,7 @@ public final class OriginalGardenWaves {
 
     private static String scanTextFor(int wave) {
         return switch (wave) {
-            case 1 -> "Tutorial: Build your defense. Sunflower and Peashooter are supplied for free.";
+            case 1 -> "Starter wave: Build your defense. Sunflower and Peashooter are supplied for free.";
             case 2, 3, 4 -> "Build Your Defense: basic zombies approach in simple lanes.";
             case 5 -> "Milestone Wave: expect a stronger push and unlock support after clearing.";
             case 6, 7, 8, 9 -> "Standard Defense: use sun economy and lane coverage.";
