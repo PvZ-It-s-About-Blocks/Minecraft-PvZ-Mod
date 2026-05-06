@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.item;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
+import net.PvZModders.PvZMod.item.custom.CommandersBucketItem;
 import net.PvZModders.PvZMod.item.custom.DinoWhistleItem;
 import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
@@ -191,6 +192,8 @@ public class ModItems {
             () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> TIDE_SHELL = ITEMS.register("tide_shell",
             () -> new TideShellItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> COMMANDERS_BUCKET = ITEMS.register("commanders_bucket",
+            () -> new CommandersBucketItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> PIRATE_CANNON = ITEMS.register("pirate_cannon",
             () -> new Item(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> CAPTAINS_HELMET = ITEMS.register("captains_helmet",

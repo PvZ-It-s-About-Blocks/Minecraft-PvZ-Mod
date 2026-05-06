@@ -44,7 +44,7 @@ public final class BigWaveBeachWaves {
             case 3 -> "Tide warning: high tide can submerge unsupported land plants.";
             case 6, 11, 19, 27 -> "Plant unlock detected. Clear the wave to expand your beach loadout.";
             case 9 -> "Utility reward detected: Sea Pickle lighting unlock.";
-            case 30 -> "Completion Wave: long high tide detected. Tide Shell reward available.";
+            case 30 -> "Completion Wave: long high tide detected. Commander's Bucket reward available.";
             default -> "Beach zombies approach. Watch preset tide changes and keep land plants supported.";
         };
     }
@@ -62,7 +62,7 @@ public final class BigWaveBeachWaves {
             case 27 -> plant("banana_launcher", "Banana Launcher", "pvz2mod:banana_launcher_seed_packet", "Heavy splash artillery.");
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "big_wave_beach_complete", "Big Wave Beach Garden Complete", "minecraft:heart_of_the_sea", "Marks Big Wave Beach complete."),
-                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "tide_shell", "Tide Shell", "pvz2mod:tide_shell", "Water mobility and wave pulse reward.")
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "commanders_bucket", "Commander's Bucket", "pvz2mod:commanders_bucket", "Right-click a zombie to make reachable plants focus fire on it.")
             );
             default -> List.of();
         };

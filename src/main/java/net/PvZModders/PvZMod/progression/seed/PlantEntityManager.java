@@ -1753,6 +1753,10 @@ public final class PlantEntityManager {
     private static Optional<Zombie> selectZombie(ServerLevel level, SnowGolem plant, double range) {
         AABB area = plant.getBoundingBox().inflate(range, 3.0D, range);
         List<Zombie> zombies = level.getEntitiesOfClass(Zombie.class, area, Zombie::isAlive);
+        Optional<Zombie> focusedTarget = TargetingPriorityManager.selectFocusedTarget(level, zombies);
+        if (focusedTarget.isPresent()) {
+            return focusedTarget;
+        }
         return TargetingPriorityManager.selectTarget(zombies, plant, priorityFor(level, plant));
     }
 

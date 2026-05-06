@@ -158,6 +158,7 @@ public class PvZ2Mod {
             event.accept(ModItems.CITRON_LEGGINGS);
             event.accept(ModItems.CITRON_BOOTS);
             event.accept(ModItems.TIDE_SHELL);
+            event.accept(ModItems.COMMANDERS_BUCKET);
             event.accept(ModItems.PIRATE_CANNON);
             event.accept(ModItems.CAPTAINS_HELMET);
             event.accept(ModItems.CAPTAINS_CHESTPLATE);
