@@ -42,6 +42,10 @@ public record GardenPlantDefinition(
         return AncientEgyptPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> pirateSeasPlants() {
+        return PirateSeasPlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> wildWestPlants() {
         return WildWestPlants.PLANTS;
     }
@@ -78,6 +82,7 @@ public record GardenPlantDefinition(
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
             case DESERT -> ancientEgyptPlants();
+            case PIRATE_SEAS -> pirateSeasPlants();
             case WILD_WEST -> wildWestPlants();
             case FROSTBITE -> frostbitePlants();
             case LOST_CITY -> lostCityPlants();
@@ -93,7 +98,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), bigWaveBeachPlants().size())), frostbitePlants().size())
+                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), Math.max(bigWaveBeachPlants().size(), pirateSeasPlants().size()))), frostbitePlants().size())
         );
     }
 
@@ -111,6 +116,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.INITIAL_PLAINS, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition pirate(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.PIRATE_SEAS, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static GardenPlantDefinition wildWest(String plantId, String displayName, String description, int sunCost, int unlockWave) {
@@ -196,6 +209,19 @@ public record GardenPlantDefinition(
                 ancient("bonk_choy", "Bonk Choy", "Rapidly punches zombies in front and behind.", 150, 13),
                 ancient("torchwood", "Torchwood", "Doubles compatible pea projectile damage.", 175, 19),
                 ancient("twin_sunflower", "Twin Sunflower", "Produces 50 sun every few seconds.", 125, 24)
+        );
+    }
+
+    private static final class PirateSeasPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                pirate("kernel_pult", "Kernel-pult", "Lobs kernels and occasional stunning butter.", 100, 1),
+                pirate("snapdragon", "Snapdragon", "Breathes short-range fire over multiple zombies.", 150, 4),
+                pirate("spikeweed", "Spikeweed", "Damages zombies that walk over it on planks.", 100, 7),
+                pirate("spring_bean", "Spring Bean", "Launches zombies backward, especially into churning water.", 50, 10),
+                pirate("coconut_cannon", "Coconut Cannon", "Slow heavy cannon with splash damage.", 400, 15),
+                pirate("threepeater", "Threepeater", "Fires three shots at nearby lanes.", 300, 18),
+                pirate("spikerock", "Spikerock", "Stronger Spikeweed for plank control.", 250, 22),
+                pirate("cherry_bomb", "Cherry Bomb", "Explodes after a short fuse without damaging terrain.", 150, 26)
         );
     }
 

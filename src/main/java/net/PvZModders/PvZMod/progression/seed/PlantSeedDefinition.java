@@ -32,14 +32,14 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.DESERT, ModItems.BONK_CHOY_SEED_PACKET.getId(), "bonk_choy", "Bonk Choy", 150, PlantBehavior.BONK_CHOY);
         register(GardenId.DESERT, ModItems.TORCHWOOD_SEED_PACKET.getId(), "torchwood", "Torchwood", 175, PlantBehavior.TORCHWOOD);
         register(GardenId.DESERT, ModItems.TWIN_SUNFLOWER_SEED_PACKET.getId(), "twin_sunflower", "Twin Sunflower", 125, PlantBehavior.TWIN_SUNFLOWER);
-        register(GardenId.PIRATE_SEAS, "kernel_pult", "Kernel-pult", 100);
-        register(GardenId.PIRATE_SEAS, "snapdragon", "Snapdragon", 150);
-        register(GardenId.PIRATE_SEAS, "spikeweed", "Spikeweed", 100);
-        register(GardenId.PIRATE_SEAS, "spring_bean", "Spring Bean", 50);
-        register(GardenId.PIRATE_SEAS, "coconut_cannon", "Coconut Cannon", 400);
-        register(GardenId.PIRATE_SEAS, "threepeater", "Threepeater", 300);
-        register(GardenId.PIRATE_SEAS, "spikerock", "Spikerock", 250);
-        register(GardenId.PIRATE_SEAS, "cherry_bomb", "Cherry Bomb", 150);
+        register(GardenId.PIRATE_SEAS, ModItems.KERNEL_PULT_SEED_PACKET.getId(), "kernel_pult", "Kernel-pult", 100, PlantBehavior.KERNEL_PULT);
+        register(GardenId.PIRATE_SEAS, ModItems.SNAPDRAGON_SEED_PACKET.getId(), "snapdragon", "Snapdragon", 150, PlantBehavior.SNAPDRAGON);
+        register(GardenId.PIRATE_SEAS, ModItems.SPIKEWEED_SEED_PACKET.getId(), "spikeweed", "Spikeweed", 100, PlantBehavior.SPIKEWEED);
+        register(GardenId.PIRATE_SEAS, ModItems.SPRING_BEAN_SEED_PACKET.getId(), "spring_bean", "Spring Bean", 50, PlantBehavior.SPRING_BEAN);
+        register(GardenId.PIRATE_SEAS, ModItems.COCONUT_CANNON_SEED_PACKET.getId(), "coconut_cannon", "Coconut Cannon", 400, PlantBehavior.COCONUT_CANNON);
+        register(GardenId.PIRATE_SEAS, ModItems.THREEPEATER_SEED_PACKET.getId(), "threepeater", "Threepeater", 300, PlantBehavior.THREEPEATER);
+        register(GardenId.PIRATE_SEAS, ModItems.SPIKEROCK_SEED_PACKET.getId(), "spikerock", "Spikerock", 250, PlantBehavior.SPIKEROCK);
+        register(GardenId.PIRATE_SEAS, ModItems.CHERRY_BOMB_SEED_PACKET.getId(), "cherry_bomb", "Cherry Bomb", 150, PlantBehavior.CHERRY_BOMB);
         register(GardenId.WILD_WEST, ModItems.SPLIT_PEA_SEED_PACKET.getId(), "split_pea", "Split Pea", 125, PlantBehavior.SPLIT_PEA);
         register(GardenId.WILD_WEST, ModItems.CHILI_BEAN_SEED_PACKET.getId(), "chili_bean", "Chili Bean", 50, PlantBehavior.CHILI_BEAN);
         register(GardenId.WILD_WEST, ModItems.PEA_POD_SEED_PACKET.getId(), "pea_pod", "Pea Pod", 125, PlantBehavior.PEA_POD);
@@ -196,6 +196,14 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         CHARD_GUARD,
         STUNION,
         ROTOBAGA,
+        KERNEL_PULT,
+        SNAPDRAGON,
+        SPIKEWEED,
+        SPRING_BEAN,
+        COCONUT_CANNON,
+        THREEPEATER,
+        SPIKEROCK,
+        CHERRY_BOMB,
         LILY_PAD,
         TANGLE_KELP,
         BOWLING_BULB,

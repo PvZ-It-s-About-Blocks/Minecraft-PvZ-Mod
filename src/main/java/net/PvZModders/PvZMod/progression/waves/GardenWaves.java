@@ -11,6 +11,7 @@ public final class GardenWaves {
     public static List<GardenWaveDefinition> all(GardenId gardenId) {
         return switch (gardenId) {
             case DESERT -> AncientEgyptWaves.all();
+            case PIRATE_SEAS -> PirateSeasWaves.all();
             case WILD_WEST -> WildWestWaves.all();
             case FROSTBITE -> FrostbiteWaves.all();
             case LOST_CITY -> LostCityWaves.all();
@@ -26,6 +27,7 @@ public final class GardenWaves {
     public static GardenWaveDefinition get(GardenId gardenId, int wave) {
         return switch (gardenId) {
             case DESERT -> AncientEgyptWaves.get(wave);
+            case PIRATE_SEAS -> PirateSeasWaves.get(wave);
             case WILD_WEST -> WildWestWaves.get(wave);
             case FROSTBITE -> FrostbiteWaves.get(wave);
             case LOST_CITY -> LostCityWaves.get(wave);

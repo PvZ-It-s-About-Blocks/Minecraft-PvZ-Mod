@@ -14,6 +14,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
+import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
@@ -163,6 +164,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.tickNeonSpeakerEffects(serverLevel);
         be.tickFrostbiteSnowfallEffects(serverLevel);
         be.tickBigWaveBeachTideEffects(serverLevel);
+        be.tickPirateSeasPlankEffects(serverLevel);
         be.updateWaveBossBar(serverLevel);
         be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
@@ -190,6 +192,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         this.totemY = pos.getY() - 1.0D;
         this.sinkingPlotterY = pos.getY();
         placeTotemColumn(level, pos);
+        if (gardenId == GardenId.PIRATE_SEAS) {
+            PirateSeasPlankManager.createPermanentTotemPlatform(level, pos);
+        }
         registerPortal(level, pos);
         spawnSinkingPlotter(level, pos);
         syncHealthBar(level, pos);
@@ -210,6 +215,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     public int getCurrentWave() {
         return getWaveProgress().currentWave();
+    }
+
+    public GardenId getGardenId() {
+        return gardenId;
     }
 
     public boolean isWaveActive() {
@@ -465,6 +474,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         ensureWildWestMinecarts(level);
         generateGoldTilesForWave(level, definition.wave());
         generatePowerTilesForWave(level, definition.wave());
+        generatePirateSeasPlanksForWave(level, definition.wave());
         return List.copyOf(activeWaveDirections);
     }
 
@@ -1013,6 +1023,31 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     if (!player.getInventory().add(rewardStack)) {
                         player.drop(rewardStack, false);
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("pirate_cannon")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.PIRATE_CANNON.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("pirate_ship")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.PIRATE_SHIP.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("captains_armor_set")) {
+                    List<ItemStack> armorStacks = List.of(
+                            new ItemStack(ModItems.CAPTAINS_HELMET.get()),
+                            new ItemStack(ModItems.CAPTAINS_CHESTPLATE.get()),
+                            new ItemStack(ModItems.CAPTAINS_LEGGINGS.get()),
+                            new ItemStack(ModItems.CAPTAINS_BOOTS.get())
+                    );
+                    for (ItemStack rewardStack : armorStacks) {
+                        if (!player.getInventory().add(rewardStack)) {
+                            player.drop(rewardStack, false);
+                        }
+                    }
                 }
             }
         }
@@ -1038,6 +1073,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         migrateLegacyWaveProgress(level);
         unlockSunForExistingOriginalProgress(level);
         placeTotemColumn(level, pos);
+        if (gardenId == GardenId.PIRATE_SEAS) {
+            PirateSeasPlankManager.createPermanentTotemPlatform(level, pos);
+        }
         registerPortal(level, pos);
         syncHealthBar(level, pos);
     }
@@ -1143,6 +1181,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.BIG_WAVE_BEACH) {
             BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
+        }
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.PIRATE_SEAS) {
+            PirateSeasPlankManager.clearWavePlanks(serverLevel, worldPosition);
         }
     }
 
@@ -1343,6 +1384,26 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         FarFuturePowerTileManager.generatePowerTilesForWave(level, worldPosition, wave);
+    }
+
+    private void generatePirateSeasPlanksForWave(ServerLevel level, int wave) {
+        if (gardenId != GardenId.PIRATE_SEAS) {
+            return;
+        }
+
+        PirateSeasPlankManager.createPermanentTotemPlatform(level, worldPosition);
+        PirateSeasPlankManager.generatePlanksForWave(level, worldPosition, wave);
+    }
+
+    private void tickPirateSeasPlankEffects(ServerLevel level) {
+        if (gardenId != GardenId.PIRATE_SEAS) {
+            return;
+        }
+
+        PirateSeasPlankManager.createPermanentTotemPlatform(level, worldPosition);
+        if (!getWaveProgress(level).waveActive()) {
+            PirateSeasPlankManager.clearWavePlanks(level, worldPosition);
+        }
     }
 
     private int goldTileCountForWave(int wave) {
@@ -1678,6 +1739,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             }
             FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
             BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
+            PirateSeasPlankManager.clearWavePlanks(serverLevel, worldPosition);
             waveBossBar.removeAllPlayers();
         }
         super.setRemoved();

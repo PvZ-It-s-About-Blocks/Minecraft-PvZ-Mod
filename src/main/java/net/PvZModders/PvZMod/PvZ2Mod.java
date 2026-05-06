@@ -87,6 +87,14 @@ public class PvZ2Mod {
             event.accept(ModItems.BONK_CHOY_SEED_PACKET);
             event.accept(ModItems.TORCHWOOD_SEED_PACKET);
             event.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET);
+            event.accept(ModItems.KERNEL_PULT_SEED_PACKET);
+            event.accept(ModItems.SNAPDRAGON_SEED_PACKET);
+            event.accept(ModItems.SPIKEWEED_SEED_PACKET);
+            event.accept(ModItems.SPRING_BEAN_SEED_PACKET);
+            event.accept(ModItems.COCONUT_CANNON_SEED_PACKET);
+            event.accept(ModItems.THREEPEATER_SEED_PACKET);
+            event.accept(ModItems.SPIKEROCK_SEED_PACKET);
+            event.accept(ModItems.CHERRY_BOMB_SEED_PACKET);
             event.accept(ModItems.SPLIT_PEA_SEED_PACKET);
             event.accept(ModItems.CHILI_BEAN_SEED_PACKET);
             event.accept(ModItems.PEA_POD_SEED_PACKET);
@@ -147,6 +155,12 @@ public class PvZ2Mod {
             event.accept(ModItems.CITRON_LEGGINGS);
             event.accept(ModItems.CITRON_BOOTS);
             event.accept(ModItems.TIDE_SHELL);
+            event.accept(ModItems.PIRATE_CANNON);
+            event.accept(ModItems.CAPTAINS_HELMET);
+            event.accept(ModItems.CAPTAINS_CHESTPLATE);
+            event.accept(ModItems.CAPTAINS_LEGGINGS);
+            event.accept(ModItems.CAPTAINS_BOOTS);
+            event.accept(ModItems.PIRATE_SHIP);
         }
     }
 

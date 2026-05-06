@@ -29,6 +29,14 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.BONK_CHOY_SEED_PACKET.get());
                         output.accept(ModItems.TORCHWOOD_SEED_PACKET.get());
                         output.accept(ModItems.TWIN_SUNFLOWER_SEED_PACKET.get());
+                        output.accept(ModItems.KERNEL_PULT_SEED_PACKET.get());
+                        output.accept(ModItems.SNAPDRAGON_SEED_PACKET.get());
+                        output.accept(ModItems.SPIKEWEED_SEED_PACKET.get());
+                        output.accept(ModItems.SPRING_BEAN_SEED_PACKET.get());
+                        output.accept(ModItems.COCONUT_CANNON_SEED_PACKET.get());
+                        output.accept(ModItems.THREEPEATER_SEED_PACKET.get());
+                        output.accept(ModItems.SPIKEROCK_SEED_PACKET.get());
+                        output.accept(ModItems.CHERRY_BOMB_SEED_PACKET.get());
                         output.accept(ModItems.SPLIT_PEA_SEED_PACKET.get());
                         output.accept(ModItems.CHILI_BEAN_SEED_PACKET.get());
                         output.accept(ModItems.PEA_POD_SEED_PACKET.get());
@@ -84,6 +92,12 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CITRON_LEGGINGS.get());
                         output.accept(ModItems.CITRON_BOOTS.get());
                         output.accept(ModItems.TIDE_SHELL.get());
+                        output.accept(ModItems.PIRATE_CANNON.get());
+                        output.accept(ModItems.CAPTAINS_HELMET.get());
+                        output.accept(ModItems.CAPTAINS_CHESTPLATE.get());
+                        output.accept(ModItems.CAPTAINS_LEGGINGS.get());
+                        output.accept(ModItems.CAPTAINS_BOOTS.get());
+                        output.accept(ModItems.PIRATE_SHIP.get());
                     })
                     .build());
 

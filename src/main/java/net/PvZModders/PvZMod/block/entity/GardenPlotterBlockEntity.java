@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.progression.GardenBiomeCategory;
 import net.PvZModders.PvZMod.progression.GardenDefinitions;
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
+import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.minecraft.ChatFormatting;
@@ -246,6 +247,9 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         if (serverLevel.getBlockEntity(worldPosition) instanceof GardenTotemBlockEntity gardenTotem) {
             gardenTotem.initializeFromPlotter(serverLevel, worldPosition, creationGardenId.get());
         }
+        if (creationGardenId.get() == GardenId.PIRATE_SEAS) {
+            PirateSeasPlankManager.createPermanentTotemPlatform(serverLevel, worldPosition);
+        }
         player.displayClientMessage(Component.literal(GardenDefinitions.get(creationGardenId.get()).displayName() + " created").withStyle(ChatFormatting.GREEN), true);
         return true;
     }
@@ -284,7 +288,9 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         int startZ = origin.getZ() - (LENGTH / 2);
         int y = origin.getY();
         boolean valid = true;
-        boolean waterAllowed = intendedGardenId == GardenId.BIG_WAVE_BEACH;
+        boolean bigWaveBeach = intendedGardenId == GardenId.BIG_WAVE_BEACH;
+        boolean pirateSeas = intendedGardenId == GardenId.PIRATE_SEAS;
+        boolean waterAllowed = bigWaveBeach || pirateSeas;
         int waterTiles = 0;
         int beachLandTiles = 0;
 
@@ -296,13 +302,15 @@ public class GardenPlotterBlockEntity extends BlockEntity {
                 BlockState floorState = level.getBlockState(floorPos);
                 boolean waterInPlot = gardenState.is(Blocks.WATER);
                 boolean beachLand = floorState.is(BlockTags.SAND) || floorState.is(Blocks.SANDSTONE) || floorState.is(Blocks.SMOOTH_SANDSTONE) || floorState.is(Blocks.CUT_SANDSTONE);
-                boolean validFloor = floorState.is(BlockTags.DIRT)
-                        || floorState.is(BlockTags.SAND)
-                        || (waterAllowed && beachLand)
-                        || (waterAllowed && waterInPlot && floorState.isFaceSturdy(level, floorPos, net.minecraft.core.Direction.UP));
+                boolean validFloor = pirateSeas
+                        ? (waterInPlot || gardenPos.equals(origin))
+                        : floorState.is(BlockTags.DIRT)
+                                || floorState.is(BlockTags.SAND)
+                                || (bigWaveBeach && beachLand)
+                                || (bigWaveBeach && waterInPlot && floorState.isFaceSturdy(level, floorPos, net.minecraft.core.Direction.UP));
                 if (waterAllowed && waterInPlot) {
                     waterTiles++;
-                } else if (waterAllowed && beachLand) {
+                } else if (bigWaveBeach && beachLand) {
                     beachLandTiles++;
                 }
                 markers.add(new PreviewMarker(gardenPos, validFloor, false));
@@ -327,10 +335,16 @@ public class GardenPlotterBlockEntity extends BlockEntity {
             }
         }
 
-        if (waterAllowed) {
+        if (bigWaveBeach) {
             int totalTiles = WIDTH * LENGTH;
             int minimumMixTiles = Math.max(1, totalTiles / 5);
             if (waterTiles < minimumMixTiles || beachLandTiles < minimumMixTiles) {
+                valid = false;
+                markers.add(new PreviewMarker(origin.above(1), false, true));
+            }
+        } else if (pirateSeas) {
+            int minimumOceanTiles = (WIDTH * LENGTH * 3) / 4;
+            if (waterTiles < minimumOceanTiles) {
                 valid = false;
                 markers.add(new PreviewMarker(origin.above(1), false, true));
             }
