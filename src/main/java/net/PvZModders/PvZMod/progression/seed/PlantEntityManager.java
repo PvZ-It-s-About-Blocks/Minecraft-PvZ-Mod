@@ -116,6 +116,11 @@ public final class PlantEntityManager {
     private static final double PERFUME_SHROOM_RANGE = 8.0D;
     private static final double PHAT_BEET_RADIUS = 3.0D;
     private static final double SPORE_SHROOM_RANGE = 12.0D;
+    private static final float PEA_PROJECTILE_SPEED = 0.62F;
+    private static final float BASIC_PROJECTILE_SPEED = 0.52F;
+    private static final double LOBBED_PROJECTILE_DISTANCE_DIVISOR = 22.0D;
+    private static final double LOBBED_PROJECTILE_MIN_SPEED = 0.32D;
+    private static final double LOBBED_PROJECTILE_MAX_SPEED = 0.72D;
     private static final int SHOOTER_INTERVAL_TICKS = 30;
     private static final int REPEATER_SECOND_SHOT_DELAY_TICKS = 6;
     private static final int PHAT_BEET_INTERVAL_TICKS = 40;
@@ -2357,7 +2362,7 @@ public final class PlantEntityManager {
         Vec3 direction = targetPos.subtract(start).normalize();
         Vec3 side = new Vec3(-direction.z, 0.0D, direction.x).normalize().scale(sideOffset);
         snowball.setPos(start.x + side.x, start.y, start.z + side.z);
-        snowball.shoot(direction.x, direction.y + 0.05D, direction.z, 1.35F, 0.0F);
+        snowball.shoot(direction.x, direction.y + 0.08D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
         if (buffed) {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
             snowball.setSecondsOnFire(2);
@@ -2381,7 +2386,7 @@ public final class PlantEntityManager {
         Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
         Vec3 direction = targetPos.subtract(start).normalize();
         snowball.setPos(start.x, start.y, start.z);
-        snowball.shoot(direction.x, direction.y + 0.18D, direction.z, 1.1F, 0.0F);
+        snowball.shoot(direction.x, direction.y + 0.22D, direction.z, BASIC_PROJECTILE_SPEED, 0.0F);
         snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         if (buffed) {
@@ -2402,7 +2407,7 @@ public final class PlantEntityManager {
         Vec3 horizontal = new Vec3(delta.x, 0.0D, delta.z);
         double distance = Math.max(1.0D, horizontal.length());
         Vec3 direction = horizontal.normalize();
-        double speed = Mth.clamp(distance / 13.0D, 0.45D, 1.15D);
+        double speed = Mth.clamp(distance / LOBBED_PROJECTILE_DISTANCE_DIVISOR, LOBBED_PROJECTILE_MIN_SPEED, LOBBED_PROJECTILE_MAX_SPEED);
         double verticalLift = Mth.clamp(0.35D + distance * 0.035D, 0.45D, 0.95D);
         snowball.setPos(start.x, start.y, start.z);
         snowball.shoot(direction.x, verticalLift, direction.z, (float) speed, 0.0F);

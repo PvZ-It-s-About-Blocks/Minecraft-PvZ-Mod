@@ -65,6 +65,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
@@ -103,6 +105,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
+    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.13D;
+    private static final double WAVE_ZOMBIE_NAVIGATION_SPEED = 0.55D;
     private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
     public static final String WAVE_ZOMBIE_TAG = "PvZWaveZombie";
     private static final ResourceLocation SEED_HOLDER_RECIPE = new ResourceLocation(PvZ2Mod.MOD_ID, "seed_holder");
@@ -671,6 +675,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (entity instanceof Mob mob) {
             mob.setPersistenceRequired();
             if (!(entity instanceof JurassicDinosaurEntity)) {
+                applyWaveZombieTuning(mob);
                 moveMobTowardTotem(mob);
             }
         }
@@ -809,7 +814,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private void moveMobTowardTotem(Mob mob) {
         BlockPos approachPos = getTotemApproachPos(mob);
-        mob.getNavigation().moveTo(approachPos.getX() + 0.5D, approachPos.getY(), approachPos.getZ() + 0.5D, 1.1D);
+        mob.getNavigation().moveTo(approachPos.getX() + 0.5D, approachPos.getY(), approachPos.getZ() + 0.5D, WAVE_ZOMBIE_NAVIGATION_SPEED);
+    }
+
+    private void applyWaveZombieTuning(Mob mob) {
+        AttributeInstance movementSpeed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (movementSpeed != null) {
+            movementSpeed.setBaseValue(WAVE_ZOMBIE_MOVEMENT_SPEED);
+        }
     }
 
     private BlockPos getTotemApproachPos(Mob mob) {
