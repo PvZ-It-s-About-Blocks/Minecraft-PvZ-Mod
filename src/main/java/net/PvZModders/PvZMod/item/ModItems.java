@@ -159,6 +159,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> PEA = ITEMS.register("pea",
+            () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> GARDEN_PLOTTER = ITEMS.register("garden_plotter",
             () -> new GardenPlotterItem(ModBlocks.GARDEN_PLOTTER.get(), new Item.Properties()));
     public static final RegistryObject<Item> BIOME_DETECTOR = ITEMS.register("biome_detector",

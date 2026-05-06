@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
+import net.PvZModders.PvZMod.entity.custom.PeaProjectileEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
@@ -2350,7 +2351,7 @@ public final class PlantEntityManager {
 
     private static void shootSnowball(ServerLevel level, SnowGolem plant, LivingEntity target, double sideOffset) {
         boolean buffed = hasTorchwoodBetween(level, plant.position(), target.position());
-        Snowball snowball = new Snowball(level, plant);
+        Snowball snowball = createProjectileVisual(level, plant, "pea");
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
         Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
         Vec3 direction = targetPos.subtract(start).normalize();
@@ -2364,6 +2365,7 @@ public final class PlantEntityManager {
         snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, "pea");
         level.addFreshEntity(snowball);
+        plant.swing(InteractionHand.MAIN_HAND, true);
 
         DamageSource source = level.damageSources().mobProjectile(snowball, plant);
         hurtWithoutKnockback(target, source, scaledPlantDamage(level, plant, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE));
@@ -2374,7 +2376,7 @@ public final class PlantEntityManager {
     }
 
     private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed, String projectileKind) {
-        Snowball snowball = new Snowball(level, plant);
+        Snowball snowball = createProjectileVisual(level, plant, projectileKind);
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
         Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
         Vec3 direction = targetPos.subtract(start).normalize();
@@ -2387,6 +2389,9 @@ public final class PlantEntityManager {
             snowball.setSecondsOnFire(2);
         }
         level.addFreshEntity(snowball);
+        if (usesPeaProjectileVisual(projectileKind)) {
+            plant.swing(InteractionHand.MAIN_HAND, true);
+        }
     }
 
     private static void shootLobbedSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, String projectileKind) {
@@ -2405,6 +2410,17 @@ public final class PlantEntityManager {
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         level.addFreshEntity(snowball);
         level.sendParticles(ParticleTypes.POOF, start.x, start.y, start.z, 4, 0.12D, 0.12D, 0.12D, 0.01D);
+    }
+
+    private static Snowball createProjectileVisual(ServerLevel level, SnowGolem plant, String projectileKind) {
+        if (usesPeaProjectileVisual(projectileKind)) {
+            return new PeaProjectileEntity(level, plant);
+        }
+        return new Snowball(level, plant);
+    }
+
+    private static boolean usesPeaProjectileVisual(String projectileKind) {
+        return "pea".equals(projectileKind) || "primal_pea".equals(projectileKind);
     }
 
     private static void renderGuardianStyleLaser(ServerLevel level, Vec3 start, Vec3 end) {

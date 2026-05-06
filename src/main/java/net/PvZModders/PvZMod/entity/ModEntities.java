@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.AllPlantsDevSummonEntity;
 import net.PvZModders.PvZMod.entity.custom.FlyingPlaneEntity;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
+import net.PvZModders.PvZMod.entity.custom.PeaProjectileEntity;
 import net.PvZModders.PvZMod.entity.custom.PennyVanEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZPlantEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
@@ -38,6 +39,12 @@ public class ModEntities {
                     .clientTrackingRange(6)
                     .updateInterval(20)
                     .build(PvZ2Mod.MOD_ID + ":sun"));
+    public static final RegistryObject<EntityType<PeaProjectileEntity>> PEA_PROJECTILE =
+            ENTITY_TYPES.register("pea_projectile", () -> EntityType.Builder.<PeaProjectileEntity>of(PeaProjectileEntity::new, MobCategory.MISC)
+                    .sized(0.25F, 0.25F)
+                    .clientTrackingRange(8)
+                    .updateInterval(10)
+                    .build(PvZ2Mod.MOD_ID + ":pea_projectile"));
     public static final RegistryObject<EntityType<PvZZombieEntity>> GARDEN_ZOMBIE =
             ENTITY_TYPES.register("garden_zombie", () -> EntityType.Builder.<PvZZombieEntity>of(PvZZombieEntity::new, MobCategory.MONSTER)
                     .sized(0.6F, 1.95F)

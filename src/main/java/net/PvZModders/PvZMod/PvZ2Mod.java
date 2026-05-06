@@ -8,6 +8,9 @@ import net.PvZModders.PvZMod.client.seed.ClientSeedStorage;
 import net.PvZModders.PvZMod.client.screen.BiomeDetectorScreen;
 import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
+import net.PvZModders.PvZMod.entity.client.PeaProjectileRenderer;
+import net.PvZModders.PvZMod.entity.client.PeashooterModel;
+import net.PvZModders.PvZMod.entity.client.PeashooterRenderer;
 import net.PvZModders.PvZMod.entity.client.WildWestMinecartRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
@@ -161,6 +164,7 @@ public class PvZ2Mod {
             event.accept(ModItems.CAPTAINS_LEGGINGS);
             event.accept(ModItems.CAPTAINS_BOOTS);
             event.accept(ModItems.PIRATE_SHIP);
+            event.accept(ModItems.PEA);
         }
     }
 
@@ -190,8 +194,12 @@ public class PvZ2Mod {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.WILD_WEST_MINECART.get(), WildWestMinecartRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.FLYING_PLANE.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.JURASSIC_DINOSAUR.get(), SnifferRenderer::new);
-                for (var plantEntityType : ModEntities.plantEntityTypes()) {
-                    net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntityType.get(), SnowGolemRenderer::new);
+                for (var plantEntry : ModEntities.PLANTS.entrySet()) {
+                    if ("peashooter".equals(plantEntry.getKey())) {
+                        net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntry.getValue().get(), PeashooterRenderer::new);
+                    } else {
+                        net.minecraft.client.renderer.entity.EntityRenderers.register(plantEntry.getValue().get(), SnowGolemRenderer::new);
+                    }
                 }
                 MenuScreens.register(ModMenuTypes.GARDEN_TOTEM.get(), GardenTotemScreen::new);
                 MenuScreens.register(ModMenuTypes.BIOME_DETECTOR.get(), BiomeDetectorScreen::new);
@@ -207,11 +215,13 @@ public class PvZ2Mod {
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
             event.registerLayerDefinition(pennytest.LAYER_LOCATION, pennytest::createBodyLayer);
+            event.registerLayerDefinition(PeashooterModel.LAYER_LOCATION, PeashooterModel::createBodyLayer);
         }
 
         @SubscribeEvent
         public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerEntityRenderer(ModEntities.SUN.get(), SunExperienceOrbRenderer::new);
+            event.registerEntityRenderer(ModEntities.PEA_PROJECTILE.get(), PeaProjectileRenderer::new);
         }
     }
 }

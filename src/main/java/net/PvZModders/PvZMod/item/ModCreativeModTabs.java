@@ -98,6 +98,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CAPTAINS_LEGGINGS.get());
                         output.accept(ModItems.CAPTAINS_BOOTS.get());
                         output.accept(ModItems.PIRATE_SHIP.get());
+                        output.accept(ModItems.PEA.get());
                     })
                     .build());
 
