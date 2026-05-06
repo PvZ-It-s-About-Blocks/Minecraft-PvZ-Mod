@@ -81,11 +81,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.JURASSIC_MARSH, ModItems.PERFUME_SHROOM_SEED_PACKET.getId(), "perfume_shroom", "Perfume-shroom", 150, PlantBehavior.PERFUME_SHROOM);
         register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_SUNFLOWER_SEED_PACKET.getId(), "primal_sunflower", "Primal Sunflower", 75, PlantBehavior.PRIMAL_SUNFLOWER);
         register(GardenId.JURASSIC_MARSH, ModItems.PRIMAL_POTATO_MINE_SEED_PACKET.getId(), "primal_potato_mine", "Primal Potato Mine", 50, PlantBehavior.PRIMAL_POTATO_MINE);
-        register(GardenId.BIG_WAVE_BEACH, "lily_pad", "Lily Pad", 25);
-        register(GardenId.BIG_WAVE_BEACH, "tangle_kelp", "Tangle Kelp", 25);
-        register(GardenId.BIG_WAVE_BEACH, "bowling_bulb", "Bowling Bulb", 200);
-        register(GardenId.BIG_WAVE_BEACH, "guacodile", "Guacodile", 125);
-        register(GardenId.BIG_WAVE_BEACH, "banana_launcher", "Banana Launcher", 500);
+        register(GardenId.BIG_WAVE_BEACH, ModItems.LILY_PAD_SEED_PACKET.getId(), "lily_pad", "Lily Pad", 25, PlantBehavior.LILY_PAD);
+        register(GardenId.BIG_WAVE_BEACH, ModItems.TANGLE_KELP_SEED_PACKET.getId(), "tangle_kelp", "Tangle Kelp", 25, PlantBehavior.TANGLE_KELP);
+        register(GardenId.BIG_WAVE_BEACH, ModItems.BOWLING_BULB_SEED_PACKET.getId(), "bowling_bulb", "Bowling Bulb", 200, PlantBehavior.BOWLING_BULB);
+        register(GardenId.BIG_WAVE_BEACH, ModItems.GUACODILE_SEED_PACKET.getId(), "guacodile", "Guacodile", 125, PlantBehavior.GUACODILE);
+        register(GardenId.BIG_WAVE_BEACH, ModItems.BANANA_LAUNCHER_SEED_PACKET.getId(), "banana_launcher", "Banana Launcher", 500, PlantBehavior.BANANA_LAUNCHER);
         register(GardenId.MODERN_DAY, "moonflower", "Moonflower", 50);
         register(GardenId.MODERN_DAY, "nightshade", "Nightshade", 75);
         register(GardenId.MODERN_DAY, "shadow_shroom", "Shadow-shroom", 50);
@@ -195,6 +195,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         PEPPER_PULT,
         CHARD_GUARD,
         STUNION,
-        ROTOBAGA
+        ROTOBAGA,
+        LILY_PAD,
+        TANGLE_KELP,
+        BOWLING_BULB,
+        GUACODILE,
+        BANANA_LAUNCHER
     }
 }

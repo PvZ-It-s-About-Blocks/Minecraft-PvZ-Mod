@@ -64,6 +64,11 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.INFI_NUT_SEED_PACKET.get());
                         output.accept(ModItems.MAGNIFYING_GRASS_SEED_PACKET.get());
                         output.accept(ModItems.TILE_TURNIP_SEED_PACKET.get());
+                        output.accept(ModItems.LILY_PAD_SEED_PACKET.get());
+                        output.accept(ModItems.TANGLE_KELP_SEED_PACKET.get());
+                        output.accept(ModItems.BOWLING_BULB_SEED_PACKET.get());
+                        output.accept(ModItems.GUACODILE_SEED_PACKET.get());
+                        output.accept(ModItems.BANANA_LAUNCHER_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
@@ -78,6 +83,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CITRON_CHESTPLATE.get());
                         output.accept(ModItems.CITRON_LEGGINGS.get());
                         output.accept(ModItems.CITRON_BOOTS.get());
+                        output.accept(ModItems.TIDE_SHELL.get());
                     })
                     .build());
 

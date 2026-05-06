@@ -12,6 +12,7 @@ import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
+import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
@@ -161,6 +162,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.tickWaveSpawnSchedule(serverLevel);
         be.tickNeonSpeakerEffects(serverLevel);
         be.tickFrostbiteSnowfallEffects(serverLevel);
+        be.tickBigWaveBeachTideEffects(serverLevel);
         be.updateWaveBossBar(serverLevel);
         be.tickActiveWaveZombies(serverLevel);
         be.tickWaveObjective(serverLevel);
@@ -564,6 +566,19 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 }
             }
         }
+    }
+
+    private void tickBigWaveBeachTideEffects(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (gardenId != GardenId.BIG_WAVE_BEACH || !waveProgress.waveActive() || activeWaveStartTick < 0L) {
+            if (gardenId == GardenId.BIG_WAVE_BEACH) {
+                BigWaveBeachTideManager.clearTide(level, worldPosition);
+            }
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        BigWaveBeachTideManager.tickTide(level, worldPosition, waveProgress.currentWave(), elapsed, true);
     }
 
     private void applyNeonSpeakerPulse(ServerLevel level, NeonSpeakerPulse pulse) {
@@ -986,6 +1001,18 @@ public class GardenTotemBlockEntity extends BlockEntity {
                             player.drop(rewardStack, false);
                         }
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("sea_pickle")) {
+                    ItemStack rewardStack = new ItemStack(Items.SEA_PICKLE);
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("tide_shell")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.TIDE_SHELL.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
                 }
             }
         }
@@ -1113,6 +1140,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.FAR_FUTURE) {
             FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
+        }
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.BIG_WAVE_BEACH) {
+            BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
         }
     }
 
@@ -1647,6 +1677,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 discardDisplay(serverLevel, displayId);
             }
             FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
+            BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
             waveBossBar.removeAllPlayers();
         }
         super.setRemoved();

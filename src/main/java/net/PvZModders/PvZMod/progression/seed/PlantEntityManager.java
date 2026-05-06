@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
+import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
@@ -98,6 +99,12 @@ public final class PlantEntityManager {
     private static final String INFI_NUT_LAST_HURT_TICK_TAG = "PvZInfiNutLastHurtTick";
     private static final String MECHANICAL_ZOMBIE_TAG = "PvZMechanicalZombie";
     private static final String FLYING_ZOMBIE_TAG = "PvZFlyingZombie";
+    private static final String SUBMERGED_TAG = "PvZSubmerged";
+    private static final String SUBMERGED_START_TICK_TAG = "PvZSubmergedStartTick";
+    private static final String NEXT_DROWNING_DAMAGE_TICK_TAG = "PvZNextDrowningDamageTick";
+    private static final String ALLOW_DROWNING_DAMAGE_TAG = "PvZAllowDrowningDamage";
+    private static final String GUACODILE_RUSHING_TAG = "PvZGuacodileRushing";
+    private static final String GUACODILE_RUSH_END_TICK_TAG = "PvZGuacodileRushEndTick";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -130,6 +137,9 @@ public final class PlantEntityManager {
     private static final int INFI_NUT_REGEN_INTERVAL_TICKS = 20 * 4;
     private static final int INFI_NUT_RECENT_DAMAGE_TICKS = 20 * 3;
     private static final int MAGNIFYING_GRASS_SUN_COST = 50;
+    private static final int SUBMERGED_GRACE_TICKS = 20 * 5;
+    private static final int DROWNING_DAMAGE_INTERVAL_TICKS = 20 * 2;
+    private static final int BANANA_LAUNCHER_INTERVAL_TICKS = 20 * 6;
     private static final int RECENT_PLANT_DEATH_WINDOW_TICKS = 20 * 60;
     private static final int MAX_SPORE_SHROOM_CLONES_NEARBY = 12;
     private static final int FREEZE_STAGE_INTERVAL_TICKS = 20 * 5;
@@ -162,6 +172,11 @@ public final class PlantEntityManager {
     private static final float LASER_BEAN_DAMAGE = 6.0F;
     private static final float MAGNIFYING_GRASS_DAMAGE = 12.0F;
     private static final float CITRON_DAMAGE = 32.0F;
+    private static final float BOWLING_BULB_DAMAGE = 7.0F;
+    private static final float GUACODILE_SEED_DAMAGE = 4.0F;
+    private static final float GUACODILE_RUSH_DAMAGE = 10.0F;
+    private static final float BANANA_DIRECT_DAMAGE = 24.0F;
+    private static final float BANANA_SPLASH_DAMAGE = 12.0F;
     private static final float PEPPER_PULT_DIRECT_DAMAGE = 9.0F;
     private static final float PEPPER_PULT_SPLASH_DAMAGE = 4.5F;
     private static final float ROTOBAGA_DAMAGE = 4.0F;
@@ -194,7 +209,24 @@ public final class PlantEntityManager {
             return thawPlantNear(player, target.getBlockPos());
         }
 
-        BlockPos placePos = graveBuster ? graveTargetPos.above() : target.getBlockPos().relative(target.getDirection());
+        BlockPos targetPos = target.getBlockPos();
+        BlockPos placePos = graveBuster ? graveTargetPos.above() : targetPos.relative(target.getDirection());
+        PlantSeedDefinition.PlantBehavior behavior = definition.behavior();
+        boolean aquaticPlant = isAquaticPlant(behavior);
+        boolean amphibiousPlant = isAmphibiousPlant(behavior);
+        if (aquaticPlant) {
+            if (!canPlaceAquaticPlant(level, targetPos)) {
+                return false;
+            }
+            placePos = targetPos;
+        } else if (amphibiousPlant && isWaterOrFlooded(level, targetPos)) {
+            placePos = targetPos;
+        } else if (!amphibiousPlant && isWaterOrFlooded(level, targetPos)) {
+            if (!hasLilyPadSupport(level, targetPos)) {
+                return false;
+            }
+            placePos = targetPos.above();
+        }
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.GOLD_LEAF) {
             return GoldTileManager.addGoldTileNear(level, target.getBlockPos());
         }
@@ -219,7 +251,9 @@ public final class PlantEntityManager {
             }
         }
 
-        if (!level.getBlockState(placePos).isAir() || level.getBlockState(placePos.below()).isAir()) {
+        boolean waterPlacement = isWaterOrFlooded(level, placePos) && (aquaticPlant || amphibiousPlant);
+        if ((!level.getBlockState(placePos).isAir() && !waterPlacement)
+                || (level.getBlockState(placePos.below()).isAir() && !waterPlacement && !hasLilyPadSupport(level, placePos.below()))) {
             return false;
         }
 
@@ -349,6 +383,9 @@ public final class PlantEntityManager {
             return;
         }
 
+        if (isPlant(event.getEntity()) && event.getEntity().getPersistentData().getBoolean(ALLOW_DROWNING_DAMAGE_TAG)) {
+            event.getEntity().getPersistentData().remove(ALLOW_DROWNING_DAMAGE_TAG);
+        } else
         if (isPlant(event.getEntity()) && isEnvironmentalPlaceholderDamage(event.getSource())) {
             event.setCanceled(true);
             return;
@@ -429,6 +466,9 @@ public final class PlantEntityManager {
     private static void tickPlant(ServerLevel level, SnowGolem plant) {
         ensurePlantNameVisible(plant);
         lookAtNearestHostile(level, plant);
+        if (tickSubmergedPlantDrowning(level, plant)) {
+            return;
+        }
         if (isPlantFrozen(plant)) {
             syncFreezeOverlay(level, plant);
             if (level.getGameTime() % 20L == 0L) {
@@ -486,7 +526,11 @@ public final class PlantEntityManager {
             case CHARD_GUARD -> tickChardGuard(level, plant);
             case STUNION -> tickStunion(level, plant);
             case ROTOBAGA -> tickRotobaga(level, plant);
-            case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, PLACEHOLDER -> {
+            case TANGLE_KELP -> tickTangleKelp(level, plant);
+            case BOWLING_BULB -> tickBowlingBulb(level, plant);
+            case GUACODILE -> tickGuacodile(level, plant);
+            case BANANA_LAUNCHER -> tickBananaLauncher(level, plant);
+            case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, LILY_PAD, PLACEHOLDER -> {
             }
         }
     }
@@ -1247,6 +1291,119 @@ public final class PlantEntityManager {
         }
     }
 
+    private static void tickTangleKelp(ServerLevel level, SnowGolem plant) {
+        Optional<Zombie> target = selectZombie(level, plant, 1.6D);
+        if (target.isEmpty()) {
+            return;
+        }
+
+        Zombie zombie = target.get();
+        if (isGargantuarLike(zombie)) {
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), 40.0F);
+        } else {
+            zombie.hurt(level.damageSources().mobAttack(plant), 999.0F);
+        }
+        level.sendParticles(ParticleTypes.BUBBLE, zombie.getX(), zombie.getY() + 0.4D, zombie.getZ(), 36, 0.7D, 0.5D, 0.7D, 0.04D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.PLAYER_SPLASH_HIGH_SPEED, SoundSource.HOSTILE, 0.7F, 0.8F);
+        plant.discard();
+    }
+
+    private static void tickBowlingBulb(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> firstTarget = selectZombie(level, plant, SHOOTER_RANGE);
+        if (firstTarget.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Set<UUID> hitTargets = new HashSet<>();
+        Zombie current = firstTarget.get();
+        for (int bounce = 0; bounce < 3 && current != null; bounce++) {
+            hurtWithoutKnockback(current, level.damageSources().mobAttack(plant), BOWLING_BULB_DAMAGE);
+            shootSnowballVisual(level, plant, current, false, "bowling_bulb");
+            hitTargets.add(current.getUUID());
+            Zombie previous = current;
+            current = level.getEntitiesOfClass(Zombie.class, previous.getBoundingBox().inflate(5.0D), Zombie::isAlive)
+                    .stream()
+                    .filter(zombie -> !hitTargets.contains(zombie.getUUID()))
+                    .min((first, second) -> Double.compare(previous.distanceToSqr(first), previous.distanceToSqr(second)))
+                    .orElse(null);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MELON_PULT_INTERVAL_TICKS);
+    }
+
+    private static void tickGuacodile(ServerLevel level, SnowGolem plant) {
+        CompoundTag tag = plant.getPersistentData();
+        long gameTime = level.getGameTime();
+        if (tag.getBoolean(GUACODILE_RUSHING_TAG)) {
+            tickGuacodileRush(level, plant);
+            if (gameTime >= tag.getLong(GUACODILE_RUSH_END_TICK_TAG)) {
+                plant.discard();
+            }
+            return;
+        }
+
+        Optional<Zombie> closeTarget = selectZombie(level, plant, 1.7D);
+        if (closeTarget.isPresent()) {
+            tag.putBoolean(GUACODILE_RUSHING_TAG, true);
+            tag.putLong(GUACODILE_RUSH_END_TICK_TAG, gameTime + 20L);
+            return;
+        }
+
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        shootSnowballVisual(level, plant, target.get(), false, "guacodile_seed");
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), GUACODILE_SEED_DAMAGE);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickGuacodileRush(ServerLevel level, SnowGolem plant) {
+        Vec3 facing = facingVector(plant);
+        plant.setDeltaMovement(facing.scale(0.45D));
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(0.8D), Zombie::isAlive)) {
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), GUACODILE_RUSH_DAMAGE);
+        }
+        level.sendParticles(ParticleTypes.SPLASH, plant.getX(), plant.getY() + 0.4D, plant.getZ(), 8, 0.35D, 0.2D, 0.35D, 0.03D);
+    }
+
+    private static void tickBananaLauncher(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, 18.0D);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 20L);
+            return;
+        }
+
+        Zombie directTarget = target.get();
+        hurtWithoutKnockback(directTarget, level.damageSources().mobAttack(plant), BANANA_DIRECT_DAMAGE);
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, directTarget.getBoundingBox().inflate(3.0D, 1.5D, 3.0D), Zombie::isAlive)) {
+            if (zombie != directTarget) {
+                hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), BANANA_SPLASH_DAMAGE);
+            }
+        }
+        shootLobbedSnowballVisual(level, plant, directTarget, "banana");
+        level.sendParticles(ParticleTypes.EXPLOSION, directTarget.getX(), directTarget.getY() + 0.7D, directTarget.getZ(), 2, 0.3D, 0.2D, 0.3D, 0.0D);
+        level.playSound(null, directTarget.blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.55F, 1.4F);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + BANANA_LAUNCHER_INTERVAL_TICKS);
+    }
+
     private static void tickPepperPult(ServerLevel level, SnowGolem plant) {
         thawNearbyPlants(level, plant);
         long gameTime = level.getGameTime();
@@ -1561,6 +1718,78 @@ public final class PlantEntityManager {
 
     private static boolean isMechanicalZombie(LivingEntity entity) {
         return entity.getPersistentData().getBoolean(MECHANICAL_ZOMBIE_TAG);
+    }
+
+    private static boolean canPlaceAquaticPlant(ServerLevel level, BlockPos targetPos) {
+        return isWaterOrFlooded(level, targetPos);
+    }
+
+    private static boolean isWaterOrFlooded(ServerLevel level, BlockPos pos) {
+        return level.getBlockState(pos).is(Blocks.WATER)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos.below());
+    }
+
+    private static boolean hasLilyPadSupport(ServerLevel level, BlockPos pos) {
+        return findPlantAt(level, pos, PlantSeedDefinition.PlantBehavior.LILY_PAD).isPresent()
+                || findPlantAt(level, pos.below(), PlantSeedDefinition.PlantBehavior.LILY_PAD).isPresent();
+    }
+
+    private static boolean isAquaticPlant(PlantSeedDefinition.PlantBehavior behavior) {
+        return behavior == PlantSeedDefinition.PlantBehavior.LILY_PAD
+                || behavior == PlantSeedDefinition.PlantBehavior.TANGLE_KELP;
+    }
+
+    private static boolean isAmphibiousPlant(PlantSeedDefinition.PlantBehavior behavior) {
+        return behavior == PlantSeedDefinition.PlantBehavior.GUACODILE;
+    }
+
+    private static boolean tickSubmergedPlantDrowning(ServerLevel level, SnowGolem plant) {
+        PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
+        if (isAquaticPlant(behavior) || isAmphibiousPlant(behavior)) {
+            clearSubmergedState(plant);
+            return false;
+        }
+
+        BlockPos pos = plant.blockPosition();
+        boolean flooded = isWaterOrFlooded(level, pos) || isWaterOrFlooded(level, pos.below());
+        boolean supported = hasLilyPadSupport(level, pos) || hasLilyPadSupport(level, pos.below());
+        CompoundTag tag = plant.getPersistentData();
+        if (!flooded || supported) {
+            clearSubmergedState(plant);
+            return false;
+        }
+
+        long gameTime = level.getGameTime();
+        if (!tag.getBoolean(SUBMERGED_TAG)) {
+            tag.putBoolean(SUBMERGED_TAG, true);
+            tag.putLong(SUBMERGED_START_TICK_TAG, gameTime);
+            tag.putLong(NEXT_DROWNING_DAMAGE_TICK_TAG, gameTime + SUBMERGED_GRACE_TICKS);
+            plant.setCustomName(Component.literal(plant.getDisplayName().getString() + " (Submerged)").withStyle(ChatFormatting.AQUA));
+        }
+
+        if (gameTime >= tag.getLong(NEXT_DROWNING_DAMAGE_TICK_TAG)) {
+            tag.putBoolean(ALLOW_DROWNING_DAMAGE_TAG, true);
+            plant.hurt(level.damageSources().drown(), 2.0F);
+            tag.putLong(NEXT_DROWNING_DAMAGE_TICK_TAG, gameTime + DROWNING_DAMAGE_INTERVAL_TICKS);
+        }
+        if (gameTime % 20L == 0L) {
+            level.sendParticles(ParticleTypes.BUBBLE, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 8, 0.25D, 0.25D, 0.25D, 0.02D);
+        }
+        return true;
+    }
+
+    private static void clearSubmergedState(SnowGolem plant) {
+        CompoundTag tag = plant.getPersistentData();
+        if (!tag.getBoolean(SUBMERGED_TAG)) {
+            return;
+        }
+        tag.remove(SUBMERGED_TAG);
+        tag.remove(SUBMERGED_START_TICK_TAG);
+        tag.remove(NEXT_DROWNING_DAMAGE_TICK_TAG);
+        String plantId = tag.getString(PLANT_ID_TAG);
+        PlantSeedDefinition.getByPlantId(plantId).ifPresent(definition ->
+                plant.setCustomName(Component.literal(definition.displayName()).withStyle(style -> style.withColor(TextColor.fromRgb(definition.gardenColor())))));
     }
 
     private static Optional<Player> nearestPlayerWithSun(ServerLevel level, SnowGolem plant, int sunCost) {

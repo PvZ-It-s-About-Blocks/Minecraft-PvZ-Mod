@@ -127,6 +127,11 @@ public class PvZ2Mod {
             event.accept(ModItems.INFI_NUT_SEED_PACKET);
             event.accept(ModItems.MAGNIFYING_GRASS_SEED_PACKET);
             event.accept(ModItems.TILE_TURNIP_SEED_PACKET);
+            event.accept(ModItems.LILY_PAD_SEED_PACKET);
+            event.accept(ModItems.TANGLE_KELP_SEED_PACKET);
+            event.accept(ModItems.BOWLING_BULB_SEED_PACKET);
+            event.accept(ModItems.GUACODILE_SEED_PACKET);
+            event.accept(ModItems.BANANA_LAUNCHER_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
@@ -141,6 +146,7 @@ public class PvZ2Mod {
             event.accept(ModItems.CITRON_CHESTPLATE);
             event.accept(ModItems.CITRON_LEGGINGS);
             event.accept(ModItems.CITRON_BOOTS);
+            event.accept(ModItems.TIDE_SHELL);
         }
     }
 

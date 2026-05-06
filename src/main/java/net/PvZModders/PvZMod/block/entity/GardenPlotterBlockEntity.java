@@ -285,16 +285,26 @@ public class GardenPlotterBlockEntity extends BlockEntity {
         int y = origin.getY();
         boolean valid = true;
         boolean waterAllowed = intendedGardenId == GardenId.BIG_WAVE_BEACH;
+        int waterTiles = 0;
+        int beachLandTiles = 0;
 
         for (int dx = 0; dx < WIDTH; dx++) {
             for (int dz = 0; dz < LENGTH; dz++) {
                 BlockPos floorPos = new BlockPos(startX + dx, y - 1, startZ + dz);
                 BlockPos gardenPos = floorPos.above();
                 BlockState gardenState = level.getBlockState(gardenPos);
+                BlockState floorState = level.getBlockState(floorPos);
                 boolean waterInPlot = gardenState.is(Blocks.WATER);
-                boolean validFloor = level.getBlockState(floorPos).is(BlockTags.DIRT)
-                        || level.getBlockState(floorPos).is(BlockTags.SAND)
-                        || (waterAllowed && waterInPlot && level.getBlockState(floorPos).isFaceSturdy(level, floorPos, net.minecraft.core.Direction.UP));
+                boolean beachLand = floorState.is(BlockTags.SAND) || floorState.is(Blocks.SANDSTONE) || floorState.is(Blocks.SMOOTH_SANDSTONE) || floorState.is(Blocks.CUT_SANDSTONE);
+                boolean validFloor = floorState.is(BlockTags.DIRT)
+                        || floorState.is(BlockTags.SAND)
+                        || (waterAllowed && beachLand)
+                        || (waterAllowed && waterInPlot && floorState.isFaceSturdy(level, floorPos, net.minecraft.core.Direction.UP));
+                if (waterAllowed && waterInPlot) {
+                    waterTiles++;
+                } else if (waterAllowed && beachLand) {
+                    beachLandTiles++;
+                }
                 markers.add(new PreviewMarker(gardenPos, validFloor, false));
 
                 boolean validGardenLevel = gardenPos.equals(origin) || gardenState.isAir() || (waterAllowed && waterInPlot);
@@ -314,6 +324,15 @@ public class GardenPlotterBlockEntity extends BlockEntity {
                 if (!validFloor || !validGardenLevel || !validAir) {
                     valid = false;
                 }
+            }
+        }
+
+        if (waterAllowed) {
+            int totalTiles = WIDTH * LENGTH;
+            int minimumMixTiles = Math.max(1, totalTiles / 5);
+            if (waterTiles < minimumMixTiles || beachLandTiles < minimumMixTiles) {
+                valid = false;
+                markers.add(new PreviewMarker(origin.above(1), false, true));
             }
         }
 

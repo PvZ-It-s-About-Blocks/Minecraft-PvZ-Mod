@@ -58,6 +58,6 @@ public class SeedHotbarActionC2SPacket {
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getViewVector(1.0F);
         Vec3 end = eye.add(look.x * reach, look.y * reach, look.z * reach);
-        return player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, player));
+        return player.level().clip(new ClipContext(eye, end, ClipContext.Block.OUTLINE, ClipContext.Fluid.ANY, player));
     }
 }
