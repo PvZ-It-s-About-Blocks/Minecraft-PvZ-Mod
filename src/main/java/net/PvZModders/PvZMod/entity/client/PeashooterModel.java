@@ -25,6 +25,7 @@ public class PeashooterModel<T extends PvZPlantEntity> extends EntityModel<T> {
     private final ModelPart upperLimb;
     private final ModelPart mainHead;
     private final ModelPart snout;
+    private final ModelPart eyes;
     private final ModelPart headLeaf;
     private final ModelPart leaf;
     private final ModelPart leaf2;
@@ -37,6 +38,7 @@ public class PeashooterModel<T extends PvZPlantEntity> extends EntityModel<T> {
         this.upperLimb = this.root.getChild("upper_limb");
         this.mainHead = this.root.getChild("main_head");
         this.snout = this.root.getChild("snout");
+        this.eyes = this.root.getChild("eyes");
         this.headLeaf = this.root.getChild("head_leaf");
         this.leaf = this.root.getChild("leaf");
         this.leaf2 = this.root.getChild("leaf2");
@@ -67,6 +69,12 @@ public class PeashooterModel<T extends PvZPlantEntity> extends EntityModel<T> {
                 CubeListBuilder.create()
                         .texOffs(0, 12).addBox(4.0F, -13.0F, -2.0F, 2.0F, 4.0F, 4.0F, new CubeDeformation(0.0F))
                         .texOffs(26, 27).addBox(3.0F, -12.5F, -1.5F, 1.0F, 3.0F, 3.0F, new CubeDeformation(0.0F)),
+                PartPose.offset(0.0F, 0.0F, 0.0F));
+
+        root.addOrReplaceChild("eyes",
+                CubeListBuilder.create()
+                        .texOffs(0, 6).addBox(3.02F, -12.55F, -2.25F, 0.20F, 1.15F, 1.15F, new CubeDeformation(0.0F))
+                        .texOffs(0, 6).addBox(3.02F, -12.55F, 1.10F, 0.20F, 1.15F, 1.15F, new CubeDeformation(0.0F)),
                 PartPose.offset(0.0F, 0.0F, 0.0F));
 
         root.addOrReplaceChild("head_leaf",
@@ -115,6 +123,7 @@ public class PeashooterModel<T extends PvZPlantEntity> extends EntityModel<T> {
         if (attackPulse > 0.0F) {
             mainHead.x -= attackPulse * 1.6F;
             snout.x -= attackPulse * 2.4F;
+            eyes.x -= attackPulse * 1.6F;
             snout.xScale = 1.0F + attackPulse * 0.28F;
             snout.yScale = 1.0F - attackPulse * 0.08F;
         }
@@ -125,6 +134,7 @@ public class PeashooterModel<T extends PvZPlantEntity> extends EntityModel<T> {
             root.y += death * 7.0F;
             mainHead.zRot += death * 1.2F;
             snout.zRot += death * 1.5F;
+            eyes.zRot += death * 1.2F;
         }
     }
 
