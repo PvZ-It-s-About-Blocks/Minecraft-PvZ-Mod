@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 
 public class PeashooterRenderer extends MobRenderer<PvZPlantEntity, PeashooterModel<PvZPlantEntity>> {
-    private static final ResourceLocation TEXTURE = new ResourceLocation(PvZ2Mod.MOD_ID, "textures/entity/peashooter.png");
+    private static final ResourceLocation TEXTURE = new ResourceLocation(PvZ2Mod.MOD_ID, "textures/entity/plants/peashooter.png");
 
     public PeashooterRenderer(EntityRendererProvider.Context context) {
         super(context, new PeashooterModel<>(context.bakeLayer(PeashooterModel.LAYER_LOCATION)), 0.35F);
