@@ -855,6 +855,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
 
+        adoptNearbyWaveZombies(level);
         for (UUID entityId : List.copyOf(activeWaveEntityIds)) {
             Entity entity = level.getEntity(entityId);
             if (!(entity instanceof Mob mob) || !mob.isAlive()) {
@@ -880,6 +881,26 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
             if (mob.getTarget() == null && (level.getGameTime() + entity.getId()) % 10 == 0) {
                 moveMobTowardTotem(mob);
+            }
+        }
+    }
+
+    private void adoptNearbyWaveZombies(ServerLevel level) {
+        if (level.getGameTime() % 10L != 0L) {
+            return;
+        }
+
+        AABB waveArea = new AABB(worldPosition).inflate(64.0D, 16.0D, 64.0D);
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, waveArea, zombie -> zombie.isAlive()
+                && zombie.getPersistentData().getBoolean(WAVE_ZOMBIE_TAG))) {
+            if (!zombie.getPersistentData().contains(PvZZombieEntity.GARDEN_CENTER_X_TAG)
+                    || (zombie.getPersistentData().getInt(PvZZombieEntity.GARDEN_CENTER_X_TAG) == worldPosition.getX()
+                    && zombie.getPersistentData().getInt(PvZZombieEntity.GARDEN_CENTER_Y_TAG) == worldPosition.getY()
+                    && zombie.getPersistentData().getInt(PvZZombieEntity.GARDEN_CENTER_Z_TAG) == worldPosition.getZ())) {
+                activeWaveEntityIds.add(zombie.getUUID());
+                zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_X_TAG, worldPosition.getX());
+                zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Y_TAG, worldPosition.getY());
+                zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Z_TAG, worldPosition.getZ());
             }
         }
     }

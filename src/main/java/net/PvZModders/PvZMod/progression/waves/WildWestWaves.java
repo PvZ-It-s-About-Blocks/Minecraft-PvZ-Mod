@@ -35,7 +35,121 @@ public final class WildWestWaves {
     private static List<WaveSpawnGroup> spawnGroupsFor(int wave) {
         int zombieCount = Math.min(52, 3 + wave + (wave / 5) * 3);
         int directionCount = wave >= 30 ? 4 : wave >= 20 ? 3 : wave >= 10 ? 2 : 1;
-        return List.of(new WaveSpawnGroup("minecraft:zombie", zombieCount, directionCount, List.of()));
+        List<WaveSpawnGroup> groups = new ArrayList<>();
+        if (wave <= 2) {
+            addGroup(groups, "cowboy_zombie", zombieCount, directionCount);
+        } else if (wave == 3) {
+            addGroup(groups, "cowboy_zombie", Math.max(1, zombieCount - 1), directionCount);
+            addGroup(groups, "flag_cowboy_zombie", 1, directionCount);
+        } else if (wave <= 5) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 80),
+                    entry("conehead_cowboy", 20));
+        } else if (wave <= 8) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 60),
+                    entry("conehead_cowboy", 25),
+                    entry("prospector_zombie", 15));
+        } else if (wave <= 11) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 50),
+                    entry("conehead_cowboy", 18),
+                    entry("prospector_zombie", 10),
+                    entry("chicken_wrangler_zombie", 12),
+                    entry("zombie_chicken", 10));
+        } else if (wave <= 14) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 45),
+                    entry("conehead_cowboy", 18),
+                    entry("prospector_zombie", 10),
+                    entry("chicken_wrangler_zombie", 10),
+                    entry("zombie_chicken", 7),
+                    entry("poncho_zombie", 10));
+        } else if (wave <= 17) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 40),
+                    entry("conehead_cowboy", 15),
+                    entry("prospector_zombie", 10),
+                    entry("chicken_wrangler_zombie", 10),
+                    entry("poncho_zombie", 10),
+                    entry("pianist_zombie", 8),
+                    entry("zombie_chicken", 7));
+        } else if (wave <= 20) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 38),
+                    entry("conehead_cowboy", 14),
+                    entry("buckethead_cowboy", 16),
+                    entry("prospector_zombie", 9),
+                    entry("chicken_wrangler_zombie", 9),
+                    entry("poncho_zombie", 9),
+                    entry("pianist_zombie", 5));
+        } else if (wave <= 23) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cowboy_zombie", 32),
+                    entry("conehead_cowboy", 12),
+                    entry("buckethead_cowboy", 14),
+                    entry("prospector_zombie", 9),
+                    entry("chicken_wrangler_zombie", 9),
+                    entry("poncho_zombie", 9),
+                    entry("pianist_zombie", 5),
+                    entry("bull_rider_zombie", 5),
+                    entry("zombie_bull", 5));
+        } else if (wave <= 29) {
+            int gargantuars = wave >= 27 ? 1 : 0;
+            addWeighted(groups, zombieCount - gargantuars, directionCount,
+                    entry("cowboy_zombie", 30),
+                    entry("conehead_cowboy", 10),
+                    entry("buckethead_cowboy", 15),
+                    entry("prospector_zombie", 10),
+                    entry("chicken_wrangler_zombie", 10),
+                    entry("poncho_zombie", 10),
+                    entry("pianist_zombie", 5),
+                    entry("bull_rider_zombie", 5),
+                    entry("zombie_bull", 5));
+            addGroup(groups, "wild_west_gargantuar", gargantuars, directionCount);
+        } else {
+            addWeighted(groups, zombieCount - 2, directionCount,
+                    entry("cowboy_zombie", 25),
+                    entry("conehead_cowboy", 9),
+                    entry("buckethead_cowboy", 13),
+                    entry("prospector_zombie", 10),
+                    entry("pianist_zombie", 7),
+                    entry("poncho_zombie", 9),
+                    entry("chicken_wrangler_zombie", 9),
+                    entry("zombie_chicken", 8),
+                    entry("bull_rider_zombie", 5),
+                    entry("zombie_bull", 5));
+            addGroup(groups, "wild_west_gargantuar", 2, directionCount);
+        }
+        return List.copyOf(groups);
+    }
+
+    private static void addWeighted(List<WaveSpawnGroup> groups, int totalCount, int directionCount, WeightedZombie... entries) {
+        int remaining = Math.max(0, totalCount);
+        int totalWeight = 0;
+        for (WeightedZombie entry : entries) {
+            totalWeight += entry.weight();
+        }
+        for (int i = 0; i < entries.length; i++) {
+            WeightedZombie entry = entries[i];
+            int count = i == entries.length - 1 ? remaining : (int) Math.floor(totalCount * (entry.weight() / (double) totalWeight));
+            count = Math.min(remaining, count);
+            addGroup(groups, entry.id(), count, directionCount);
+            remaining -= count;
+        }
+    }
+
+    private static void addGroup(List<WaveSpawnGroup> groups, String zombieId, int count, int directionCount) {
+        if (count > 0) {
+            groups.add(new WaveSpawnGroup("pvz2mod:" + zombieId, count, directionCount, List.of()));
+        }
+    }
+
+    private static WeightedZombie entry(String id, int weight) {
+        return new WeightedZombie(id, weight);
+    }
+
+    private record WeightedZombie(String id, int weight) {
     }
 
     private static String scanTextFor(int wave) {
@@ -44,7 +158,7 @@ public final class WildWestWaves {
             case 4, 6, 9, 11, 18, 24 -> "Plant unlock detected. Clear the wave to expand your Wild West loadout.";
             case 15, 21, 27 -> "Garden upgrade placeholder detected.";
             case 30 -> "Completion Wave: survive the final Wild West defense.";
-            default -> "Basic zombies approach. Future Wild West zombie types will replace these placeholders.";
+            default -> "Wild West zombies approach with lane tricks, chicken swarms, and charge pressure.";
         };
     }
 

@@ -37,6 +37,13 @@ public class PvZZombieEntity extends Zombie {
     private static final String RA_NEXT_DRAIN_TICK_TAG = "PvZRaNextDrainTick";
     private static final String TOMB_NEXT_RAISE_TICK_TAG = "PvZTombNextRaiseTick";
     private static final String TOMB_RAISED_COUNT_TAG = "PvZTombRaisedCount";
+    public static final String PROSPECTOR_LEAPED_TAG = "PvZProspectorLeaped";
+    public static final String CHICKEN_WRANGLER_RELEASED_TAG = "PvZChickenWranglerReleased";
+    public static final String PONCHO_SHIELD_ACTIVE_TAG = "PvZPonchoShieldActive";
+    private static final String PROSPECTOR_LEAP_TICK_TAG = "PvZProspectorLeapTick";
+    private static final String PIANIST_NEXT_SUPPORT_TICK_TAG = "PvZPianistNextSupportTick";
+    private static final String BULL_NEXT_CHARGE_TICK_TAG = "PvZBullNextChargeTick";
+    private static final String BULL_CHARGE_END_TICK_TAG = "PvZBullChargeEndTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -47,6 +54,10 @@ public class PvZZombieEntity extends Zombie {
     private static final int RA_DRAIN_AMOUNT = 15;
     private static final int RA_DRAIN_INTERVAL_TICKS = 20 * 3;
     private static final int TOMB_RAISE_INTERVAL_TICKS = 20 * 10;
+    private static final int PIANIST_SUPPORT_INTERVAL_TICKS = 20 * 5;
+    private static final int BULL_CHARGE_INTERVAL_TICKS = 20 * 7;
+    private static final int BULL_CHARGE_DURATION_TICKS = 20 * 3;
+    private static final double BULL_CHARGE_SPEED_MULTIPLIER = 2.25D;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -65,6 +76,9 @@ public class PvZZombieEntity extends Zombie {
         tickPoleVault(level);
         tickRaDrain(level);
         tickTombRaiser(level);
+        tickProspectorLeap(level);
+        tickPianistSupport(level);
+        tickBullCharge(level);
     }
 
     @Override
@@ -129,6 +143,9 @@ public class PvZZombieEntity extends Zombie {
         if (definition.has(PvZZombieSpecial.POLE_VAULT) && !tag.contains(POLE_VAULT_READY_TAG)) {
             tag.putBoolean(POLE_VAULT_READY_TAG, true);
         }
+        if (definition.has(PvZZombieSpecial.PONCHO_SHIELD) && !tag.contains(PONCHO_SHIELD_ACTIVE_TAG)) {
+            tag.putBoolean(PONCHO_SHIELD_ACTIVE_TAG, true);
+        }
 
         setAttribute(Attributes.MAX_HEALTH, definition.maxHealth());
         setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
@@ -153,6 +170,9 @@ public class PvZZombieEntity extends Zombie {
         }
         if (definition.has(PvZZombieSpecial.POLE_VAULT) && tag.contains(POLE_VAULT_READY_TAG) && !tag.getBoolean(POLE_VAULT_READY_TAG)) {
             multiplier = POLE_VAULT_AFTER_SPEED_MULTIPLIER;
+        }
+        if (definition.has(PvZZombieSpecial.BULL_CHARGE) && tag.getLong(BULL_CHARGE_END_TICK_TAG) > level().getGameTime()) {
+            multiplier = BULL_CHARGE_SPEED_MULTIPLIER;
         }
         return tag.getDouble(WAVE_BASE_SPEED_TAG) * multiplier;
     }
@@ -253,6 +273,104 @@ public class PvZZombieEntity extends Zombie {
             level.sendParticles(ParticleTypes.SOUL, getX(), getY() + 1.0D, getZ(), 10, 0.4D, 0.5D, 0.4D, 0.02D);
         }
         tag.putLong(TOMB_NEXT_RAISE_TICK_TAG, gameTime + TOMB_RAISE_INTERVAL_TICKS + level.random.nextInt(20 * 3));
+    }
+
+    private void tickProspectorLeap(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.PROSPECTOR_LEAP)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (tag.getBoolean(PROSPECTOR_LEAPED_TAG)) {
+            return;
+        }
+        if (!tag.contains(PROSPECTOR_LEAP_TICK_TAG)) {
+            tag.putLong(PROSPECTOR_LEAP_TICK_TAG, gameTime + 20L * 3);
+            return;
+        }
+        if (gameTime < tag.getLong(PROSPECTOR_LEAP_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 forward = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> blocker = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(5.0D, 1.0D, 5.0D), PlantEntityManager::isPlant)
+                .stream()
+                .filter(plant -> isInFront(plant.position(), forward))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        if (blocker.isEmpty()) {
+            tag.putBoolean(PROSPECTOR_LEAPED_TAG, true);
+            return;
+        }
+
+        BlockPos landing = BlockPos.containing(blocker.get().position().add(forward.scale(2.8D)));
+        landing = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing);
+        if (!isSafeLanding(level, landing)) {
+            tag.putBoolean(PROSPECTOR_LEAPED_TAG, true);
+            return;
+        }
+
+        moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), getXRot());
+        setDeltaMovement(forward.scale(0.65D).add(0.0D, 0.35D, 0.0D));
+        tag.putBoolean(PROSPECTOR_LEAPED_TAG, true);
+        level.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 0.6D, getZ(), 24, 0.45D, 0.35D, 0.45D, 0.06D);
+        level.playSound(null, blockPosition(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 0.7F, 1.4F);
+    }
+
+    private void tickPianistSupport(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.PIANIST_SUPPORT)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(PIANIST_NEXT_SUPPORT_TICK_TAG)) {
+            return;
+        }
+
+        AABB area = getBoundingBox().inflate(6.0D, 2.0D, 6.0D);
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, area, zombie -> zombie.isAlive() && zombie != this)) {
+            zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, 20 * 3, 0, false, true));
+        }
+        level.sendParticles(ParticleTypes.NOTE, getX(), getY() + 1.6D, getZ(), 12, 0.7D, 0.4D, 0.7D, 0.0D);
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BANJO.get(), SoundSource.HOSTILE, 0.8F, 0.7F);
+        tag.putLong(PIANIST_NEXT_SUPPORT_TICK_TAG, gameTime + PIANIST_SUPPORT_INTERVAL_TICKS);
+    }
+
+    private void tickBullCharge(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BULL_CHARGE) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime >= tag.getLong(BULL_CHARGE_END_TICK_TAG)) {
+            if (gameTime >= tag.getLong(BULL_NEXT_CHARGE_TICK_TAG)) {
+                tag.putLong(BULL_CHARGE_END_TICK_TAG, gameTime + BULL_CHARGE_DURATION_TICKS);
+                tag.putLong(BULL_NEXT_CHARGE_TICK_TAG, gameTime + BULL_CHARGE_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+                level.playSound(null, blockPosition(), SoundEvents.GOAT_SCREAMING_RAM_IMPACT, SoundSource.HOSTILE, 0.85F, 0.7F);
+            } else {
+                setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+                return;
+            }
+        }
+
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        setDeltaMovement(getDeltaMovement().add(towardGarden.scale(0.12D)));
+        level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.25D, getZ(), 4, 0.25D, 0.1D, 0.25D, 0.03D);
+    }
+
+    private Optional<Vec3> vectorTowardGarden() {
+        CompoundTag tag = getPersistentData();
+        if (!tag.contains(GARDEN_CENTER_X_TAG)) {
+            return Optional.empty();
+        }
+        Vec3 towardGarden = new Vec3(tag.getInt(GARDEN_CENTER_X_TAG) + 0.5D - getX(), 0.0D, tag.getInt(GARDEN_CENTER_Z_TAG) + 0.5D - getZ());
+        if (towardGarden.lengthSqr() < 1.0E-4D) {
+            return Optional.empty();
+        }
+        return Optional.of(towardGarden.normalize());
     }
 
     private Vec3 horizontalForward() {

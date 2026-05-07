@@ -93,6 +93,30 @@ public final class PvZZombieDefinitions {
                 "Slow, coffin-armored heavy mummy.", Set.of(PvZZombieSpecial.METAL));
         register(definitions, GardenId.DESERT, "mummified_gargantuar", "Mummified Gargantuar", 330.0D, 0.62D, 18.0D, 0.95D, 3.0F,
                 "Huge Ancient Egypt gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
+        register(definitions, GardenId.WILD_WEST, "cowboy_zombie", "Cowboy Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Wild West zombie.", Set.of());
+        register(definitions, GardenId.WILD_WEST, "conehead_cowboy", "Conehead Cowboy", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Wild West zombie.", Set.of());
+        register(definitions, GardenId.WILD_WEST, "buckethead_cowboy", "Buckethead Cowboy", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Wild West zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.WILD_WEST, "flag_cowboy_zombie", "Flag Cowboy Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Wild West push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.WILD_WEST, "prospector_zombie", "Prospector Zombie", 35.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Leaps past one defensive blocker after entering.", Set.of(PvZZombieSpecial.PROSPECTOR_LEAP));
+        register(definitions, GardenId.WILD_WEST, "pianist_zombie", "Pianist Zombie", 60.0D, 0.75D, 4.0D, 0.1D, 1.0F,
+                "Supports nearby zombies with music.", Set.of(PvZZombieSpecial.PIANIST_SUPPORT));
+        register(definitions, GardenId.WILD_WEST, "poncho_zombie", "Poncho Zombie", 70.0D, 1.0D, 4.0D, 0.12D, 1.0F,
+                "Hidden shield zombie that resists projectiles until weakened.", Set.of(PvZZombieSpecial.PONCHO_SHIELD, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.WILD_WEST, "chicken_wrangler_zombie", "Chicken Wrangler Zombie", 45.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Releases fast Zombie Chickens when damaged.", Set.of(PvZZombieSpecial.CHICKEN_WRANGLER));
+        register(definitions, GardenId.WILD_WEST, "zombie_chicken", "Zombie Chicken", 4.0D, 2.0D, 2.0D, 0.0D, 0.4F,
+                "Tiny fast swarm zombie.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.WILD_WEST, "bull_rider_zombie", "Bull Rider Zombie", 85.0D, 1.25D, 8.0D, 0.3D, 1.25F,
+                "Mounted charge pressure enemy.", Set.of(PvZZombieSpecial.BULL_CHARGE));
+        register(definitions, GardenId.WILD_WEST, "zombie_bull", "Zombie Bull", 70.0D, 1.2D, 9.0D, 0.35D, 1.35F,
+                "Charging bull enemy.", Set.of(PvZZombieSpecial.BULL_CHARGE));
+        register(definitions, GardenId.WILD_WEST, "wild_west_gargantuar", "Wild West Gargantuar", 330.0D, 0.62D, 18.0D, 0.95D, 3.0F,
+                "Huge Wild West gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

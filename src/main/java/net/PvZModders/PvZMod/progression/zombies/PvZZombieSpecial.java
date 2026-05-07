@@ -8,6 +8,11 @@ public enum PvZZombieSpecial {
     RA_DRAIN,
     EXPLORER_TORCH,
     TOMB_RAISER,
+    PROSPECTOR_LEAP,
+    PIANIST_SUPPORT,
+    PONCHO_SHIELD,
+    CHICKEN_WRANGLER,
+    BULL_CHARGE,
     METAL,
     IMP,
     GARGANTUAR
