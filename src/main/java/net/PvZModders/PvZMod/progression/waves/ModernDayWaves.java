@@ -37,8 +37,8 @@ public final class ModernDayWaves {
             case 1 -> "Modern Day: Moonflower produces Sun and powers nearby shadow plants.";
             case 4, 8, 15, 22 -> "Shadow plant unlock detected. Clear the wave to expand your Modern Day loadout.";
             case 10 -> "Mixed zombie pool online: previous garden zombie themes can now combine.";
-            case 25 -> "Crazy Dave reward detected: Taco foundation unlock.";
-            case 27 -> "Crazy Dave high-tech armor foundation detected.";
+            case 25 -> "Modern Day mastery checkpoint: previous garden pressure patterns intensify.";
+            case 27 -> "Modern Day mastery checkpoint: final easy-mode systems are stabilizing.";
             case 30 -> "Completion Wave: Modern Day completes Easy Mode and unlocks Mystical Eye plus Dragon fight groundwork.";
             default -> "Modern Day wave: mixed garden zombie placeholders approach from previous eras.";
         };
@@ -53,8 +53,8 @@ public final class ModernDayWaves {
             case 15 -> plant("dusk_lobber", "Dusk Lobber", "pvz2mod:dusk_lobber_seed_packet", "Lobs shadow splash projectiles.");
             case 18 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "modern_day_upgrade_1", "Modern Day Upgrade I", "minecraft:chorus_fruit", "Placeholder Modern Day garden upgrade."));
             case 22 -> plant("grimrose", "Grimrose", "pvz2mod:grimrose_seed_packet", "Drags normal zombies into the shadows.");
-            case 25 -> List.of(new WaveReward(WaveRewardType.ITEM_UNLOCK, "taco", "Crazy Dave's Taco", "pvz2mod:taco", "Powerful shop-food foundation."));
-            case 27 -> List.of(new WaveReward(WaveRewardType.ITEM_UNLOCK, "crazy_dave_tech_armor_set", "Crazy Dave High-Tech Armor", "pvz2mod:crazy_dave_tech_chestplate", "Placeholder final easy-mode armor foundation."));
+            case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "modern_day_mastery_checkpoint_1", "Modern Day Mastery Checkpoint I", "minecraft:end_stone", "Placeholder Modern Day mastery upgrade."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "modern_day_mastery_checkpoint_2", "Modern Day Mastery Checkpoint II", "minecraft:ender_eye", "Placeholder final easy-mode mastery upgrade."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "modern_day_complete", "Modern Day Complete", "minecraft:dragon_egg", "Marks Modern Day complete and prepares the final Dragon fight."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "mystical_eye", "Mystical Eye", "pvz2mod:mystical_eye", "Teleport to discovered garden totems from anywhere."),

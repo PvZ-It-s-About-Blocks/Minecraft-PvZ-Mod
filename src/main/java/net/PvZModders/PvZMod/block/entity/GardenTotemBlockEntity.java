@@ -1068,25 +1068,6 @@ public class GardenTotemBlockEntity extends BlockEntity {
                         }
                     }
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
-                        && reward.id().equals("taco")) {
-                    ItemStack rewardStack = new ItemStack(ModItems.TACO.get());
-                    if (!player.getInventory().add(rewardStack)) {
-                        player.drop(rewardStack, false);
-                    }
-                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
-                        && reward.id().equals("crazy_dave_tech_armor_set")) {
-                    List<ItemStack> armorStacks = List.of(
-                            new ItemStack(ModItems.CRAZY_DAVE_TECH_HELMET.get()),
-                            new ItemStack(ModItems.CRAZY_DAVE_TECH_CHESTPLATE.get()),
-                            new ItemStack(ModItems.CRAZY_DAVE_TECH_LEGGINGS.get()),
-                            new ItemStack(ModItems.CRAZY_DAVE_TECH_BOOTS.get())
-                    );
-                    for (ItemStack rewardStack : armorStacks) {
-                        if (!player.getInventory().add(rewardStack)) {
-                            player.drop(rewardStack, false);
-                        }
-                    }
-                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
                         && reward.id().equals("mystical_eye")) {
                     ItemStack rewardStack = new ItemStack(ModItems.MYSTICAL_EYE.get());
                     if (!player.getInventory().add(rewardStack)) {

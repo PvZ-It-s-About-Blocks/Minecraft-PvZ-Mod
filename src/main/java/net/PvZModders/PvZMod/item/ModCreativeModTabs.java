@@ -103,11 +103,6 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CAPTAINS_LEGGINGS.get());
                         output.accept(ModItems.CAPTAINS_BOOTS.get());
                         output.accept(ModItems.PIRATE_SHIP.get());
-                        output.accept(ModItems.TACO.get());
-                        output.accept(ModItems.CRAZY_DAVE_TECH_HELMET.get());
-                        output.accept(ModItems.CRAZY_DAVE_TECH_CHESTPLATE.get());
-                        output.accept(ModItems.CRAZY_DAVE_TECH_LEGGINGS.get());
-                        output.accept(ModItems.CRAZY_DAVE_TECH_BOOTS.get());
                         output.accept(ModItems.MYSTICAL_EYE.get());
                         output.accept(ModItems.PEA.get());
                     })

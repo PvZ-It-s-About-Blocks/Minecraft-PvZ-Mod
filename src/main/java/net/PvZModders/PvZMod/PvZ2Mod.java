@@ -170,11 +170,6 @@ public class PvZ2Mod {
             event.accept(ModItems.CAPTAINS_LEGGINGS);
             event.accept(ModItems.CAPTAINS_BOOTS);
             event.accept(ModItems.PIRATE_SHIP);
-            event.accept(ModItems.TACO);
-            event.accept(ModItems.CRAZY_DAVE_TECH_HELMET);
-            event.accept(ModItems.CRAZY_DAVE_TECH_CHESTPLATE);
-            event.accept(ModItems.CRAZY_DAVE_TECH_LEGGINGS);
-            event.accept(ModItems.CRAZY_DAVE_TECH_BOOTS);
             event.accept(ModItems.MYSTICAL_EYE);
             event.accept(ModItems.PEA);
         }

@@ -14,7 +14,6 @@ import net.PvZModders.PvZMod.item.custom.PirateShipItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
-import net.PvZModders.PvZMod.item.custom.TacoItem;
 import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
 import net.PvZModders.PvZMod.item.custom.TideShellItem;
 import net.PvZModders.PvZMod.item.custom.TotemShieldItem;
@@ -218,16 +217,6 @@ public class ModItems {
             () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> PIRATE_SHIP = ITEMS.register("pirate_ship",
             () -> new PirateShipItem(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> TACO = ITEMS.register("taco",
-            () -> new TacoItem(new Item.Properties().stacksTo(16).food(TacoItem.FOOD)));
-    public static final RegistryObject<Item> CRAZY_DAVE_TECH_HELMET = ITEMS.register("crazy_dave_tech_helmet",
-            () -> new Item(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> CRAZY_DAVE_TECH_CHESTPLATE = ITEMS.register("crazy_dave_tech_chestplate",
-            () -> new Item(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> CRAZY_DAVE_TECH_LEGGINGS = ITEMS.register("crazy_dave_tech_leggings",
-            () -> new Item(new Item.Properties().stacksTo(1)));
-    public static final RegistryObject<Item> CRAZY_DAVE_TECH_BOOTS = ITEMS.register("crazy_dave_tech_boots",
-            () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> MYSTICAL_EYE = ITEMS.register("mystical_eye",
             () -> new MysticalEyeItem(new Item.Properties().stacksTo(1)));
 
