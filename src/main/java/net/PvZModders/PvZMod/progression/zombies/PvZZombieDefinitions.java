@@ -83,9 +83,24 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.BIG_WAVE_BEACH;
     }
 
+    public static boolean isPirateSeasZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.PIRATE_SEAS;
+    }
+
     public static boolean isAquaticZombie(LivingEntity entity) {
         return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && zombie.definition().has(PvZZombieSpecial.AQUATIC);
+    }
+
+    public static boolean isSmallZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().has(PvZZombieSpecial.IMP);
+    }
+
+    public static boolean isStationaryZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().has(PvZZombieSpecial.STATIONARY);
     }
 
     private static Map<String, PvZZombieDefinition> createDefinitions() {
@@ -286,6 +301,32 @@ public final class PvZZombieDefinitions {
                 "Small, fast aquatic imp.", Set.of(PvZZombieSpecial.IMP, PvZZombieSpecial.AQUATIC));
         register(definitions, GardenId.BIG_WAVE_BEACH, "deep_sea_gargantuar", "Deep Sea Gargantuar", 350.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Big Wave Beach gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.AQUATIC, PvZZombieSpecial.DEEP_SEA_GARGANTUAR));
+        register(definitions, GardenId.PIRATE_SEAS, "pirate_zombie", "Pirate Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Pirate Seas zombie.", Set.of());
+        register(definitions, GardenId.PIRATE_SEAS, "conehead_pirate_zombie", "Conehead Pirate Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Pirate Seas zombie.", Set.of());
+        register(definitions, GardenId.PIRATE_SEAS, "buckethead_pirate_zombie", "Buckethead Pirate Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Pirate Seas zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.PIRATE_SEAS, "flag_pirate_zombie", "Flag Pirate Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Pirate Seas push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.PIRATE_SEAS, "barrel_roller_zombie", "Barrel Roller Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Rolls barrel obstacles down plank paths.", Set.of(PvZZombieSpecial.BARREL_ROLLER));
+        register(definitions, GardenId.PIRATE_SEAS, "barrel_obstacle", "Barrel", 40.0D, 0.65D, 8.0D, 0.65D, 1.0F,
+                "Moving barrel obstacle that breaks in turbulent water.", Set.of(PvZZombieSpecial.BARREL_OBSTACLE));
+        register(definitions, GardenId.PIRATE_SEAS, "swashbuckler_zombie", "Swashbuckler Zombie", 35.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Rope-swings once onto a valid Pirate Seas plank.", Set.of(PvZZombieSpecial.SWASHBUCKLER));
+        register(definitions, GardenId.PIRATE_SEAS, "seagull_zombie", "Seagull Zombie", 25.0D, 1.35D, 4.0D, 0.0D, 1.0F,
+                "Flying Pirate Seas pressure zombie.", Set.of(PvZZombieSpecial.FLYING));
+        register(definitions, GardenId.PIRATE_SEAS, "pelican_zombie", "Pelican Zombie", 35.0D, 1.25D, 4.0D, 0.0D, 1.0F,
+                "Flying carrier that can drop a Pirate Imp.", Set.of(PvZZombieSpecial.FLYING, PvZZombieSpecial.PELICAN_DROPPER));
+        register(definitions, GardenId.PIRATE_SEAS, "imp_cannon", "Imp Cannon", 80.0D, 0.0D, 0.0D, 0.85D, 1.2F,
+                "Stationary cannon that launches Pirate Imps onto planks.", Set.of(PvZZombieSpecial.IMP_CANNON, PvZZombieSpecial.STATIONARY));
+        register(definitions, GardenId.PIRATE_SEAS, "pirate_imp", "Pirate Imp", 10.0D, 1.45D, 3.0D, 0.0D, 0.55F,
+                "Small, fast Pirate Seas imp.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.PIRATE_SEAS, "pirate_captain_zombie", "Pirate Captain Zombie", 70.0D, 0.9D, 4.0D, 0.1D, 1.0F,
+                "Supports nearby Pirate Seas zombies.", Set.of(PvZZombieSpecial.PIRATE_CAPTAIN));
+        register(definitions, GardenId.PIRATE_SEAS, "pirate_gargantuar", "Pirate Gargantuar", 340.0D, 0.58D, 18.0D, 0.95D, 3.0F,
+                "Huge Pirate Seas gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.PIRATE_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

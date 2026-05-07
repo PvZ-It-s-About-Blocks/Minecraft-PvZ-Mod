@@ -138,6 +138,11 @@ public final class PvZZombieEvents {
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseMermaidImp(zombie);
         }
+        if (zombie.definition().has(PvZZombieSpecial.PIRATE_GARGANTUAR)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.PIRATE_GARGANTUAR_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releasePirateImp(zombie);
+        }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
             return;
@@ -261,6 +266,17 @@ public final class PvZZombieEvents {
         Optional.ofNullable(ModEntities.ZOMBIES.get("mermaid_imp"))
                 .map(registryObject -> registryObject.get())
                 .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.DOLPHIN_SPLASH, ParticleTypes.BUBBLE));
+    }
+
+    private static void releasePirateImp(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.PIRATE_GARGANTUAR_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("pirate_imp"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.CROSSBOW_SHOOT, ParticleTypes.CLOUD));
     }
 
     private static void breakSurferBoard(PvZZombieEntity surfer) {

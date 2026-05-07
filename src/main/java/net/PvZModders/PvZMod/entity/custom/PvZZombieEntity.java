@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.entity.custom;
 
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
+import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
@@ -17,6 +18,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
@@ -54,6 +57,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String NEON_GARGANTUAR_THROWN_IMP_TAG = "PvZNeonGargantuarThrownImp";
     public static final String JURASSIC_GARGANTUAR_THROWN_IMP_TAG = "PvZJurassicGargantuarThrownImp";
     public static final String DEEP_SEA_GARGANTUAR_THROWN_IMP_TAG = "PvZDeepSeaGargantuarThrownImp";
+    public static final String PIRATE_GARGANTUAR_THROWN_IMP_TAG = "PvZPirateGargantuarThrownImp";
     public static final String MUSIC_BOOSTED_TAG = "PvZMusicBoosted";
     public static final String MUSIC_BOOST_END_TICK_TAG = "PvZMusicBoostEndTick";
     public static final String MUSIC_BOOST_STRENGTH_TAG = "PvZMusicBoostStrength";
@@ -83,6 +87,14 @@ public class PvZZombieEntity extends Zombie {
     private static final String SURFER_DAMAGE_TAKEN_TAG = "PvZSurferDamageTaken";
     private static final String FISHERMAN_NEXT_HOOK_TICK_TAG = "PvZFishermanNextHookTick";
     private static final String OCTO_NEXT_DISABLE_TICK_TAG = "PvZOctoNextDisableTick";
+    private static final String BARREL_NEXT_ROLL_TICK_TAG = "PvZBarrelNextRollTick";
+    private static final String SWASHBUCKLER_SWUNG_TAG = "PvZSwashbucklerSwung";
+    private static final String PELICAN_DROPPED_IMP_TAG = "PvZPelicanDroppedImp";
+    private static final String IMP_CANNON_NEXT_LAUNCH_TICK_TAG = "PvZImpCannonNextLaunchTick";
+    private static final String IMP_CANNON_LAUNCH_COUNT_TAG = "PvZImpCannonLaunchCount";
+    private static final String PIRATE_CAPTAIN_NEXT_SUPPORT_TICK_TAG = "PvZPirateCaptainNextSupportTick";
+    private static final String PIRATE_CAPTAIN_BUFF_END_TICK_TAG = "PvZPirateCaptainBuffEndTick";
+    private static final String TURBULENT_WATER_DAMAGE_TICK_TAG = "PvZTurbulentWaterDamageTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -122,6 +134,11 @@ public class PvZZombieEntity extends Zombie {
     private static final int FISHERMAN_HOOK_RANGE = 8;
     private static final int OCTO_DISABLE_INTERVAL_TICKS = 20 * 8;
     private static final int OCTO_DISABLE_DURATION_TICKS = 20 * 6;
+    private static final int BARREL_ROLL_INTERVAL_TICKS = 20 * 9;
+    private static final int IMP_CANNON_LAUNCH_INTERVAL_TICKS = 20 * 9;
+    private static final int IMP_CANNON_MAX_LAUNCHES = 7;
+    private static final int PIRATE_CAPTAIN_SUPPORT_INTERVAL_TICKS = 20 * 5;
+    private static final int PIRATE_CAPTAIN_SUPPORT_DURATION_TICKS = 20 * 4;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -162,6 +179,14 @@ public class PvZZombieEntity extends Zombie {
         tickBeachWaterMovement(level);
         tickFishermanHook(level);
         tickOctoDisable(level);
+        tickPirateStationaryState(level);
+        tickPirateTurbulentWater(level);
+        tickBarrelRoller(level);
+        tickBarrelObstacle(level);
+        tickSwashbucklerSwing(level);
+        tickPelicanDrop(level);
+        tickImpCannon(level);
+        tickPirateCaptainSupport(level);
     }
 
     @Override
@@ -267,6 +292,9 @@ public class PvZZombieEntity extends Zombie {
         }
         if (definition.has(PvZZombieSpecial.AQUATIC) && isOnBeachWaterTile()) {
             multiplier *= definition.has(PvZZombieSpecial.GARGANTUAR) ? 1.15D : 1.25D;
+        }
+        if (tag.getLong(PIRATE_CAPTAIN_BUFF_END_TICK_TAG) > level().getGameTime()) {
+            multiplier *= 1.15D;
         }
         return tag.getDouble(WAVE_BASE_SPEED_TAG) * multiplier;
     }
@@ -962,6 +990,211 @@ public class PvZZombieEntity extends Zombie {
                 || level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)
                 || BigWaveBeachTideManager.isTileFlooded(level, pos)
                 || BigWaveBeachTideManager.isTileFlooded(level, pos.below());
+    }
+
+    private void tickPirateStationaryState(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.STATIONARY)) {
+            return;
+        }
+        getNavigation().stop();
+        setDeltaMovement(Vec3.ZERO);
+        setNoAi(false);
+        if (getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            getLookControl().setLookAt(getPersistentData().getInt(GARDEN_CENTER_X_TAG) + 0.5D,
+                    getPersistentData().getInt(GARDEN_CENTER_Y_TAG) + 1.0D,
+                    getPersistentData().getInt(GARDEN_CENTER_Z_TAG) + 0.5D);
+        }
+    }
+
+    private void tickPirateTurbulentWater(ServerLevel level) {
+        if (!PvZZombieDefinitions.isPirateSeasZombie(this)
+                || definition().has(PvZZombieSpecial.FLYING)
+                || definition().has(PvZZombieSpecial.STATIONARY)
+                || !PirateSeasPlankManager.isTurbulentWater(level, blockPosition())) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(TURBULENT_WATER_DAMAGE_TICK_TAG)) {
+            return;
+        }
+        tag.putLong(TURBULENT_WATER_DAMAGE_TICK_TAG, gameTime + 20L);
+        if (PvZZombieDefinitions.isGargantuarLike(this)) {
+            hurt(level.damageSources().drown(), 50.0F);
+            addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 20 * 2, 1));
+        } else {
+            hurt(level.damageSources().drown(), 999.0F);
+        }
+        level.sendParticles(ParticleTypes.SPLASH, getX(), getY() + 0.4D, getZ(), 24, 0.45D, 0.25D, 0.45D, 0.08D);
+        level.playSound(null, blockPosition(), SoundEvents.PLAYER_SPLASH_HIGH_SPEED, SoundSource.HOSTILE, 0.75F, 0.7F);
+    }
+
+    private void tickBarrelRoller(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BARREL_ROLLER) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(BARREL_NEXT_ROLL_TICK_TAG)) {
+            return;
+        }
+
+        spawnSummonedZombies(level, "barrel_obstacle", 1, ParticleTypes.CAMPFIRE_COSY_SMOKE, SoundEvents.BARREL_OPEN);
+        tag.putLong(BARREL_NEXT_ROLL_TICK_TAG, gameTime + BARREL_ROLL_INTERVAL_TICKS + level.random.nextInt(20 * 3));
+    }
+
+    private void tickBarrelObstacle(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BARREL_OBSTACLE) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+        if (PirateSeasPlankManager.isTurbulentWater(level, blockPosition())) {
+            discard();
+            level.sendParticles(ParticleTypes.SPLASH, getX(), getY() + 0.5D, getZ(), 18, 0.35D, 0.2D, 0.35D, 0.05D);
+            return;
+        }
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        if (tickCount % 5 == 0 && PirateSeasPlankManager.canPirateZombieTraverseTile(level, BlockPos.containing(position().add(towardGarden.scale(0.8D))), false)) {
+            setDeltaMovement(getDeltaMovement().add(towardGarden.scale(0.08D)));
+        }
+    }
+
+    private void tickSwashbucklerSwing(ServerLevel level) {
+        CompoundTag tag = getPersistentData();
+        if (!definition().has(PvZZombieSpecial.SWASHBUCKLER)
+                || tag.getBoolean(SWASHBUCKLER_SWUNG_TAG)
+                || !tag.contains(GARDEN_CENTER_X_TAG)
+                || tickCount < 20) {
+            return;
+        }
+
+        findSwashbucklerLandingTile(level).ifPresent(landing -> {
+            tag.putBoolean(SWASHBUCKLER_SWUNG_TAG, true);
+            Vec3 start = position().add(0.0D, 1.0D, 0.0D);
+            teleportTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D);
+            setDeltaMovement(Vec3.ZERO);
+            renderMagicLine(level, start, position().add(0.0D, 1.0D, 0.0D), ParticleTypes.CLOUD);
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.4D, getZ(), 18, 0.35D, 0.15D, 0.35D, 0.04D);
+            level.playSound(null, blockPosition(), SoundEvents.LEASH_KNOT_PLACE, SoundSource.HOSTILE, 0.8F, 1.2F);
+        });
+    }
+
+    private Optional<BlockPos> findSwashbucklerLandingTile(ServerLevel level) {
+        BlockPos center = new BlockPos(getPersistentData().getInt(GARDEN_CENTER_X_TAG), getPersistentData().getInt(GARDEN_CENTER_Y_TAG), getPersistentData().getInt(GARDEN_CENTER_Z_TAG));
+        BlockPos best = null;
+        double currentDistance = blockPosition().distSqr(center);
+        double bestDistance = currentDistance;
+        for (int dx = -8; dx <= 8; dx++) {
+            for (int dz = -8; dz <= 8; dz++) {
+                BlockPos candidate = center.offset(dx, 0, dz);
+                double distance = candidate.distSqr(center);
+                if (distance >= bestDistance || distance > currentDistance || !PirateSeasPlankManager.isPirateSeasPlankTile(level, candidate)) {
+                    continue;
+                }
+                if (!canSwashbucklerLandAt(level, candidate)) {
+                    continue;
+                }
+                best = candidate;
+                bestDistance = distance;
+            }
+        }
+        return Optional.ofNullable(best);
+    }
+
+    private boolean canSwashbucklerLandAt(ServerLevel level, BlockPos pos) {
+        return PirateSeasPlankManager.isPirateSeasPlankTile(level, pos)
+                && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+                && level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty()
+                && level.getEntities(this, new AABB(pos).inflate(0.2D, 0.0D, 0.2D)).isEmpty();
+    }
+
+    private void tickPelicanDrop(ServerLevel level) {
+        CompoundTag tag = getPersistentData();
+        if (!definition().has(PvZZombieSpecial.PELICAN_DROPPER)
+                || tag.getBoolean(PELICAN_DROPPED_IMP_TAG)
+                || !tag.contains(GARDEN_CENTER_X_TAG)
+                || tickCount < 40) {
+            return;
+        }
+
+        findPirateImpLanding(level, 7).ifPresent(landing -> {
+            tag.putBoolean(PELICAN_DROPPED_IMP_TAG, true);
+            spawnPirateImpAt(level, landing, ParticleTypes.CLOUD, SoundEvents.PARROT_FLY);
+        });
+    }
+
+    private void tickImpCannon(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.IMP_CANNON) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(IMP_CANNON_NEXT_LAUNCH_TICK_TAG) || tag.getInt(IMP_CANNON_LAUNCH_COUNT_TAG) >= IMP_CANNON_MAX_LAUNCHES) {
+            return;
+        }
+
+        findPirateImpLanding(level, 7).ifPresent(landing -> {
+            spawnPirateImpAt(level, landing, ParticleTypes.EXPLOSION, SoundEvents.GENERIC_EXPLODE);
+            tag.putInt(IMP_CANNON_LAUNCH_COUNT_TAG, tag.getInt(IMP_CANNON_LAUNCH_COUNT_TAG) + 1);
+        });
+        tag.putLong(IMP_CANNON_NEXT_LAUNCH_TICK_TAG, gameTime + IMP_CANNON_LAUNCH_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private Optional<BlockPos> findPirateImpLanding(ServerLevel level, int radius) {
+        if (!getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return Optional.empty();
+        }
+        BlockPos center = new BlockPos(getPersistentData().getInt(GARDEN_CENTER_X_TAG), getPersistentData().getInt(GARDEN_CENTER_Y_TAG), getPersistentData().getInt(GARDEN_CENTER_Z_TAG));
+        for (int attempt = 0; attempt < 36; attempt++) {
+            BlockPos candidate = center.offset(level.random.nextInt(radius * 2 + 1) - radius, 0, level.random.nextInt(radius * 2 + 1) - radius);
+            if (PirateSeasPlankManager.canLaunchPirateImpTo(level, candidate)) {
+                return Optional.of(candidate);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private void spawnPirateImpAt(ServerLevel level, BlockPos landing, net.minecraft.core.particles.ParticleOptions particle, net.minecraft.sounds.SoundEvent sound) {
+        Optional.ofNullable(ModEntities.ZOMBIES.get("pirate_imp"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> {
+                    PvZZombieEntity imp = impType.create(level);
+                    if (imp == null) {
+                        return;
+                    }
+                    imp.moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), 0.0F);
+                    imp.getPersistentData().putBoolean("PvZWaveZombie", getPersistentData().getBoolean("PvZWaveZombie"));
+                    copyGardenCenterTo(imp);
+                    imp.finalizeSpawn(level, level.getCurrentDifficultyAt(landing), MobSpawnType.EVENT, null, null);
+                    level.addFreshEntity(imp);
+                    imp.configureForWave(0.13D);
+                });
+        level.sendParticles(particle, landing.getX() + 0.5D, landing.getY() + 0.5D, landing.getZ() + 0.5D, 18, 0.4D, 0.3D, 0.4D, 0.04D);
+        level.playSound(null, landing, sound, SoundSource.HOSTILE, 0.75F, 1.0F);
+    }
+
+    private void tickPirateCaptainSupport(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.PIRATE_CAPTAIN)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(PIRATE_CAPTAIN_NEXT_SUPPORT_TICK_TAG)) {
+            return;
+        }
+
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, getBoundingBox().inflate(6.0D, 2.0D, 6.0D),
+                zombie -> zombie.isAlive() && zombie != this && PvZZombieDefinitions.isPirateSeasZombie(zombie) && !PvZZombieDefinitions.isGargantuarLike(zombie))) {
+            zombie.getPersistentData().putLong(PIRATE_CAPTAIN_BUFF_END_TICK_TAG, gameTime + PIRATE_CAPTAIN_SUPPORT_DURATION_TICKS);
+            zombie.addEffect(new MobEffectInstance(MobEffects.DAMAGE_RESISTANCE, PIRATE_CAPTAIN_SUPPORT_DURATION_TICKS, 0, false, true));
+            zombie.setAttribute(Attributes.MOVEMENT_SPEED, zombie.movementSpeedFor(zombie.definition()));
+            level.sendParticles(ParticleTypes.ENCHANT, zombie.getX(), zombie.getY() + 1.1D, zombie.getZ(), 4, 0.25D, 0.35D, 0.25D, 0.01D);
+        }
+        level.playSound(null, blockPosition(), SoundEvents.GOAT_HORN_SOUND_VARIANTS.get(0).get(), SoundSource.HOSTILE, 0.8F, 1.15F);
+        tag.putLong(PIRATE_CAPTAIN_NEXT_SUPPORT_TICK_TAG, gameTime + PIRATE_CAPTAIN_SUPPORT_INTERVAL_TICKS);
     }
 
     private void pulseNearbyNeonZombies(ServerLevel level, double radius, boolean includeSelf) {

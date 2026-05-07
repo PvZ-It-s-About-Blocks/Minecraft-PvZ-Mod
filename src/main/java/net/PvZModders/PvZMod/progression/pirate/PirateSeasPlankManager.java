@@ -81,6 +81,27 @@ public final class PirateSeasPlankManager {
                 && level.getBlockState(floor).is(Blocks.OAK_PLANKS);
     }
 
+    public static boolean isPermanentTotemPlatform(ServerLevel level, BlockPos pos) {
+        Optional<BlockPos> totem = nearestPirateTotem(level, pos);
+        if (totem.isEmpty()) {
+            return false;
+        }
+        BlockPos floor = floorPosNear(pos, totem.get());
+        return Math.abs(floor.getX() - totem.get().getX()) <= 1
+                && Math.abs(floor.getZ() - totem.get().getZ()) <= 1
+                && level.getBlockState(floor).is(Blocks.OAK_PLANKS);
+    }
+
+    public static boolean isTemporaryWavePlank(ServerLevel level, BlockPos pos) {
+        Optional<BlockPos> totem = nearestPirateTotem(level, pos);
+        if (totem.isEmpty()) {
+            return false;
+        }
+        BlockPos floor = floorPosNear(pos, totem.get());
+        return keyPlanks(level, totem.get()).contains(floor.immutable())
+                && level.getBlockState(floor).is(Blocks.OAK_PLANKS);
+    }
+
     public static boolean isChurningWaterHole(ServerLevel level, BlockPos pos) {
         Optional<BlockPos> totem = nearestPirateTotem(level, pos);
         if (totem.isEmpty()) {
@@ -91,6 +112,24 @@ public final class PirateSeasPlankManager {
             return false;
         }
         return !level.getBlockState(floor).is(Blocks.OAK_PLANKS);
+    }
+
+    public static boolean isTurbulentWater(ServerLevel level, BlockPos pos) {
+        return isChurningWaterHole(level, pos);
+    }
+
+    public static boolean canPirateZombieTraverseTile(ServerLevel level, BlockPos pos, boolean flying) {
+        return flying || isPirateSeasPlankTile(level, pos) || !isChurningWaterHole(level, pos);
+    }
+
+    public static boolean canSpawnImpCannonAt(ServerLevel level, BlockPos pos) {
+        return isPirateSeasPlankTile(level, pos)
+                && level.getBlockState(pos).getCollisionShape(level, pos).isEmpty()
+                && level.getBlockState(pos.above()).getCollisionShape(level, pos.above()).isEmpty();
+    }
+
+    public static boolean canLaunchPirateImpTo(ServerLevel level, BlockPos pos) {
+        return canSpawnImpCannonAt(level, pos);
     }
 
     private static BlockPos floorPosNear(BlockPos pos, BlockPos totem) {
