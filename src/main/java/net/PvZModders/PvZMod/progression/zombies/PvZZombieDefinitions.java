@@ -63,6 +63,11 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.LOST_CITY;
     }
 
+    public static boolean isDarkAgesZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.DARK_AGES;
+    }
+
     private static Map<String, PvZZombieDefinition> createDefinitions() {
         Map<String, PvZZombieDefinition> definitions = new LinkedHashMap<>();
         register(definitions, "basic_zombie", "Basic Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
@@ -177,6 +182,26 @@ public final class PvZZombieDefinitions {
                 "Small, fast Lost City support enemy.", Set.of(PvZZombieSpecial.IMP));
         register(definitions, GardenId.LOST_CITY, "porter_gargantuar", "Porter Gargantuar", 340.0D, 0.6D, 18.0D, 0.95D, 3.0F,
                 "Huge Lost City gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.PORTER_GARGANTUAR));
+        register(definitions, GardenId.DARK_AGES, "peasant_zombie", "Peasant Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Dark Ages peasant zombie.", Set.of());
+        register(definitions, GardenId.DARK_AGES, "conehead_peasant", "Conehead Peasant", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Dark Ages peasant.", Set.of());
+        register(definitions, GardenId.DARK_AGES, "buckethead_peasant", "Buckethead Peasant", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Dark Ages peasant.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.DARK_AGES, "flag_peasant_zombie", "Flag Peasant Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Dark Ages push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.DARK_AGES, "knight_zombie", "Knight Zombie", 120.0D, 0.65D, 6.0D, 0.5D, 1.0F,
+                "Slow armored Dark Ages tank.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.DARK_AGES, "jester_zombie", "Jester Zombie", 45.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Periodically spins to deflect straight projectiles.", Set.of(PvZZombieSpecial.JESTER_SPIN));
+        register(definitions, GardenId.DARK_AGES, "wizard_zombie", "Wizard Zombie", 55.0D, 0.9D, 3.0D, 0.0D, 1.0F,
+                "Temporarily disables plants with sheep magic.", Set.of(PvZZombieSpecial.WIZARD_DISABLE));
+        register(definitions, GardenId.DARK_AGES, "king_zombie", "King Zombie", 70.0D, 0.75D, 4.0D, 0.1D, 1.0F,
+                "Buffs nearby Dark Ages zombies with Royal Guard.", Set.of(PvZZombieSpecial.KING_SUPPORT));
+        register(definitions, GardenId.DARK_AGES, "dragon_imp", "Dragon Imp", 12.0D, 1.35D, 3.0D, 0.0D, 0.55F,
+                "Small, fast fire-themed imp.", Set.of(PvZZombieSpecial.IMP, PvZZombieSpecial.DRAGON_IMP_FIRE));
+        register(definitions, GardenId.DARK_AGES, "dark_ages_gargantuar", "Dark Ages Gargantuar", 340.0D, 0.58D, 18.0D, 0.95D, 3.0F,
+                "Huge Dark Ages gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.DARK_AGES_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

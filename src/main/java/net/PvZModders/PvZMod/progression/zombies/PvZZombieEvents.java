@@ -49,6 +49,21 @@ public final class PvZZombieEvents {
         if (zombie.definition().has(PvZZombieSpecial.PONCHO_SHIELD)) {
             tickPonchoShield(zombie, event);
         }
+        if (zombie.getPersistentData().getLong(PvZZombieEntity.ROYAL_GUARD_END_TICK_TAG) > zombie.level().getGameTime()) {
+            event.setAmount(event.getAmount() * 0.7F);
+            if (zombie.level() instanceof ServerLevel level && level.getGameTime() % 5L == 0L) {
+                level.sendParticles(ParticleTypes.ENCHANT, zombie.getX(), zombie.getY() + 1.1D, zombie.getZ(), 3, 0.25D, 0.35D, 0.25D, 0.01D);
+            }
+        }
+        if (zombie.definition().has(PvZZombieSpecial.JESTER_SPIN)
+                && zombie.getPersistentData().getBoolean(PvZZombieEntity.JESTER_SPINNING_TAG)
+                && isStraightProjectileDamage(event)) {
+            event.setAmount(event.getAmount() * 0.2F);
+            if (zombie.level() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.CRIT, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 10, 0.35D, 0.45D, 0.35D, 0.03D);
+                level.playSound(null, zombie.blockPosition(), SoundEvents.SHIELD_BLOCK, SoundSource.HOSTILE, 0.6F, 1.4F);
+            }
+        }
         if (zombie.definition().has(PvZZombieSpecial.EXCAVATOR_SHIELD) && isStraightProjectileDamage(event)) {
             Entity direct = event.getSource().getDirectEntity();
             Entity source = event.getSource().getEntity();
@@ -87,6 +102,11 @@ public final class PvZZombieEvents {
                 && !zombie.getPersistentData().getBoolean(PvZZombieEntity.PORTER_GARGANTUAR_THROWN_IMP_TAG)
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseImpPorter(zombie);
+        }
+        if (zombie.definition().has(PvZZombieSpecial.DARK_AGES_GARGANTUAR)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.DARK_AGES_GARGANTUAR_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseDragonImp(zombie);
         }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
@@ -167,6 +187,17 @@ public final class PvZZombieEvents {
         Optional.ofNullable(ModEntities.ZOMBIES.get("imp_porter"))
                 .map(registryObject -> registryObject.get())
                 .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.ZOMBIE_INFECT, ParticleTypes.CRIT));
+    }
+
+    private static void releaseDragonImp(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.DARK_AGES_GARGANTUAR_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("dragon_imp"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.BLAZE_SHOOT, ParticleTypes.FLAME));
     }
 
     private static void spawnSwarm(ServerLevel level, PvZZombieEntity source, EntityType<PvZZombieEntity> swarmType, int count, net.minecraft.sounds.SoundEvent sound, net.minecraft.core.particles.ParticleOptions particle) {

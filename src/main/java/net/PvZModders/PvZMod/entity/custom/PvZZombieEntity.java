@@ -47,6 +47,9 @@ public class PvZZombieEntity extends Zombie {
     public static final String HUNTER_FREEZE_SHOT_TAG = "PvZHunterFreezeShot";
     public static final String RELIC_HUNTER_LEAPED_TAG = "PvZRelicHunterLeaped";
     public static final String PORTER_GARGANTUAR_THROWN_IMP_TAG = "PvZPorterGargantuarThrownImp";
+    public static final String DARK_AGES_GARGANTUAR_THROWN_IMP_TAG = "PvZDarkAgesGargantuarThrownImp";
+    public static final String JESTER_SPINNING_TAG = "PvZJesterSpinning";
+    public static final String ROYAL_GUARD_END_TICK_TAG = "PvZRoyalGuardEndTick";
     private static final String PROSPECTOR_LEAP_TICK_TAG = "PvZProspectorLeapTick";
     private static final String RELIC_HUNTER_LEAP_TICK_TAG = "PvZRelicHunterLeapTick";
     private static final String PIANIST_NEXT_SUPPORT_TICK_TAG = "PvZPianistNextSupportTick";
@@ -57,6 +60,11 @@ public class PvZZombieEntity extends Zombie {
     private static final String TROGLOBITE_ICE_CREATED_TAG = "PvZTroglobiteIceCreated";
     private static final String DODO_NEXT_HOP_TICK_TAG = "PvZDodoNextHopTick";
     private static final String TURQUOISE_NEXT_DRAIN_TICK_TAG = "PvZTurquoiseNextDrainTick";
+    private static final String JESTER_NEXT_SPIN_TICK_TAG = "PvZJesterNextSpinTick";
+    private static final String JESTER_SPIN_END_TICK_TAG = "PvZJesterSpinEndTick";
+    private static final String WIZARD_NEXT_CAST_TICK_TAG = "PvZWizardNextCastTick";
+    private static final String KING_NEXT_SUPPORT_TICK_TAG = "PvZKingNextSupportTick";
+    private static final String DRAGON_IMP_NEXT_FIRE_TICK_TAG = "PvZDragonImpNextFireTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -76,6 +84,13 @@ public class PvZZombieEntity extends Zombie {
     private static final int DODO_HOP_INTERVAL_TICKS = 20 * 6;
     private static final int TURQUOISE_DRAIN_AMOUNT = 15;
     private static final int TURQUOISE_DRAIN_INTERVAL_TICKS = 20 * 4;
+    private static final int JESTER_SPIN_DURATION_TICKS = 20 * 2;
+    private static final int JESTER_SPIN_INTERVAL_TICKS = 20 * 6;
+    private static final int WIZARD_CAST_INTERVAL_TICKS = 20 * 8;
+    private static final int WIZARD_DISABLE_DURATION_TICKS = 20 * 6;
+    private static final int KING_SUPPORT_INTERVAL_TICKS = 20 * 5;
+    private static final int KING_SUPPORT_DURATION_TICKS = 20 * 5;
+    private static final int DRAGON_IMP_FIRE_INTERVAL_TICKS = 20 * 4;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -102,6 +117,10 @@ public class PvZZombieEntity extends Zombie {
         tickTroglobitePush(level);
         tickDodoHop(level);
         tickTurquoiseSkullDrain(level);
+        tickJesterSpin(level);
+        tickWizardDisable(level);
+        tickKingSupport(level);
+        tickDragonImpFire(level);
     }
 
     @Override
@@ -164,6 +183,7 @@ public class PvZZombieEntity extends Zombie {
         tag.putDouble(WAVE_BASE_SPEED_TAG, waveBaseSpeed);
         tag.putBoolean(PvZZombieDefinitions.GARGANTUAR_LIKE_TAG, definition.has(PvZZombieSpecial.GARGANTUAR));
         tag.putBoolean(PvZZombieDefinitions.FLYING_ZOMBIE_TAG, definition.has(PvZZombieSpecial.FLYING));
+        tag.putBoolean("PvZMetalZombie", definition.has(PvZZombieSpecial.METAL));
         if (definition.has(PvZZombieSpecial.POLE_VAULT) && !tag.contains(POLE_VAULT_READY_TAG)) {
             tag.putBoolean(POLE_VAULT_READY_TAG, true);
         }
@@ -561,6 +581,117 @@ public class PvZZombieEntity extends Zombie {
             level.playSound(null, blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.HOSTILE, 0.45F, 1.55F);
         }
         tag.putLong(TURQUOISE_NEXT_DRAIN_TICK_TAG, gameTime + TURQUOISE_DRAIN_INTERVAL_TICKS);
+    }
+
+    private void tickJesterSpin(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.JESTER_SPIN)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (tag.getBoolean(JESTER_SPINNING_TAG)) {
+            if (gameTime >= tag.getLong(JESTER_SPIN_END_TICK_TAG)) {
+                tag.putBoolean(JESTER_SPINNING_TAG, false);
+                tag.putLong(JESTER_NEXT_SPIN_TICK_TAG, gameTime + JESTER_SPIN_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+            } else if (gameTime % 5L == 0L) {
+                level.sendParticles(ParticleTypes.CRIT, getX(), getY() + 1.0D, getZ(), 4, 0.35D, 0.45D, 0.35D, 0.02D);
+            }
+            return;
+        }
+
+        if (gameTime >= tag.getLong(JESTER_NEXT_SPIN_TICK_TAG)) {
+            tag.putBoolean(JESTER_SPINNING_TAG, true);
+            tag.putLong(JESTER_SPIN_END_TICK_TAG, gameTime + JESTER_SPIN_DURATION_TICKS);
+            level.playSound(null, blockPosition(), SoundEvents.ARMOR_EQUIP_LEATHER, SoundSource.HOSTILE, 0.8F, 1.6F);
+        }
+    }
+
+    private void tickWizardDisable(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.WIZARD_DISABLE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(WIZARD_NEXT_CAST_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(9.0D, 4.0D, 9.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(this::hasLineOfSight)
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            PlantEntityManager.applyWizardDisable(level, plant, this, WIZARD_DISABLE_DURATION_TICKS);
+            renderMagicLine(level, position().add(0.0D, 1.3D, 0.0D), plant.position().add(0.0D, 1.0D, 0.0D), ParticleTypes.ENCHANT);
+        });
+        tag.putLong(WIZARD_NEXT_CAST_TICK_TAG, gameTime + WIZARD_CAST_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickKingSupport(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.KING_SUPPORT)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(KING_NEXT_SUPPORT_TICK_TAG)) {
+            return;
+        }
+
+        AABB area = getBoundingBox().inflate(6.0D, 2.0D, 6.0D);
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, area, zombie -> zombie.isAlive() && zombie != this && isDarkAgesSupportTarget(zombie))) {
+            zombie.getPersistentData().putLong(ROYAL_GUARD_END_TICK_TAG, gameTime + KING_SUPPORT_DURATION_TICKS);
+            zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, KING_SUPPORT_DURATION_TICKS, 0, false, true));
+            level.sendParticles(ParticleTypes.ENCHANT, zombie.getX(), zombie.getY() + 1.1D, zombie.getZ(), 5, 0.25D, 0.35D, 0.25D, 0.02D);
+        }
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BELL.get(), SoundSource.HOSTILE, 0.8F, 0.8F);
+        tag.putLong(KING_NEXT_SUPPORT_TICK_TAG, gameTime + KING_SUPPORT_INTERVAL_TICKS);
+    }
+
+    private void tickDragonImpFire(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.DRAGON_IMP_FIRE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(DRAGON_IMP_NEXT_FIRE_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(6.0D, 3.0D, 6.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(this::hasLineOfSight)
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            plant.hurt(level.damageSources().mobAttack(this), 2.0F);
+            level.sendParticles(ParticleTypes.FLAME, plant.getX(), plant.getY() + 0.9D, plant.getZ(), 8, 0.25D, 0.25D, 0.25D, 0.02D);
+            renderMagicLine(level, position().add(0.0D, 0.8D, 0.0D), plant.position().add(0.0D, 0.9D, 0.0D), ParticleTypes.FLAME);
+            level.playSound(null, blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 0.55F, 1.5F);
+        });
+        tag.putLong(DRAGON_IMP_NEXT_FIRE_TICK_TAG, gameTime + DRAGON_IMP_FIRE_INTERVAL_TICKS);
+    }
+
+    private static boolean isDarkAgesSupportTarget(PvZZombieEntity zombie) {
+        String id = zombie.definition().id();
+        return "peasant_zombie".equals(id)
+                || "conehead_peasant".equals(id)
+                || "buckethead_peasant".equals(id)
+                || "jester_zombie".equals(id)
+                || "wizard_zombie".equals(id)
+                || "dragon_imp".equals(id)
+                || "knight_zombie".equals(id);
+    }
+
+    private static void renderMagicLine(ServerLevel level, Vec3 start, Vec3 end, net.minecraft.core.particles.ParticleOptions particle) {
+        Vec3 delta = end.subtract(start);
+        int steps = Math.max(2, (int) (delta.length() * 4.0D));
+        for (int i = 0; i <= steps; i++) {
+            Vec3 point = start.add(delta.scale(i / (double) steps));
+            level.sendParticles(particle, point.x, point.y, point.z, 1, 0.02D, 0.02D, 0.02D, 0.0D);
+        }
     }
 
     private void copyGardenCenterTo(PvZZombieEntity other) {

@@ -98,6 +98,8 @@ public final class PlantEntityManager {
     private static final String FREEZE_STAGE_TAG = "PvZFreezeStage";
     private static final String FREEZE_NEXT_STAGE_TICK_TAG = "PvZFreezeNextStageTick";
     private static final String FREEZE_OVERLAY_UUID_TAG = "PvZFreezeOverlayUuid";
+    public static final String WIZARD_DISABLED_TAG = "PvZWizardDisabled";
+    public static final String WIZARD_DISABLED_END_TICK_TAG = "PvZWizardDisabledEndTick";
     private static final String CHARD_GUARD_CHARGES_TAG = "PvZChardGuardCharges";
     private static final String INFI_NUT_LAST_HURT_TICK_TAG = "PvZInfiNutLastHurtTick";
     private static final String MECHANICAL_ZOMBIE_TAG = "PvZMechanicalZombie";
@@ -507,6 +509,12 @@ public final class PlantEntityManager {
         ensurePlantNameVisible(plant);
         lookAtNearestHostile(level, plant);
         if (tickSubmergedPlantDrowning(level, plant)) {
+            return;
+        }
+        if (isWizardDisabled(level, plant)) {
+            if (level.getGameTime() % 20L == 0L) {
+                level.sendParticles(ParticleTypes.ENCHANT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 5, 0.25D, 0.35D, 0.25D, 0.01D);
+            }
             return;
         }
         if (isPlantFrozen(plant)) {
@@ -2015,6 +2023,33 @@ public final class PlantEntityManager {
 
     public static boolean isHotPlantEntity(Entity entity) {
         return entity instanceof SnowGolem plant && isPlant(plant) && isHotPlant(behaviorFor(plant));
+    }
+
+    public static void applyWizardDisable(ServerLevel level, SnowGolem plant, Entity wizard, int durationTicks) {
+        if (!isPlant(plant)) {
+            return;
+        }
+        plant.getPersistentData().putBoolean(WIZARD_DISABLED_TAG, true);
+        plant.getPersistentData().putLong(WIZARD_DISABLED_END_TICK_TAG, level.getGameTime() + durationTicks);
+        level.sendParticles(ParticleTypes.ENCHANT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 18, 0.35D, 0.45D, 0.35D, 0.04D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.SHEEP_AMBIENT, SoundSource.HOSTILE, 0.7F, 1.25F);
+    }
+
+    public static void clearWizardDisable(Entity plant) {
+        plant.getPersistentData().remove(WIZARD_DISABLED_TAG);
+        plant.getPersistentData().remove(WIZARD_DISABLED_END_TICK_TAG);
+    }
+
+    public static boolean isWizardDisabled(ServerLevel level, Entity plant) {
+        CompoundTag tag = plant.getPersistentData();
+        if (!tag.getBoolean(WIZARD_DISABLED_TAG)) {
+            return false;
+        }
+        if (level.getGameTime() >= tag.getLong(WIZARD_DISABLED_END_TICK_TAG)) {
+            clearWizardDisable(plant);
+            return false;
+        }
+        return true;
     }
 
     private static boolean isPlantWarmedByHotPlant(ServerLevel level, SnowGolem plant) {
