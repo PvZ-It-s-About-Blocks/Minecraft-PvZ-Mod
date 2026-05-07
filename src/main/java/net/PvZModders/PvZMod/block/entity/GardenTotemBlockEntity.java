@@ -35,6 +35,7 @@ import net.PvZModders.PvZMod.progression.waves.WaveReward;
 import net.PvZModders.PvZMod.progression.waves.WaveRewardType;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnGroup;
+import net.PvZModders.PvZMod.progression.waves.WaveZombieSpawnManager;
 import net.PvZModders.PvZMod.progression.waves.WildWestRailProtection;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -88,6 +89,7 @@ import net.PvZModders.PvZMod.menu.GardenTotemMenu;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -130,6 +132,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private final Set<UUID> playersSunAbsorbedThisWave = new HashSet<>();
     private final Set<BlockPos> activeWildWestRailPositions = new HashSet<>();
     private final List<WaveSpawnDirection> activeWaveDirections = new ArrayList<>();
+    private final Map<WaveSpawnDirection, BlockPos> activeWavePortalAnchors = new EnumMap<>(WaveSpawnDirection.class);
+    private final Map<WaveSpawnDirection, Long> activeWavePortalRefreshTicks = new EnumMap<>(WaveSpawnDirection.class);
+    private final Map<UUID, Long> activeWavePortalVisualIds = new HashMap<>();
     private final ServerBossEvent waveBossBar = new ServerBossEvent(
             Component.literal("Wave Progress"),
             BossEvent.BossBarColor.GREEN,
@@ -481,6 +486,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveDinosaurIds.clear();
         playersSunAbsorbedThisWave.clear();
         activeWaveDirections.clear();
+        activeWavePortalAnchors.clear();
+        activeWavePortalRefreshTicks.clear();
+        WaveZombieSpawnManager.cleanupPortalVisuals(level, activeWavePortalVisualIds);
         activeWaveStartTick = level.getGameTime();
         activeWaveNextSpawnTick = activeWaveStartTick + FIRST_SPAWN_DELAY_TICKS;
         activeWaveTotalZombies = totalSpawnCount(definition);
@@ -524,6 +532,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void tickWaveSpawnSchedule(ServerLevel level) {
+        WaveZombieSpawnManager.tickPortalVisuals(level, activeWavePortalVisualIds);
         GardenWaveProgress waveProgress = getWaveProgress(level);
         if (!waveProgress.waveActive()) {
             clearWaveRuntimeState();
@@ -682,7 +691,16 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         WaveSpawnDirection direction = activeWaveDirections.get(spawnIndex % activeWaveDirections.size());
-        BlockPos spawnPos = findSpawnPos(level, direction, spawnIndex, Math.max(1, activeWaveTotalZombies));
+        BlockPos anchor = activeWavePortalAnchors.computeIfAbsent(direction, dir -> {
+            BlockPos found = WaveZombieSpawnManager.findWaveSpawnPosition(level, worldPosition, dir, spawnIndex);
+            return found;
+        });
+        long gameTime = level.getGameTime();
+        if (gameTime >= activeWavePortalRefreshTicks.getOrDefault(direction, Long.MIN_VALUE)) {
+            activeWavePortalVisualIds.putAll(WaveZombieSpawnManager.spawnPortalVisual(level, anchor));
+            activeWavePortalRefreshTicks.put(direction, gameTime + WaveZombieSpawnManager.PORTAL_VISUAL_DURATION_TICKS);
+        }
+        BlockPos spawnPos = WaveZombieSpawnManager.findNearbySpawnPosition(level, worldPosition, anchor, spawnIndex);
         Entity entity = spawnWaveEntity(level, entityType.get(), spawnPos);
         if (entity == null) {
             return false;
@@ -733,31 +751,6 @@ public class GardenTotemBlockEntity extends BlockEntity {
         entity.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D, 0.0F, 0.0F);
         level.addFreshEntity(entity);
         return entity;
-    }
-
-    private BlockPos findSpawnPos(ServerLevel level, WaveSpawnDirection direction, int index, int totalCount) {
-        int sideOffset = spreadBorderOffset(index, totalCount);
-        BlockPos base = direction.borderPosition(worldPosition, GARDEN_RADIUS, sideOffset);
-        BlockPos spawnPos = new BlockPos(base.getX(), worldPosition.getY(), base.getZ());
-
-        if (isSpawnClear(level, spawnPos)) {
-            return spawnPos;
-        }
-
-        return level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, base);
-    }
-
-    private int spreadBorderOffset(int index, int totalCount) {
-        if (totalCount <= 1) {
-            return 0;
-        }
-
-        double step = (GARDEN_RADIUS * 2.0D) / Math.max(1, totalCount - 1);
-        return (int) Math.round(-GARDEN_RADIUS + (index * step));
-    }
-
-    private boolean isSpawnClear(ServerLevel level, BlockPos pos) {
-        return level.getBlockState(pos).isAir() && level.getBlockState(pos.above()).isAir();
     }
 
     private void showWaveDirectionTitle(ServerPlayer player, List<WaveSpawnDirection> directions) {
@@ -1212,6 +1205,13 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void clearWaveRuntimeState() {
+        if (level instanceof ServerLevel serverLevel) {
+            WaveZombieSpawnManager.cleanupPortalVisuals(serverLevel, activeWavePortalVisualIds);
+        } else {
+            activeWavePortalVisualIds.clear();
+        }
+        activeWavePortalAnchors.clear();
+        activeWavePortalRefreshTicks.clear();
         activeWaveStartTick = -1L;
         activeWaveNextSpawnTick = -1L;
         activeWaveTotalZombies = 0;
@@ -1793,6 +1793,9 @@ public class GardenTotemBlockEntity extends BlockEntity {
             FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
             BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
             PirateSeasPlankManager.clearWavePlanks(serverLevel, worldPosition);
+            WaveZombieSpawnManager.cleanupPortalVisuals(serverLevel, activeWavePortalVisualIds);
+            activeWavePortalAnchors.clear();
+            activeWavePortalRefreshTicks.clear();
             waveBossBar.removeAllPlayers();
         }
         super.setRemoved();
