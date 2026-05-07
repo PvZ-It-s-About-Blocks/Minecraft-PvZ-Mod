@@ -86,11 +86,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.BIG_WAVE_BEACH, ModItems.BOWLING_BULB_SEED_PACKET.getId(), "bowling_bulb", "Bowling Bulb", 200, PlantBehavior.BOWLING_BULB);
         register(GardenId.BIG_WAVE_BEACH, ModItems.GUACODILE_SEED_PACKET.getId(), "guacodile", "Guacodile", 125, PlantBehavior.GUACODILE);
         register(GardenId.BIG_WAVE_BEACH, ModItems.BANANA_LAUNCHER_SEED_PACKET.getId(), "banana_launcher", "Banana Launcher", 500, PlantBehavior.BANANA_LAUNCHER);
-        register(GardenId.MODERN_DAY, "moonflower", "Moonflower", 50);
-        register(GardenId.MODERN_DAY, "nightshade", "Nightshade", 75);
-        register(GardenId.MODERN_DAY, "shadow_shroom", "Shadow-shroom", 50);
-        register(GardenId.MODERN_DAY, "dusk_lobber", "Dusk Lobber", 150);
-        register(GardenId.MODERN_DAY, "grimrose", "Grimrose", 75);
+        register(GardenId.MODERN_DAY, ModItems.MOONFLOWER_SEED_PACKET.getId(), "moonflower", "Moonflower", 50, PlantBehavior.MOONFLOWER);
+        register(GardenId.MODERN_DAY, ModItems.NIGHTSHADE_SEED_PACKET.getId(), "nightshade", "Nightshade", 75, PlantBehavior.NIGHTSHADE);
+        register(GardenId.MODERN_DAY, ModItems.SHADOW_SHROOM_SEED_PACKET.getId(), "shadow_shroom", "Shadow-shroom", 50, PlantBehavior.SHADOW_SHROOM);
+        register(GardenId.MODERN_DAY, ModItems.DUSK_LOBBER_SEED_PACKET.getId(), "dusk_lobber", "Dusk Lobber", 150, PlantBehavior.DUSK_LOBBER);
+        register(GardenId.MODERN_DAY, ModItems.GRIMROSE_SEED_PACKET.getId(), "grimrose", "Grimrose", 75, PlantBehavior.GRIMROSE);
     }
 
     public static Optional<PlantSeedDefinition> get(ResourceLocation seedPacketId) {
@@ -208,6 +208,11 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         TANGLE_KELP,
         BOWLING_BULB,
         GUACODILE,
-        BANANA_LAUNCHER
+        BANANA_LAUNCHER,
+        MOONFLOWER,
+        NIGHTSHADE,
+        SHADOW_SHROOM,
+        DUSK_LOBBER,
+        GRIMROSE
     }
 }

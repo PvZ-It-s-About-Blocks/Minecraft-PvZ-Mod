@@ -143,6 +143,11 @@ public class PvZ2Mod {
             event.accept(ModItems.BOWLING_BULB_SEED_PACKET);
             event.accept(ModItems.GUACODILE_SEED_PACKET);
             event.accept(ModItems.BANANA_LAUNCHER_SEED_PACKET);
+            event.accept(ModItems.MOONFLOWER_SEED_PACKET);
+            event.accept(ModItems.NIGHTSHADE_SEED_PACKET);
+            event.accept(ModItems.SHADOW_SHROOM_SEED_PACKET);
+            event.accept(ModItems.DUSK_LOBBER_SEED_PACKET);
+            event.accept(ModItems.GRIMROSE_SEED_PACKET);
             event.accept(ModItems.GARDEN_PLOTTER);
             event.accept(ModItems.BIOME_DETECTOR);
             event.accept(ModItems.SEED_HOLDER);
@@ -165,6 +170,12 @@ public class PvZ2Mod {
             event.accept(ModItems.CAPTAINS_LEGGINGS);
             event.accept(ModItems.CAPTAINS_BOOTS);
             event.accept(ModItems.PIRATE_SHIP);
+            event.accept(ModItems.TACO);
+            event.accept(ModItems.CRAZY_DAVE_TECH_HELMET);
+            event.accept(ModItems.CRAZY_DAVE_TECH_CHESTPLATE);
+            event.accept(ModItems.CRAZY_DAVE_TECH_LEGGINGS);
+            event.accept(ModItems.CRAZY_DAVE_TECH_BOOTS);
+            event.accept(ModItems.MYSTICAL_EYE);
             event.accept(ModItems.PEA);
         }
     }

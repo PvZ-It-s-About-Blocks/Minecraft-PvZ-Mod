@@ -14,6 +14,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
+import net.PvZModders.PvZMod.progression.modernday.ModernDayDragonFightData;
 import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
@@ -1036,6 +1037,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
                         player.drop(rewardStack, false);
                     }
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("commanders_bucket")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.COMMANDERS_BUCKET.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
                         && reward.id().equals("pirate_cannon")) {
                     ItemStack rewardStack = new ItemStack(ModItems.PIRATE_CANNON.get());
                     if (!player.getInventory().add(rewardStack)) {
@@ -1060,6 +1067,34 @@ public class GardenTotemBlockEntity extends BlockEntity {
                             player.drop(rewardStack, false);
                         }
                     }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("taco")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.TACO.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("crazy_dave_tech_armor_set")) {
+                    List<ItemStack> armorStacks = List.of(
+                            new ItemStack(ModItems.CRAZY_DAVE_TECH_HELMET.get()),
+                            new ItemStack(ModItems.CRAZY_DAVE_TECH_CHESTPLATE.get()),
+                            new ItemStack(ModItems.CRAZY_DAVE_TECH_LEGGINGS.get()),
+                            new ItemStack(ModItems.CRAZY_DAVE_TECH_BOOTS.get())
+                    );
+                    for (ItemStack rewardStack : armorStacks) {
+                        if (!player.getInventory().add(rewardStack)) {
+                            player.drop(rewardStack, false);
+                        }
+                    }
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && reward.id().equals("mystical_eye")) {
+                    ItemStack rewardStack = new ItemStack(ModItems.MYSTICAL_EYE.get());
+                    if (!player.getInventory().add(rewardStack)) {
+                        player.drop(rewardStack, false);
+                    }
+                } else if (reward.id().equals("dragon_final_fight_foundation")) {
+                    ModernDayDragonFightData.get(level).unlockDragonFight();
+                    player.sendSystemMessage(Component.literal("The final Dragon fight stirs beyond the garden.").withStyle(ChatFormatting.LIGHT_PURPLE));
                 }
             }
         }

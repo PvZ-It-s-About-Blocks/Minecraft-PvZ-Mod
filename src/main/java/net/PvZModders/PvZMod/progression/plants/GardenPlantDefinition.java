@@ -78,6 +78,10 @@ public record GardenPlantDefinition(
         return BigWaveBeachPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> modernDayPlants() {
+        return ModernDayPlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
@@ -91,6 +95,7 @@ public record GardenPlantDefinition(
             case NEON_MIXTAPE -> neonMixtapePlants();
             case FAR_FUTURE -> farFuturePlants();
             case BIG_WAVE_BEACH -> bigWaveBeachPlants();
+            case MODERN_DAY -> modernDayPlants();
             default -> List.of();
         };
     }
@@ -98,7 +103,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), Math.max(bigWaveBeachPlants().size(), pirateSeasPlants().size()))), frostbitePlants().size())
+                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), Math.max(Math.max(bigWaveBeachPlants().size(), pirateSeasPlants().size()), modernDayPlants().size()))), frostbitePlants().size())
         );
     }
 
@@ -188,6 +193,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.BIG_WAVE_BEACH, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition modernDay(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.MODERN_DAY, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -307,6 +320,16 @@ public record GardenPlantDefinition(
                 bigWaveBeach("bowling_bulb", "Bowling Bulb", "Rolls bouncing bulbs between zombies.", 200, 11),
                 bigWaveBeach("guacodile", "Guacodile", "Amphibious attacker that can rush through zombies.", 125, 19),
                 bigWaveBeach("banana_launcher", "Banana Launcher", "Slow heavy artillery with splash damage.", 500, 27)
+        );
+    }
+
+    private static final class ModernDayPlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                modernDay("moonflower", "Moonflower", "Produces Sun and powers nearby shadow plants.", 50, 1),
+                modernDay("nightshade", "Nightshade", "Close-range shadow attacker empowered by Moonflower.", 75, 4),
+                modernDay("shadow_shroom", "Shadow-shroom", "Curses zombies with shadow damage over time.", 50, 8),
+                modernDay("dusk_lobber", "Dusk Lobber", "Lobs shadow splash projectiles.", 150, 15),
+                modernDay("grimrose", "Grimrose", "Drags normal zombies into the shadows.", 75, 22)
         );
     }
 }

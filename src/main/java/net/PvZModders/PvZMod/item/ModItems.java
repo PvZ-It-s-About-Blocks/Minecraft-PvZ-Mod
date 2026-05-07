@@ -9,10 +9,12 @@ import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.JetpackItem;
+import net.PvZModders.PvZMod.item.custom.MysticalEyeItem;
 import net.PvZModders.PvZMod.item.custom.PirateShipItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
+import net.PvZModders.PvZMod.item.custom.TacoItem;
 import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
 import net.PvZModders.PvZMod.item.custom.TideShellItem;
 import net.PvZModders.PvZMod.item.custom.TotemShieldItem;
@@ -156,6 +158,16 @@ public class ModItems {
             () -> new SeedPacketItem("guacodile", new Item.Properties()));
     public static final RegistryObject<Item> BANANA_LAUNCHER_SEED_PACKET = ITEMS.register("banana_launcher_seed_packet",
             () -> new SeedPacketItem("banana_launcher", new Item.Properties()));
+    public static final RegistryObject<Item> MOONFLOWER_SEED_PACKET = ITEMS.register("moonflower_seed_packet",
+            () -> new SeedPacketItem("moonflower", new Item.Properties()));
+    public static final RegistryObject<Item> NIGHTSHADE_SEED_PACKET = ITEMS.register("nightshade_seed_packet",
+            () -> new SeedPacketItem("nightshade", new Item.Properties()));
+    public static final RegistryObject<Item> SHADOW_SHROOM_SEED_PACKET = ITEMS.register("shadow_shroom_seed_packet",
+            () -> new SeedPacketItem("shadow_shroom", new Item.Properties()));
+    public static final RegistryObject<Item> DUSK_LOBBER_SEED_PACKET = ITEMS.register("dusk_lobber_seed_packet",
+            () -> new SeedPacketItem("dusk_lobber", new Item.Properties()));
+    public static final RegistryObject<Item> GRIMROSE_SEED_PACKET = ITEMS.register("grimrose_seed_packet",
+            () -> new SeedPacketItem("grimrose", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
@@ -206,6 +218,18 @@ public class ModItems {
             () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> PIRATE_SHIP = ITEMS.register("pirate_ship",
             () -> new PirateShipItem(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> TACO = ITEMS.register("taco",
+            () -> new TacoItem(new Item.Properties().stacksTo(16).food(TacoItem.FOOD)));
+    public static final RegistryObject<Item> CRAZY_DAVE_TECH_HELMET = ITEMS.register("crazy_dave_tech_helmet",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CRAZY_DAVE_TECH_CHESTPLATE = ITEMS.register("crazy_dave_tech_chestplate",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CRAZY_DAVE_TECH_LEGGINGS = ITEMS.register("crazy_dave_tech_leggings",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CRAZY_DAVE_TECH_BOOTS = ITEMS.register("crazy_dave_tech_boots",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> MYSTICAL_EYE = ITEMS.register("mystical_eye",
+            () -> new MysticalEyeItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

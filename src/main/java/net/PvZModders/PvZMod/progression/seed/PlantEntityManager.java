@@ -152,6 +152,12 @@ public final class PlantEntityManager {
     private static final int SPRING_BEAN_COOLDOWN_TICKS = 20 * 10;
     private static final int CHERRY_BOMB_FUSE_TICKS = 20;
     private static final int RECENT_PLANT_DEATH_WINDOW_TICKS = 20 * 60;
+    private static final int MOONFLOWER_INTERVAL_TICKS = 20 * 4;
+    private static final int NIGHTSHADE_INTERVAL_TICKS = 16;
+    private static final int SHADOW_SHROOM_INTERVAL_TICKS = 20 * 6;
+    private static final int SHADOW_SHROOM_CURSE_TICKS = 20 * 8;
+    private static final int DUSK_LOBBER_INTERVAL_TICKS = 45;
+    private static final int GRIMROSE_COOLDOWN_TICKS = 20 * 9;
     private static final int MAX_SPORE_SHROOM_CLONES_NEARBY = 12;
     private static final int FREEZE_STAGE_INTERVAL_TICKS = 20 * 5;
     private static final int FREEZE_DECAY_INTERVAL_TICKS = 20 * 9;
@@ -199,6 +205,13 @@ public final class PlantEntityManager {
     private static final float PEPPER_PULT_DIRECT_DAMAGE = 9.0F;
     private static final float PEPPER_PULT_SPLASH_DAMAGE = 4.5F;
     private static final float ROTOBAGA_DAMAGE = 4.0F;
+    private static final float NIGHTSHADE_DAMAGE = 5.0F;
+    private static final float POWERED_NIGHTSHADE_DAMAGE = 8.0F;
+    private static final float SHADOW_SHROOM_DAMAGE = 2.5F;
+    private static final float DUSK_LOBBER_DIRECT_DAMAGE = 8.0F;
+    private static final float DUSK_LOBBER_SPLASH_DAMAGE = 4.0F;
+    private static final float POWERED_DUSK_LOBBER_SPLASH_DAMAGE = 6.0F;
+    private static final float GRIMROSE_DAMAGE = 60.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
@@ -564,6 +577,11 @@ public final class PlantEntityManager {
             case BOWLING_BULB -> tickBowlingBulb(level, plant);
             case GUACODILE -> tickGuacodile(level, plant);
             case BANANA_LAUNCHER -> tickBananaLauncher(level, plant);
+            case MOONFLOWER -> tickMoonflower(level, plant);
+            case NIGHTSHADE -> tickNightshade(level, plant);
+            case SHADOW_SHROOM -> tickShadowShroom(level, plant);
+            case DUSK_LOBBER -> tickDuskLobber(level, plant);
+            case GRIMROSE -> tickGrimrose(level, plant);
             case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, LILY_PAD, PLACEHOLDER -> {
             }
         }
@@ -1743,6 +1761,126 @@ public final class PlantEntityManager {
         }
     }
 
+    private static void tickMoonflower(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime % 20L == 0L) {
+            level.sendParticles(ParticleTypes.PORTAL, plant.getX(), plant.getY() + 0.9D, plant.getZ(), 8, 0.35D, 0.2D, 0.35D, 0.02D);
+        }
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        SunManager.spawnSunAt(level, plant.blockPosition().above(3), 25);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MOONFLOWER_INTERVAL_TICKS);
+    }
+
+    private static void tickNightshade(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        boolean powered = isPoweredByMoonflower(level, plant);
+        long interval = powered ? Math.max(8, NIGHTSHADE_INTERVAL_TICKS - 5) : NIGHTSHADE_INTERVAL_TICKS;
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        double range = powered ? 3.0D : 2.0D;
+        Optional<Zombie> target = selectZombie(level, plant, range);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        hurtWithoutKnockback(target.get(), level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, powered ? POWERED_NIGHTSHADE_DAMAGE : NIGHTSHADE_DAMAGE));
+        level.sendParticles(powered ? ParticleTypes.REVERSE_PORTAL : ParticleTypes.PORTAL, target.get().getX(), target.get().getY() + 0.8D, target.get().getZ(), powered ? 18 : 9, 0.25D, 0.4D, 0.25D, 0.02D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + interval);
+    }
+
+    private static void tickShadowShroom(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        boolean powered = isPoweredByMoonflower(level, plant);
+        Optional<Zombie> target = selectZombie(level, plant, powered ? 7.0D : 5.0D);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 15L);
+            return;
+        }
+
+        applyShadowCurse(level, plant, target.get(), powered);
+        if (powered) {
+            AABB spreadArea = target.get().getBoundingBox().inflate(2.0D, 1.0D, 2.0D);
+            for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, spreadArea, Zombie::isAlive)) {
+                if (zombie != target.get()) {
+                    applyShadowCurse(level, plant, zombie, false);
+                }
+            }
+        }
+        level.sendParticles(ParticleTypes.WITCH, plant.getX(), plant.getY() + 0.8D, plant.getZ(), powered ? 24 : 12, 0.35D, 0.25D, 0.35D, 0.03D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHADOW_SHROOM_INTERVAL_TICKS);
+    }
+
+    private static void applyShadowCurse(ServerLevel level, SnowGolem plant, Zombie zombie, boolean powered) {
+        zombie.addEffect(new MobEffectInstance(MobEffects.WITHER, SHADOW_SHROOM_CURSE_TICKS, powered ? 1 : 0));
+        hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, powered ? SHADOW_SHROOM_DAMAGE * 1.5F : SHADOW_SHROOM_DAMAGE));
+    }
+
+    private static void tickDuskLobber(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<Zombie> target = selectZombie(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        boolean powered = isPoweredByMoonflower(level, plant);
+        Zombie directTarget = target.get();
+        double splashRadius = powered ? 3.0D : 2.0D;
+        hurtWithoutKnockback(directTarget, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, DUSK_LOBBER_DIRECT_DAMAGE));
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, directTarget.getBoundingBox().inflate(splashRadius, 1.0D, splashRadius), Zombie::isAlive)) {
+            if (zombie != directTarget) {
+                hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, powered ? POWERED_DUSK_LOBBER_SPLASH_DAMAGE : DUSK_LOBBER_SPLASH_DAMAGE));
+            }
+        }
+        shootLobbedSnowballVisual(level, plant, directTarget, powered ? "powered_shadow_lob" : "shadow_lob");
+        level.sendParticles(ParticleTypes.DRAGON_BREATH, directTarget.getX(), directTarget.getY() + 0.8D, directTarget.getZ(), powered ? 30 : 16, splashRadius * 0.25D, 0.35D, splashRadius * 0.25D, 0.03D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + DUSK_LOBBER_INTERVAL_TICKS);
+    }
+
+    private static void tickGrimrose(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        boolean powered = isPoweredByMoonflower(level, plant);
+        List<Zombie> targets = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(powered ? 4.0D : 2.5D, 1.0D, powered ? 4.0D : 2.5D), Zombie::isAlive)
+                .stream()
+                .sorted((first, second) -> Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second)))
+                .limit(powered ? 2 : 1)
+                .toList();
+        if (targets.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        for (Zombie zombie : targets) {
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), GRIMROSE_DAMAGE);
+            level.sendParticles(ParticleTypes.REVERSE_PORTAL, zombie.getX(), zombie.getY() + 0.6D, zombie.getZ(), 28, 0.35D, 0.5D, 0.35D, 0.05D);
+        }
+        level.playSound(null, plant.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 0.7F, 0.7F);
+        plant.discard();
+    }
+
     private static Optional<LivingEntity> findPlantInAttackRange(ServerLevel level, Mob mob) {
         AABB attackArea = mob.getBoundingBox().inflate(0.65D, 0.5D, 0.65D);
         return level.getEntitiesOfClass(LivingEntity.class, attackArea, entity -> entity.isAlive() && isPlant(entity))
@@ -1867,6 +2005,28 @@ public final class PlantEntityManager {
         return behavior == PlantSeedDefinition.PlantBehavior.HOT_POTATO
                 || behavior == PlantSeedDefinition.PlantBehavior.PEPPER_PULT
                 || behavior == PlantSeedDefinition.PlantBehavior.TORCHWOOD;
+    }
+
+    private static boolean isShadowPlant(PlantSeedDefinition.PlantBehavior behavior) {
+        return behavior == PlantSeedDefinition.PlantBehavior.MOONFLOWER
+                || behavior == PlantSeedDefinition.PlantBehavior.NIGHTSHADE
+                || behavior == PlantSeedDefinition.PlantBehavior.SHADOW_SHROOM
+                || behavior == PlantSeedDefinition.PlantBehavior.DUSK_LOBBER
+                || behavior == PlantSeedDefinition.PlantBehavior.GRIMROSE;
+    }
+
+    private static boolean isPoweredByMoonflower(ServerLevel level, SnowGolem plant) {
+        if (!isShadowPlant(behaviorFor(plant))) {
+            return false;
+        }
+        return level.getEntitiesOfClass(SnowGolem.class, plant.getBoundingBox().inflate(3.0D), other ->
+                        other != plant
+                                && other.isAlive()
+                                && isPlant(other)
+                                && behaviorFor(other) == PlantSeedDefinition.PlantBehavior.MOONFLOWER)
+                .stream()
+                .findAny()
+                .isPresent();
     }
 
     private static void syncFreezeOverlay(ServerLevel level, SnowGolem plant) {

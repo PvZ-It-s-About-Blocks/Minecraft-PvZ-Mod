@@ -77,6 +77,11 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.BOWLING_BULB_SEED_PACKET.get());
                         output.accept(ModItems.GUACODILE_SEED_PACKET.get());
                         output.accept(ModItems.BANANA_LAUNCHER_SEED_PACKET.get());
+                        output.accept(ModItems.MOONFLOWER_SEED_PACKET.get());
+                        output.accept(ModItems.NIGHTSHADE_SEED_PACKET.get());
+                        output.accept(ModItems.SHADOW_SHROOM_SEED_PACKET.get());
+                        output.accept(ModItems.DUSK_LOBBER_SEED_PACKET.get());
+                        output.accept(ModItems.GRIMROSE_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
@@ -98,6 +103,12 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CAPTAINS_LEGGINGS.get());
                         output.accept(ModItems.CAPTAINS_BOOTS.get());
                         output.accept(ModItems.PIRATE_SHIP.get());
+                        output.accept(ModItems.TACO.get());
+                        output.accept(ModItems.CRAZY_DAVE_TECH_HELMET.get());
+                        output.accept(ModItems.CRAZY_DAVE_TECH_CHESTPLATE.get());
+                        output.accept(ModItems.CRAZY_DAVE_TECH_LEGGINGS.get());
+                        output.accept(ModItems.CRAZY_DAVE_TECH_BOOTS.get());
+                        output.accept(ModItems.MYSTICAL_EYE.get());
                         output.accept(ModItems.PEA.get());
                     })
                     .build());
