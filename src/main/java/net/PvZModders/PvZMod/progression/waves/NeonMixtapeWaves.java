@@ -55,12 +55,12 @@ public final class NeonMixtapeWaves {
             case 3 -> List.of(new WaveReward(WaveRewardType.GARDEN_SYSTEM_UNLOCK, "speaker_mechanic", "Speaker Mechanic", "minecraft:note_block", "Speakers pulse during selected Neon Mixtape waves."));
             case 5 -> plant("celery_stalker", "Celery Stalker", "pvz2mod:celery_stalker_seed_packet", "Ambushes zombies that pass it.");
             case 9 -> plant("thyme_warp", "Thyme Warp", "pvz2mod:thyme_warp_seed_packet", "Warps zombies backward.");
-            case 13 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "neon_upgrade_1", "Neon Mixtape Garden Upgrade I", "minecraft:jukebox", "Placeholder garden upgrade."));
+            case 13 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_5", "Totem Storage V", "minecraft:jukebox", "Totems can store more generated seeds."));
             case 17 -> plant("garlic", "Garlic", "pvz2mod:garlic_seed_packet", "Diverts and disrupts zombies.");
-            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "speaker_intensity_upgrade", "Speaker Intensity Upgrade", "minecraft:note_block", "Placeholder for stronger speaker patterns."));
+            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_4", "Seed Holder Capacity IV", "minecraft:note_block", "Increases Seed Holder packet capacity."));
             case 21 -> plant("spore_shroom", "Spore-shroom", "pvz2mod:spore_shroom_seed_packet", "Can sprout copies from defeated zombies.");
             case 26 -> plant("intensive_carrot", "Intensive Carrot", "pvz2mod:intensive_carrot_seed_packet", "Revives recently destroyed plants.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "neon_mastery_upgrade", "Neon Mixtape Mastery Upgrade", "minecraft:diamond", "Placeholder mastery upgrade."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_5", "Seed Replenishment Speed V", "minecraft:diamond", "Gardens replenish seeds 30% faster."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "neon_mixtape_complete", "Neon Mixtape Garden Complete", "minecraft:note_block", "Marks Neon Mixtape complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "totem_shield", "Totem Shield", "pvz2mod:totem_shield", "Adds a protective shield layer to garden totems.")

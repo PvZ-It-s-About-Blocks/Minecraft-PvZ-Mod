@@ -59,12 +59,12 @@ public final class FarFutureWaves {
             case 6 -> plant("citron", "Citron", "pvz2mod:citron_seed_packet", "Charges a powerful plasma shot.");
             case 9 -> plant("em_peach", "E.M.Peach", "pvz2mod:em_peach_seed_packet", "Stuns enemies with an EMP burst.");
             case 13 -> plant("infi_nut", "Infi-nut", "pvz2mod:infi_nut_seed_packet", "Regenerating defensive blocker.");
-            case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "far_future_power_tile_upgrade_1", "Far Future Power Tile Upgrade I", "minecraft:green_terracotta", "Placeholder Power Tile upgrade."));
+            case 15 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "second_seed_page_unlock", "Second Seed Page Unlock", "minecraft:green_terracotta", "Unlocks the second active seed page foundation."));
             case 17 -> plant("magnifying_grass", "Magnifying Grass", "pvz2mod:magnifying_grass_seed_packet", "Spends Sun to fire a strong beam.");
-            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "far_future_upgrade_2", "Far Future Garden Upgrade II", "minecraft:purple_terracotta", "Placeholder garden upgrade."));
+            case 20 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_5", "Sun Cap V", "minecraft:purple_terracotta", "Increases your maximum Sun by 200."));
             case 24 -> plant("tile_turnip", "Tile Turnip", "pvz2mod:tile_turnip_seed_packet", "Creates a Power Tile on a garden tile.");
-            case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "citron_armor_foundation", "Citron Armor Blueprint", "minecraft:shield", "Foundation for Citron forcefield armor."));
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "far_future_mastery_upgrade", "Far Future Mastery Upgrade", "minecraft:nether_star", "Placeholder mastery upgrade."));
+            case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_4", "Advanced Seed Storage", "minecraft:shield", "Increases Seed Holder packet capacity."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "power_tile_upgrade_foundation", "Power Tile Upgrade Foundation", "minecraft:nether_star", "Future hook for stronger Power Tile systems."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "far_future_complete", "Far Future Garden Complete", "minecraft:end_crystal", "Marks Far Future complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "jetpack", "Jetpack", "pvz2mod:jetpack", "Uses Sun for rocket-boot style upward thrust."),

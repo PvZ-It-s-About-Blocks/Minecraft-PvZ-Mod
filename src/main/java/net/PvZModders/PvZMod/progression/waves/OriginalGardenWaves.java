@@ -104,10 +104,10 @@ public final class OriginalGardenWaves {
             ));
             case 15 -> List.of(new WaveReward(
                     WaveRewardType.PLAYER_UPGRADE,
-                    "more_sun_capacity",
-                    "Player Upgrade",
+                    "sun_cap_1",
+                    "Sun Cap I",
                     "minecraft:sunflower",
-                    "Player can hold more sun."
+                    "Increases your maximum Sun by 100."
             ));
             case 18 -> List.of(new WaveReward(
                     WaveRewardType.PLANT_UNLOCK,
@@ -118,10 +118,10 @@ public final class OriginalGardenWaves {
             ));
             case 20 -> List.of(new WaveReward(
                     WaveRewardType.PLAYER_UPGRADE,
-                    "more_seed_capacity",
-                    "Player Upgrade",
+                    "active_seed_slot_1",
+                    "Seed Holder Active Slots I",
                     "minecraft:bundle",
-                    "Player can hold more seeds."
+                    "Unlocks a 7th active plant slot."
             ));
             case 23 -> List.of(new WaveReward(
                     WaveRewardType.ITEM_UNLOCK,
@@ -131,11 +131,11 @@ public final class OriginalGardenWaves {
                     "Placeholder for the later armor system."
             ));
             case 25 -> List.of(new WaveReward(
-                    WaveRewardType.PLACEHOLDER,
-                    "something",
-                    "Something",
+                    WaveRewardType.GARDEN_UPGRADE,
+                    "seed_storage_capacity_1",
+                    "Seed Storage Capacity I",
                     "minecraft:chest",
-                    "Something."
+                    "Increases how many seed packets each Seed Holder slot can carry."
             ));
             case 30 -> List.of(
                     new WaveReward(

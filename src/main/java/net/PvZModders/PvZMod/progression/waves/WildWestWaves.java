@@ -55,11 +55,11 @@ public final class WildWestWaves {
             case 6 -> plant("pea_pod", "Pea Pod", "pvz2mod:pea_pod_seed_packet", "Stacks up to five shots on one tile.");
             case 9 -> plant("lightning_reed", "Lightning Reed", "pvz2mod:lightning_reed_seed_packet", "Chains electric damage between zombies.");
             case 11 -> plant("melon_pult", "Melon-pult", "pvz2mod:melon_pult_seed_packet", "Lobs heavy splash-damage melons.");
-            case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "wild_west_upgrade_1", "Wild West Garden Upgrade I", "minecraft:rail", "Placeholder garden upgrade."));
+            case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_2", "Seed Replenishment Speed II", "minecraft:rail", "Gardens replenish seeds 15% faster."));
             case 18 -> plant("tall_nut", "Tall-nut", "pvz2mod:tall_nut_seed_packet", "Very sturdy defensive blocker.");
-            case 21 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "wild_west_upgrade_2", "Wild West Garden Upgrade II", "minecraft:golden_rail", "Placeholder garden upgrade."));
+            case 21 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_3", "Sun Cap III", "minecraft:golden_rail", "Increases your maximum Sun by 150."));
             case 24 -> plant("winter_melon", "Winter Melon", "pvz2mod:winter_melon_seed_packet", "Lobs chilling splash-damage melons.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "wild_west_mastery_upgrade", "Wild West Mastery Upgrade", "minecraft:diamond", "Placeholder mastery upgrade."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "second_seed_page_unlock", "Seed Holder Page II Foundation", "minecraft:diamond", "Unlocks the second active seed page foundation."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "wild_west_complete", "Wild West Garden Complete", "minecraft:gold_block", "Marks Wild West complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "speedy_minecart", "Speedy Minecart", "pvz2mod:speedy_minecart", "Ride without rails. Speed scales with Sun.")

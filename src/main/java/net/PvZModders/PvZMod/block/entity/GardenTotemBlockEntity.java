@@ -22,6 +22,7 @@ import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
@@ -31,6 +32,7 @@ import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule.NeonSpeakerPulse;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
 import net.PvZModders.PvZMod.progression.waves.WaveReward;
+import net.PvZModders.PvZMod.progression.waves.WaveRewardType;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnDirection;
 import net.PvZModders.PvZMod.progression.waves.WaveSpawnGroup;
 import net.PvZModders.PvZMod.progression.waves.WildWestRailProtection;
@@ -265,6 +267,24 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return 0;
         }
         return GardenPlantProductionSavedData.get(serverLevel).remainingSeconds(serverLevel, gardenId, plants.get(plantIndex));
+    }
+
+    public int getGardenPlantRefillSeconds(int plantIndex) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return 1;
+        }
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size()) {
+            return 1;
+        }
+        return GardenPlantProductionSavedData.get(serverLevel).refillSeconds(serverLevel, plants.get(plantIndex));
+    }
+
+    public int getGardenPacketCap() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return GardenPlantProductionSavedData.GARDEN_PACKET_CAP;
+        }
+        return GardenPlantProductionSavedData.get(serverLevel).packetCap(serverLevel);
     }
 
     public boolean isGardenPlantUnlocked(int plantIndex) {
@@ -954,6 +974,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
         waveProgress.markRewardClaimed(wave);
         markWaveProgressDirty(level);
         for (WaveReward reward : definition.rewards()) {
+            PvZUpgradeSavedData upgrades = PvZUpgradeSavedData.get(level);
+            if ((reward.type() == WaveRewardType.GARDEN_UPGRADE || reward.type() == WaveRewardType.PLAYER_UPGRADE)
+                    && upgrades.unlockByRewardId(reward.id())) {
+                upgrades.applyToAllPlayers(level);
+            }
             for (ServerPlayer player : level.getServer().getPlayerList().getPlayers()) {
                 player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
                 if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.PLANT_UNLOCK) {

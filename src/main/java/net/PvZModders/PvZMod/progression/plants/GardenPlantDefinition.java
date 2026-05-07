@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.progression.plants;
 
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeValues;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
@@ -17,7 +18,7 @@ public record GardenPlantDefinition(
         ResourceLocation seedPacketId
 ) {
     public int productionSeconds() {
-        return Math.max(10, sunCost * 10);
+        return Math.max(1, (int) Math.ceil(PvZUpgradeValues.baseSeedRefillTimeTicks(this) / 20.0D));
     }
 
     public String unlockHint() {

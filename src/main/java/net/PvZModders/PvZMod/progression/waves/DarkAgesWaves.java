@@ -54,10 +54,10 @@ public final class DarkAgesWaves {
             case 2 -> plant("puff_shroom", "Puff-shroom", "pvz2mod:puff_shroom_seed_packet", "Free short-range temporary shooter.");
             case 4 -> plant("fume_shroom", "Fume-shroom", "pvz2mod:fume_shroom_seed_packet", "Piercing fume attack in front.");
             case 6 -> plant("sun_bean", "Sun Bean", "pvz2mod:sun_bean_seed_packet", "Infects a zombie so damage generates Sun.");
-            case 10 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "dark_ages_upgrade_1", "Dark Ages Garden Upgrade I", "minecraft:brown_mushroom", "Placeholder garden upgrade."));
+            case 10 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "night_economy_storage", "Night Economy Storage", "minecraft:brown_mushroom", "Future hook for Dark Ages seed and Sun economy support."));
             case 15 -> plant("magnet_shroom", "Magnet-shroom", "pvz2mod:magnet_shroom_seed_packet", "Strips armor and metal equipment.");
-            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "dark_ages_upgrade_2", "Dark Ages Garden Upgrade II", "minecraft:red_mushroom", "Placeholder garden upgrade."));
-            case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "dark_ages_mastery_upgrade", "Dark Ages Mastery Upgrade", "minecraft:amethyst_shard", "Placeholder mastery upgrade."));
+            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_4", "Seed Replenishment Speed IV", "minecraft:red_mushroom", "Gardens replenish seeds 25% faster."));
+            case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "sun_magnet_synergy_foundation", "Sun Magnet Synergy Foundation", "minecraft:amethyst_shard", "Future hook for Sun collection and economy upgrades."));
             case 30 -> List.of(new WaveReward(WaveRewardType.COMPLETION, "dark_ages_complete", "Dark Ages Garden Complete", "minecraft:dark_oak_sapling", "Marks Dark Ages complete."));
             default -> List.of();
         };

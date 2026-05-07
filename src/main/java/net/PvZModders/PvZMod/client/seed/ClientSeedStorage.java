@@ -58,4 +58,8 @@ public final class ClientSeedStorage {
     public static int sunCost(ResourceLocation itemId) {
         return itemId == null ? 0 : PlantSeedDefinition.sunCost(itemId);
     }
+
+    public static int playerPacketCap() {
+        return Math.max(SeedStorage.BASE_PLAYER_PACKET_CAP, seedStorageTag.getInt("PlayerPacketCap"));
+    }
 }

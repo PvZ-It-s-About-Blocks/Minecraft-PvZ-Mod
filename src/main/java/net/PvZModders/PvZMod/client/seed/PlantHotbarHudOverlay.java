@@ -48,9 +48,10 @@ public final class PlantHotbarHudOverlay {
             boolean unlocked = ClientSeedStorage.isSlotUnlocked(page, slot);
             boolean selectedSlot = slot == selected;
             ItemStack stack = ClientSeedStorage.slotStack(page, slot);
-            boolean affordable = stack.isEmpty() || (ClientSeedStorage.slot(page, slot).packetCount() > 0
-                    && player.experienceLevel >= ClientSeedStorage.sunCost(ClientSeedStorage.slot(page, slot).itemId()));
-            renderPlantSlot(guiGraphics, minecraft.font, x, y, stack, unlocked, selectedSlot, affordable);
+            int packetCount = ClientSeedStorage.slot(page, slot).packetCount();
+            int sunCost = ClientSeedStorage.sunCost(ClientSeedStorage.slot(page, slot).itemId());
+            boolean affordable = stack.isEmpty() || (packetCount > 0 && player.experienceLevel >= sunCost);
+            renderPlantSlot(guiGraphics, minecraft.font, x, y, stack, unlocked, selectedSlot, affordable, packetCount, sunCost);
         }
 
         int swapX = startX + 8 * (SLOT_SIZE + SLOT_GAP);
@@ -79,10 +80,16 @@ public final class PlantHotbarHudOverlay {
         }
 
         ItemStack stack = ClientSeedStorage.slotStack(page, selected);
-        return stack.isEmpty() ? "Empty" : stack.getHoverName().getString();
+        if (stack.isEmpty()) {
+            return "Empty";
+        }
+        int seeds = ClientSeedStorage.slot(page, selected).packetCount();
+        int cap = ClientSeedStorage.playerPacketCap();
+        int sunCost = ClientSeedStorage.sunCost(ClientSeedStorage.slot(page, selected).itemId());
+        return stack.getHoverName().getString() + "  Seeds: " + seeds + "/" + cap + "  Sun Cost: " + sunCost;
     }
 
-    private static void renderPlantSlot(GuiGraphics guiGraphics, Font font, int x, int y, ItemStack stack, boolean unlocked, boolean selected, boolean affordable) {
+    private static void renderPlantSlot(GuiGraphics guiGraphics, Font font, int x, int y, ItemStack stack, boolean unlocked, boolean selected, boolean affordable, int packetCount, int sunCost) {
         int border = selected ? 0xFFFFFF88 : 0xFF103F1F;
         int fill = unlocked ? 0xCC1F7A33 : 0xAA222222;
         guiGraphics.fill(x, y, x + SLOT_SIZE, y + SLOT_SIZE, border);
@@ -94,14 +101,20 @@ public final class PlantHotbarHudOverlay {
         }
 
         if (!stack.isEmpty()) {
-            guiGraphics.renderItem(stack, x + 2, y + 2);
-            if (stack.getCount() > 1) {
-                guiGraphics.renderItemDecorations(font, stack, x + 2, y + 2);
-            }
+            ItemStack iconStack = stack.copyWithCount(1);
+            guiGraphics.renderItem(iconStack, x + 2, y + 2);
             if (!affordable) {
                 guiGraphics.fill(x + 2, y + 2, x + SLOT_SIZE - 2, y + SLOT_SIZE - 2, 0x88AA1111);
             }
+            String countText = Integer.toString(packetCount);
+            guiGraphics.drawString(font, countText, x + SLOT_SIZE - 3 - font.width(countText), y + 11, packetCount > 0 ? 0xFFFFFFFF : 0xFFFF5555, true);
+            String costText = Integer.toString(sunCost);
+            guiGraphics.drawString(font, costText, x + 2, y + 1, playerCostColor(sunCost), true);
         }
+    }
+
+    private static int playerCostColor(int sunCost) {
+        return sunCost <= 0 ? 0xFFEFFFFF : 0xFFFFD84A;
     }
 
     private static void renderSwapSlot(GuiGraphics guiGraphics, Font font, int x, int y) {

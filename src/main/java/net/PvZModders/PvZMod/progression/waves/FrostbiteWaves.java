@@ -54,13 +54,13 @@ public final class FrostbiteWaves {
             case 1 -> plant("hot_potato", "Hot Potato", "pvz2mod:hot_potato_seed_packet", "Thaws frozen, iced, or frosted plants.");
             case 3 -> List.of(new WaveReward(WaveRewardType.GARDEN_SYSTEM_UNLOCK, "heavy_snowfall", "Heavy Snowfall Introduced", "minecraft:snowball", "Preset snowstorms can freeze plants."));
             case 6 -> plant("pepper_pult", "Pepper-pult", "pvz2mod:pepper_pult_seed_packet", "Lobs peppers and warms nearby plants.");
-            case 10 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "frostbite_upgrade_1", "Frostbite Garden Upgrade I", "minecraft:packed_ice", "Placeholder garden upgrade."));
+            case 10 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_3", "Totem Seed Storage III", "minecraft:packed_ice", "Totems can store more generated seeds."));
             case 11 -> plant("chard_guard", "Chard Guard", "pvz2mod:chard_guard_seed_packet", "Shoves nearby zombies back with limited charges.");
             case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "frostbite_snowfall_upgrade", "Heavy Snowfall Intensity Upgrade", "minecraft:blue_ice", "Placeholder snowfall upgrade."));
             case 19 -> plant("stunion", "Stunion", "pvz2mod:stunion_seed_packet", "Stuns nearby zombies with gas.");
-            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "frostbite_upgrade_2", "Frostbite Garden Upgrade II", "minecraft:ice", "Placeholder garden upgrade."));
+            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_3", "Seed Storage Capacity III", "minecraft:ice", "Increases Seed Holder packet capacity."));
             case 26 -> plant("rotobaga", "Rotobaga", "pvz2mod:rotobaga_seed_packet", "Shoots diagonally in four directions.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "frostbite_mastery_upgrade", "Frostbite Mastery Upgrade", "minecraft:amethyst_shard", "Placeholder mastery upgrade."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "cold_garden_efficiency", "Cold Garden Efficiency", "minecraft:amethyst_shard", "Future hook for freeze resistance and snow-garden seed economy."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "frostbite_complete", "Frostbite Garden Complete", "minecraft:snow_block", "Marks Frostbite complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "freeze_ray", "Freeze Ray", "pvz2mod:freeze_ray", "Piercing slow beam reward.")

@@ -81,9 +81,9 @@ public final class JurassicMarshWaves {
             case 10 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "jurassic_dinosaur_intensifies", "Jurassic Dinosaur Mechanic", "minecraft:sniffer_egg", "Dinosaurs appear more often in Jurassic waves."));
             case 13 -> List.of(new WaveReward(WaveRewardType.ITEM_UNLOCK, "torchflower_utility", "Torchflower Utility", "minecraft:torchflower", "Placeholder for Torchflower-related utility."));
             case 17 -> plant("primal_sunflower", "Primal Sunflower", "pvz2mod:primal_sunflower_seed_packet", "Produces 50 sun every few seconds.");
-            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "jurassic_upgrade_2", "Jurassic Garden Upgrade II", "minecraft:bone", "Placeholder garden upgrade."));
+            case 20 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_6", "Sun Cap VI", "minecraft:bone", "Increases your maximum Sun by 200."));
             case 23 -> plant("primal_potato_mine", "Primal Potato Mine", "pvz2mod:primal_potato_mine_seed_packet", "Fast mine with a larger blast.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "jurassic_mastery_upgrade", "Jurassic Mastery Upgrade", "minecraft:diamond", "Placeholder mastery upgrade."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_5", "Seed Storage Capacity V", "minecraft:diamond", "Increases Seed Holder packet capacity."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "jurassic_marsh_complete", "Jurassic Marsh Garden Complete", "minecraft:sniffer_egg", "Marks Jurassic Marsh complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "dino_whistle", "Dino Whistle", "pvz2mod:dino_whistle", "Summon or recall one dinosaur pet.")

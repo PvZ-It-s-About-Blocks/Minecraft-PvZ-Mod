@@ -445,6 +445,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         boolean unlocked = plant.isUnlockedAtWave(menu.currentWave());
         int count = menu.plantCount(index);
         int remaining = menu.plantRemainingSeconds(index);
+        int refillSeconds = menu.plantRefillSeconds(index);
+        int packetCap = menu.gardenPacketCap();
         int gardenColor = plant.gardenColor();
         int border = unlocked ? 0xFF000000 | gardenColor : 0xFF050505;
         int fill = unlocked ? 0x66FFFFFF : 0x66000000;
@@ -468,19 +470,21 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int barW = cardW - 156;
         guiGraphics.fill(barX, barY, barX + barW, barY + 5, 0xFF1F1F1F);
         if (unlocked) {
-            int fillW = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP
+            int fillW = count >= packetCap
                     ? barW
-                    : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) plant.productionSeconds())));
+                    : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) refillSeconds)));
             guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF000000 | gardenColor);
-            guiGraphics.drawString(font, count + "/40", cardX + 190, cardY + 4, count > 0 ? gardenColor : 0x5F5F5F, false);
+            String timerText = count >= packetCap ? "Ready" : remaining + "s";
+            guiGraphics.drawString(font, timerText, cardX + 150, cardY + 4, count >= packetCap ? gardenColor : 0x6F6F6F, false);
+            guiGraphics.drawString(font, count + "/" + packetCap, cardX + 190, cardY + 4, count > 0 ? gardenColor : 0x5F5F5F, false);
         }
 
         if (mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
-            hoveredPlantTooltip = plantTooltip(plant, unlocked, count, remaining);
+            hoveredPlantTooltip = plantTooltip(plant, unlocked, count, remaining, packetCap);
         }
     }
 
-    private List<Component> plantTooltip(GardenPlantDefinition plant, boolean unlocked, int count, int remaining) {
+    private List<Component> plantTooltip(GardenPlantDefinition plant, boolean unlocked, int count, int remaining, int packetCap) {
         if (!unlocked) {
             return List.of(
                     Component.literal(plant.displayName()).withStyle(ChatFormatting.DARK_GRAY),
@@ -490,13 +494,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             );
         }
 
-        String timer = count >= GardenPlantProductionSavedData.GARDEN_PACKET_CAP ? "Full" : remaining + "s";
+        String timer = count >= packetCap ? "Ready / full" : "Next " + plant.displayName() + " seed: " + remaining + "s";
         return List.of(
                 Component.literal(plant.displayName()).withStyle(style -> style.withColor(net.minecraft.network.chat.TextColor.fromRgb(plant.gardenColor()))),
                 Component.literal("Cost: " + plant.sunCost() + " sun").withStyle(ChatFormatting.GOLD),
                 Component.literal(plant.description()).withStyle(ChatFormatting.GRAY),
-                Component.literal("Totem packets: " + count + "/40").withStyle(ChatFormatting.DARK_GREEN),
-                Component.literal("Next packet: " + timer).withStyle(ChatFormatting.YELLOW),
+                Component.literal("Totem packets: " + count + "/" + packetCap).withStyle(ChatFormatting.DARK_GREEN),
+                Component.literal(timer).withStyle(ChatFormatting.YELLOW),
                 Component.literal("Drag packets into Seed Storage or inventory.").withStyle(ChatFormatting.AQUA)
         );
     }

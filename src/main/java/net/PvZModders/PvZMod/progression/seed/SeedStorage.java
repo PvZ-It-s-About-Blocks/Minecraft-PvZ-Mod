@@ -2,6 +2,8 @@ package net.PvZModders.PvZMod.progression.seed;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeValues;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -25,7 +27,7 @@ public final class SeedStorage {
     public static final int PLANT_SLOTS_PER_PAGE = 8;
     public static final int PAGE_ONE = 0;
     public static final int PAGE_TWO = 1;
-    public static final int PLAYER_PACKET_CAP = 25;
+    public static final int BASE_PLAYER_PACKET_CAP = 25;
 
     private static final String ROOT_TAG = "PvZSeedStorage";
     private static final String SEED_MODE_TAG = "SeedModeEnabled";
@@ -37,6 +39,7 @@ public final class SeedStorage {
     private static final String PAGE_ONE_SLOTS_TAG = "Page1PlantSlots";
     private static final String PAGE_TWO_SLOTS_TAG = "Page2PlantSlots";
     private static final String STARTER_LOADOUT_ADDED_TAG = "StarterLoadoutAdded";
+    private static final String PLAYER_PACKET_CAP_TAG = "PlayerPacketCap";
 
     private SeedStorage() {
     }
@@ -45,6 +48,7 @@ public final class SeedStorage {
     public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         ensureInitialized(event.getEntity());
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            PvZUpgradeSavedData.get(serverPlayer.serverLevel()).applyToPlayer(serverPlayer);
             SeedStorageSync.syncToClient(serverPlayer);
         }
     }
@@ -54,6 +58,7 @@ public final class SeedStorage {
         event.getEntity().getPersistentData().put(ROOT_TAG, event.getOriginal().getPersistentData().getCompound(ROOT_TAG).copy());
         ensureInitialized(event.getEntity());
         if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+            PvZUpgradeSavedData.get(serverPlayer.serverLevel()).applyToPlayer(serverPlayer);
             SeedStorageSync.syncToClient(serverPlayer);
         }
     }
@@ -242,15 +247,34 @@ public final class SeedStorage {
         sync(player);
     }
 
+    public static void applyUpgrades(Player player, PvZUpgradeSavedData upgrades) {
+        CompoundTag root = root(player);
+        root.putInt(UNLOCKED_PAGE_ONE_TAG, Math.max(root.getInt(UNLOCKED_PAGE_ONE_TAG), PvZUpgradeValues.pageOneUnlockedSlots(upgrades)));
+        if (PvZUpgradeValues.secondPageUnlocked(upgrades)) {
+            root.putBoolean(SECOND_PAGE_UNLOCKED_TAG, true);
+            root.putInt(UNLOCKED_PAGE_TWO_TAG, Math.max(root.getInt(UNLOCKED_PAGE_TWO_TAG), PvZUpgradeValues.pageTwoUnlockedSlots(upgrades)));
+        }
+        root.putInt(PLAYER_PACKET_CAP_TAG, PvZUpgradeValues.playerSeedPacketCap(upgrades));
+        sync(player);
+    }
+
+    public static int getPlayerPacketCap(Player player) {
+        CompoundTag root = root(player);
+        if (!root.contains(PLAYER_PACKET_CAP_TAG)) {
+            root.putInt(PLAYER_PACKET_CAP_TAG, BASE_PLAYER_PACKET_CAP);
+        }
+        return Math.max(BASE_PLAYER_PACKET_CAP, root.getInt(PLAYER_PACKET_CAP_TAG));
+    }
+
     public static void setPlantSlot(Player player, int page, int slot, PlantSlotData slotData) {
         ListTag slots = slotsForPage(root(player), clampPage(page));
-        slots.set(clampSlot(slot), capped(slotData).save());
+        slots.set(clampSlot(slot), slotData.save());
     }
 
     public static void setPlantSlotByStorageIndex(Player player, int storageIndex, ItemStack stack) {
         int page = storageIndex / PLANT_SLOTS_PER_PAGE;
         int slot = storageIndex % PLANT_SLOTS_PER_PAGE;
-        setPlantSlot(player, page, slot, slotDataFromStack(stack));
+        setPlantSlot(player, page, slot, capped(slotDataFromStack(stack), getPlayerPacketCap(player)));
         sync(player);
     }
 
@@ -262,19 +286,20 @@ public final class SeedStorage {
     }
 
     public static void setPlantSlotLoadoutPlaceholder(Player player, int page, int slot, ResourceLocation seedPacketId, int packetCount) {
-        setPlantSlot(player, page, slot, new PlantSlotData(seedPacketId, packetCount));
+        setPlantSlot(player, page, slot, new PlantSlotData(seedPacketId, Math.min(getPlayerPacketCap(player), packetCount)));
         sync(player);
     }
 
     public static boolean addPlantPacketsToLoadout(Player player, ResourceLocation seedPacketId, int packetCount) {
         CompoundTag root = root(player);
+        int packetCap = getPlayerPacketCap(player);
         for (int page = PAGE_ONE; page <= PAGE_TWO; page++) {
             int unlocked = getUnlockedPlantSlots(player, page);
             ListTag slots = slotsForPage(root, page);
             for (int slot = 0; slot < unlocked; slot++) {
                 PlantSlotData slotData = PlantSlotData.load(slots.getCompound(slot));
                 if (!slotData.isEmpty() && slotData.itemId().equals(seedPacketId)) {
-                    slotData.set(seedPacketId, Math.min(PLAYER_PACKET_CAP, slotData.packetCount() + packetCount));
+                    slotData.set(seedPacketId, Math.min(packetCap, slotData.packetCount() + packetCount));
                     slots.set(slot, slotData.save());
                     sync(player);
                     return true;
@@ -288,7 +313,7 @@ public final class SeedStorage {
             for (int slot = 0; slot < unlocked; slot++) {
                 PlantSlotData slotData = PlantSlotData.load(slots.getCompound(slot));
                 if (slotData.isEmpty()) {
-                    slots.set(slot, new PlantSlotData(seedPacketId, Math.min(PLAYER_PACKET_CAP, packetCount)).save());
+                    slots.set(slot, new PlantSlotData(seedPacketId, Math.min(packetCap, packetCount)).save());
                     sync(player);
                     return true;
                 }
@@ -312,6 +337,7 @@ public final class SeedStorage {
             root.putBoolean(SECOND_PAGE_UNLOCKED_TAG, false);
             root.putInt(UNLOCKED_PAGE_ONE_TAG, 6);
             root.putInt(UNLOCKED_PAGE_TWO_TAG, 0);
+            root.putInt(PLAYER_PACKET_CAP_TAG, BASE_PLAYER_PACKET_CAP);
             root.put(PAGE_ONE_SLOTS_TAG, emptySlots());
             root.put(PAGE_TWO_SLOTS_TAG, emptySlots());
         } else {
@@ -353,6 +379,7 @@ public final class SeedStorage {
         root.putBoolean(SECOND_PAGE_UNLOCKED_TAG, false);
         root.putInt(UNLOCKED_PAGE_ONE_TAG, 6);
         root.putInt(UNLOCKED_PAGE_TWO_TAG, 0);
+        root.putInt(PLAYER_PACKET_CAP_TAG, BASE_PLAYER_PACKET_CAP);
         root.put(PAGE_ONE_SLOTS_TAG, emptySlots());
         root.put(PAGE_TWO_SLOTS_TAG, emptySlots());
     }
@@ -369,11 +396,11 @@ public final class SeedStorage {
         return slots;
     }
 
-    private static PlantSlotData capped(PlantSlotData slotData) {
+    private static PlantSlotData capped(PlantSlotData slotData, int packetCap) {
         if (slotData.isEmpty()) {
             return slotData;
         }
-        return new PlantSlotData(slotData.itemId(), Math.min(PLAYER_PACKET_CAP, slotData.packetCount()));
+        return new PlantSlotData(slotData.itemId(), Math.min(packetCap, slotData.packetCount()));
     }
 
     private static PlantSlotData slotDataFromStack(ItemStack stack) {
@@ -381,7 +408,7 @@ public final class SeedStorage {
             return PlantSlotData.empty();
         }
         ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        return new PlantSlotData(itemId, Math.min(PLAYER_PACKET_CAP, stack.getCount()));
+        return new PlantSlotData(itemId, stack.getCount());
     }
 
     private static void ensureSlotsList(CompoundTag root, String key) {

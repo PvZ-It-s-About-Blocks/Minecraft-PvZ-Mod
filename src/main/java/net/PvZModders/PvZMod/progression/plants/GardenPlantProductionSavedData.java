@@ -2,6 +2,8 @@ package net.PvZModders.PvZMod.progression.plants;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeValues;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -10,7 +12,7 @@ import java.util.List;
 
 public class GardenPlantProductionSavedData extends SavedData {
     private static final String DATA_NAME = PvZ2Mod.MOD_ID + "_garden_plant_production";
-    public static final int GARDEN_PACKET_CAP = 40;
+    public static final int GARDEN_PACKET_CAP = PvZUpgradeValues.BASE_GARDEN_PACKET_CAP;
 
     private final CompoundTag plants = new CompoundTag();
 
@@ -30,6 +32,8 @@ public class GardenPlantProductionSavedData extends SavedData {
 
     public void tick(ServerLevel level, GardenId gardenId, int currentWave, List<GardenPlantDefinition> definitions) {
         long gameTime = level.getGameTime();
+        PvZUpgradeSavedData upgrades = PvZUpgradeSavedData.get(level);
+        int packetCap = PvZUpgradeValues.gardenPacketCap(upgrades);
         for (GardenPlantDefinition definition : definitions) {
             if (!definition.isUnlockedAtWave(currentWave)) {
                 continue;
@@ -37,12 +41,12 @@ public class GardenPlantProductionSavedData extends SavedData {
 
             CompoundTag plantTag = plantTag(gardenId, definition.plantId());
             int count = plantTag.getInt("Count");
-            if (count >= GARDEN_PACKET_CAP) {
+            if (count >= packetCap) {
                 plantTag.putLong("NextReadyTick", 0L);
                 continue;
             }
 
-            long interval = definition.productionSeconds() * 20L;
+            long interval = PvZUpgradeValues.getSeedRefillTimeTicks(definition, upgrades);
             long nextReadyTick = plantTag.getLong("NextReadyTick");
             if (nextReadyTick <= 0L) {
                 plantTag.putLong("NextReadyTick", gameTime + interval);
@@ -50,14 +54,14 @@ public class GardenPlantProductionSavedData extends SavedData {
                 continue;
             }
 
-            while (gameTime >= nextReadyTick && count < GARDEN_PACKET_CAP) {
+            while (gameTime >= nextReadyTick && count < packetCap) {
                 count++;
                 nextReadyTick += interval;
                 setDirty();
             }
 
             plantTag.putInt("Count", count);
-            plantTag.putLong("NextReadyTick", count >= GARDEN_PACKET_CAP ? 0L : nextReadyTick);
+            plantTag.putLong("NextReadyTick", count >= packetCap ? 0L : nextReadyTick);
         }
     }
 
@@ -67,15 +71,24 @@ public class GardenPlantProductionSavedData extends SavedData {
 
     public int remainingSeconds(ServerLevel level, GardenId gardenId, GardenPlantDefinition definition) {
         CompoundTag plantTag = plantTag(gardenId, definition.plantId());
-        if (plantTag.getInt("Count") >= GARDEN_PACKET_CAP) {
+        PvZUpgradeSavedData upgrades = PvZUpgradeSavedData.get(level);
+        if (plantTag.getInt("Count") >= PvZUpgradeValues.gardenPacketCap(upgrades)) {
             return 0;
         }
 
         long nextReadyTick = plantTag.getLong("NextReadyTick");
         if (nextReadyTick <= 0L) {
-            return definition.productionSeconds();
+            return refillSeconds(level, definition);
         }
         return Math.max(0, (int) Math.ceil((nextReadyTick - level.getGameTime()) / 20.0D));
+    }
+
+    public int refillSeconds(ServerLevel level, GardenPlantDefinition definition) {
+        return Math.max(1, (int) Math.ceil(PvZUpgradeValues.getSeedRefillTimeTicks(definition, PvZUpgradeSavedData.get(level)) / 20.0D));
+    }
+
+    public int packetCap(ServerLevel level) {
+        return PvZUpgradeValues.gardenPacketCap(PvZUpgradeSavedData.get(level));
     }
 
     public boolean takePacket(GardenId gardenId, String plantId) {

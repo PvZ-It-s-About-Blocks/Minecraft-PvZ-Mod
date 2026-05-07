@@ -33,8 +33,10 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private int gardenPortalIndex;
     private final int[] plantCounts = new int[PLANT_COUNT];
     private final int[] plantRemainingSeconds = new int[PLANT_COUNT];
+    private final int[] plantRefillSeconds = new int[PLANT_COUNT];
     private final ItemStack[] seedStorageStacks = new ItemStack[SEED_STORAGE_SLOT_COUNT];
     private boolean planterSlotsVisible;
+    private int gardenPacketCap = net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData.GARDEN_PACKET_CAP;
 
     public GardenTotemMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, 1, false);
@@ -170,7 +172,29 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                     GardenTotemMenu.this.plantRemainingSeconds[index] = value;
                 }
             });
+            addDataSlot(new DataSlot() {
+                @Override
+                public int get() {
+                    return gardenTotem == null ? GardenTotemMenu.this.plantRefillSeconds[index] : gardenTotem.getGardenPlantRefillSeconds(index);
+                }
+
+                @Override
+                public void set(int value) {
+                    GardenTotemMenu.this.plantRefillSeconds[index] = value;
+                }
+            });
         }
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.gardenPacketCap : gardenTotem.getGardenPacketCap();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.gardenPacketCap = value;
+            }
+        });
     }
 
     public int currentWave() {
@@ -201,6 +225,14 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
     public int plantRemainingSeconds(int plantIndex) {
         return plantIndex >= 0 && plantIndex < plantRemainingSeconds.length ? plantRemainingSeconds[plantIndex] : 0;
+    }
+
+    public int plantRefillSeconds(int plantIndex) {
+        return plantIndex >= 0 && plantIndex < plantRefillSeconds.length ? Math.max(1, plantRefillSeconds[plantIndex]) : 1;
+    }
+
+    public int gardenPacketCap() {
+        return Math.max(1, gardenPacketCap);
     }
 
     @Override
@@ -275,7 +307,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         @Override
         public void set(ItemStack stack) {
-            seedStorageStacks[storageIndex] = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(Math.min(stack.getCount(), SeedStorage.PLAYER_PACKET_CAP));
+            seedStorageStacks[storageIndex] = stack.isEmpty() ? ItemStack.EMPTY : stack.copyWithCount(Math.min(stack.getCount(), SeedStorage.getPlayerPacketCap(player)));
             setChanged();
         }
 
@@ -302,7 +334,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         @Override
         public int getMaxStackSize() {
-            return SeedStorage.PLAYER_PACKET_CAP;
+            return SeedStorage.getPlayerPacketCap(player);
         }
 
         @Override
