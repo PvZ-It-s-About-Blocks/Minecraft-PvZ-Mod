@@ -197,6 +197,7 @@ public final class JurassicMarshWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_5", "Seed Storage Capacity V", "minecraft:diamond", "Increases Seed Holder packet capacity."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "jurassic_marsh_complete", "Jurassic Marsh Garden Complete", "minecraft:sniffer_egg", "Marks Jurassic Marsh complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "jurassic_marsh_eye", "Jurassic Marsh Eye", "pvz2mod:jurassic_marsh_eye", "Awakens the Jurassic Marsh Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "dino_whistle", "Dino Whistle", "pvz2mod:dino_whistle", "Summon or recall one dinosaur pet.")
             );
             default -> List.of();

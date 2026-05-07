@@ -259,7 +259,7 @@ public final class OriginalGardenWaves {
                             WaveRewardType.ITEM_UNLOCK,
                             "original_garden_eye",
                             "Original Garden Eye",
-                            "minecraft:ender_eye",
+                            "pvz2mod:original_garden_eye",
                             "Used for opening the End portal."
                     ),
                     new WaveReward(

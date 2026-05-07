@@ -7,6 +7,7 @@ import net.PvZModders.PvZMod.item.custom.CommandersBucketItem;
 import net.PvZModders.PvZMod.item.custom.DinoWhistleItem;
 import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
+import net.PvZModders.PvZMod.item.custom.GardenEyeItem;
 import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.JetpackItem;
 import net.PvZModders.PvZMod.item.custom.MysticalEyeItem;
@@ -17,11 +18,16 @@ import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
 import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
 import net.PvZModders.PvZMod.item.custom.TideShellItem;
 import net.PvZModders.PvZMod.item.custom.TotemShieldItem;
+import net.PvZModders.PvZMod.progression.portal.GardenEyeType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
@@ -233,6 +239,27 @@ public class ModItems {
             () -> new PirateShipItem(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> MYSTICAL_EYE = ITEMS.register("mystical_eye",
             () -> new MysticalEyeItem(new Item.Properties().stacksTo(1)));
+
+    public static final Map<GardenEyeType, RegistryObject<Item>> GARDEN_EYES = registerGardenEyes();
+    public static final Map<GardenEyeType, RegistryObject<Item>> PORTAL_FRAME_ITEMS = registerPortalFrameItems();
+
+    private static Map<GardenEyeType, RegistryObject<Item>> registerGardenEyes() {
+        Map<GardenEyeType, RegistryObject<Item>> eyes = new LinkedHashMap<>();
+        for (GardenEyeType type : GardenEyeType.REQUIRED) {
+            eyes.put(type, ITEMS.register(type.eyeId(),
+                    () -> new GardenEyeItem(type, new Item.Properties().stacksTo(16))));
+        }
+        return Map.copyOf(eyes);
+    }
+
+    private static Map<GardenEyeType, RegistryObject<Item>> registerPortalFrameItems() {
+        Map<GardenEyeType, RegistryObject<Item>> items = new LinkedHashMap<>();
+        for (GardenEyeType type : GardenEyeType.REQUIRED) {
+            items.put(type, ITEMS.register(type.frameId(),
+                    () -> new BlockItem(ModBlocks.PORTAL_FRAMES.get(type).get(), new Item.Properties())));
+        }
+        return Map.copyOf(items);
+    }
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

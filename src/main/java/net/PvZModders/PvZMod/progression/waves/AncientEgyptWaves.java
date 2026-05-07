@@ -163,6 +163,7 @@ public final class AncientEgyptWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_2", "Sun Cap II", "minecraft:diamond", "Increases your maximum Sun by 100."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "ancient_egypt_complete", "Ancient Egypt Garden Complete", "minecraft:gold_block", "Marks Ancient Egypt complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "ancient_egypt_eye", "Ancient Egypt Eye", "pvz2mod:ancient_egypt_eye", "Awakens the Ancient Egypt Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "targeting_priority_changer", "Targeting Priority Changer", "pvz2mod:targeting_priority_changer", "Lets the player change plant targeting priority.")
             );
             default -> List.of();

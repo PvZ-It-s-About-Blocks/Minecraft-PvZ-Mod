@@ -176,6 +176,7 @@ public final class BigWaveBeachWaves {
             );
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "big_wave_beach_complete", "Big Wave Beach Garden Complete", "minecraft:heart_of_the_sea", "Marks Big Wave Beach complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "big_wave_beach_eye", "Big Wave Beach Eye", "pvz2mod:big_wave_beach_eye", "Awakens the Big Wave Beach Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "commanders_bucket", "Commander's Bucket", "pvz2mod:commanders_bucket", "Right-click a zombie to make reachable plants focus fire on it.")
             );
             default -> List.of();

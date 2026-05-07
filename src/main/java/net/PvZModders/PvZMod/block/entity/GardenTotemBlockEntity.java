@@ -19,6 +19,7 @@ import net.PvZModders.PvZMod.progression.modernday.ModernDayDragonFightData;
 import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
+import net.PvZModders.PvZMod.progression.portal.GardenEyeType;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
@@ -1135,6 +1136,14 @@ public class GardenTotemBlockEntity extends BlockEntity {
                         if (!SeedStorage.addPlantPacketsToLoadout(player, plantDefinition.seedPacketId(), 10)) {
                             player.sendSystemMessage(Component.literal("Your plant hotbar is full. Visit a garden loadout station later to equip " + plantDefinition.displayName() + ".")
                                     .withStyle(ChatFormatting.YELLOW));
+                        }
+                    });
+                } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
+                        && GardenEyeType.byEyeId(reward.id()).isPresent()) {
+                    GardenEyeType.byEyeId(reward.id()).ifPresent(type -> {
+                        ItemStack rewardStack = new ItemStack(ModItems.GARDEN_EYES.get(type).get());
+                        if (!player.getInventory().add(rewardStack)) {
+                            player.drop(rewardStack, false);
                         }
                     });
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK

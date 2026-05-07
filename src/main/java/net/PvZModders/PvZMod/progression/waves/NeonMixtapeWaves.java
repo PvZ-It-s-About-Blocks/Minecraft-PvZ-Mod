@@ -191,6 +191,7 @@ public final class NeonMixtapeWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_5", "Seed Replenishment Speed V", "minecraft:diamond", "Gardens replenish seeds 30% faster."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "neon_mixtape_complete", "Neon Mixtape Garden Complete", "minecraft:note_block", "Marks Neon Mixtape complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "neon_mixtape_eye", "Neon Mixtape Eye", "pvz2mod:neon_mixtape_eye", "Awakens the Neon Mixtape Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "totem_shield", "Totem Shield", "pvz2mod:totem_shield", "Adds a protective shield layer to garden totems.")
             );
             default -> List.of();

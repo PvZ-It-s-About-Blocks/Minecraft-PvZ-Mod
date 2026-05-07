@@ -199,6 +199,7 @@ public final class PirateSeasWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_2", "Seed Storage Capacity II", "minecraft:heart_of_the_sea", "Increases Seed Holder packet capacity again."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "pirate_seas_complete", "Pirate Seas Garden Complete", "minecraft:filled_map", "Marks Pirate Seas complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "pirate_seas_eye", "Pirate Seas Eye", "pvz2mod:pirate_seas_eye", "Awakens the Pirate Seas Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "pirate_ship", "Pirate Ship", "pvz2mod:pirate_ship", "Advanced ocean vehicle foundation.")
             );
             default -> List.of();

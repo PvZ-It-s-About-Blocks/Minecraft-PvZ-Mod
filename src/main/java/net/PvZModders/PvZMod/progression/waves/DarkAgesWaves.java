@@ -170,7 +170,10 @@ public final class DarkAgesWaves {
             case 15 -> plant("magnet_shroom", "Magnet-shroom", "pvz2mod:magnet_shroom_seed_packet", "Strips armor and metal equipment.");
             case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_4", "Seed Replenishment Speed IV", "minecraft:red_mushroom", "Gardens replenish seeds 25% faster."));
             case 25 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "sun_magnet_synergy_foundation", "Sun Magnet Synergy Foundation", "minecraft:amethyst_shard", "Future hook for Sun collection and economy upgrades."));
-            case 30 -> List.of(new WaveReward(WaveRewardType.COMPLETION, "dark_ages_complete", "Dark Ages Garden Complete", "minecraft:dark_oak_sapling", "Marks Dark Ages complete."));
+            case 30 -> List.of(
+                    new WaveReward(WaveRewardType.COMPLETION, "dark_ages_complete", "Dark Ages Garden Complete", "minecraft:dark_oak_sapling", "Marks Dark Ages complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "dark_ages_eye", "Dark Ages Eye", "pvz2mod:dark_ages_eye", "Awakens the Dark Ages Portal Frame.")
+            );
             default -> List.of();
         };
     }

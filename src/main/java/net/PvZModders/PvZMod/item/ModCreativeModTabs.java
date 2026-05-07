@@ -110,6 +110,8 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.CAPTAINS_BOOTS.get());
                         output.accept(ModItems.PIRATE_SHIP.get());
                         output.accept(ModItems.MYSTICAL_EYE.get());
+                        ModItems.GARDEN_EYES.values().forEach(eye -> output.accept(eye.get()));
+                        ModItems.PORTAL_FRAME_ITEMS.values().forEach(frame -> output.accept(frame.get()));
                         output.accept(ModItems.PEA.get());
                         output.accept(ModItems.COIN.get());
                     })

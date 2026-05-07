@@ -178,6 +178,7 @@ public final class LostCityWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_4", "Totem Seed Storage IV", "minecraft:diamond", "Totems can store more generated seeds."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "lost_city_complete", "Lost City Garden Complete", "minecraft:gold_block", "Marks Lost City complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "lost_city_eye", "Lost City Eye", "pvz2mod:lost_city_eye", "Awakens the Lost City Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "flying_plane", "Flying Plane", "pvz2mod:flying_plane", "Fast flight vehicle. Speed scales with Sun.")
             );
             default -> List.of();

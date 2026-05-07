@@ -181,6 +181,7 @@ public final class FrostbiteWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "cold_garden_efficiency", "Cold Garden Efficiency", "minecraft:amethyst_shard", "Future hook for freeze resistance and snow-garden seed economy."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "frostbite_complete", "Frostbite Garden Complete", "minecraft:snow_block", "Marks Frostbite complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "frostbite_eye", "Frostbite Garden Eye", "pvz2mod:frostbite_eye", "Awakens the Frostbite Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "freeze_ray", "Freeze Ray", "pvz2mod:freeze_ray", "Piercing slow beam reward.")
             );
             default -> List.of();

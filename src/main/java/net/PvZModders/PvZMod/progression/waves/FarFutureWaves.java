@@ -181,6 +181,7 @@ public final class FarFutureWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "power_tile_upgrade_foundation", "Power Tile Upgrade Foundation", "minecraft:nether_star", "Future hook for stronger Power Tile systems."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "far_future_complete", "Far Future Garden Complete", "minecraft:end_crystal", "Marks Far Future complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "far_future_eye", "Far Future Eye", "pvz2mod:far_future_eye", "Awakens the Far Future Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "jetpack", "Jetpack", "pvz2mod:jetpack", "Uses Sun for rocket-boot style upward thrust."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "citron_armor_set", "Citron Armor Set Foundation", "pvz2mod:citron_chestplate", "Placeholder forcefield armor pieces.")
             );

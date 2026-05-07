@@ -172,6 +172,8 @@ public class PvZ2Mod {
             event.accept(ModItems.CAPTAINS_BOOTS);
             event.accept(ModItems.PIRATE_SHIP);
             event.accept(ModItems.MYSTICAL_EYE);
+            ModItems.GARDEN_EYES.values().forEach(event::accept);
+            ModItems.PORTAL_FRAME_ITEMS.values().forEach(event::accept);
             event.accept(ModItems.PEA);
         }
     }

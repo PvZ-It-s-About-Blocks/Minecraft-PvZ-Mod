@@ -181,7 +181,10 @@ public final class GreenhouseWaves {
             case 9 -> plant("aloe", "Aloe", "pvz2mod:aloe_seed_packet", "Heals damaged nearby plants.");
             case 12 -> plant("jalapeno", "Jalapeno", "pvz2mod:jalapeno_seed_packet", "Burns a straight lane without terrain damage.");
             case 18 -> List.of(new WaveReward(WaveRewardType.RESOURCE_REWARD, "greenhouse_coin_cache", "Greenhouse Coin Cache", "pvz2mod:coin", "Adds a small coin economy reward foundation."));
-            case 30 -> List.of(new WaveReward(WaveRewardType.COMPLETION, "greenhouse_complete", "Greenhouse Challenge Complete", "minecraft:flower_pot", "Marks the Greenhouse challenge track complete."));
+            case 30 -> List.of(
+                    new WaveReward(WaveRewardType.COMPLETION, "greenhouse_complete", "Greenhouse Challenge Complete", "minecraft:flower_pot", "Marks the Greenhouse challenge track complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "greenhouse_eye", "Greenhouse Garden Eye", "pvz2mod:greenhouse_eye", "Awakens the Greenhouse Portal Frame.")
+            );
             default -> List.of();
         };
     }

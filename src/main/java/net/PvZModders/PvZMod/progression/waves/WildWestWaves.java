@@ -176,6 +176,7 @@ public final class WildWestWaves {
             case 27 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "second_seed_page_unlock", "Seed Holder Page II Foundation", "minecraft:diamond", "Unlocks the second active seed page foundation."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "wild_west_complete", "Wild West Garden Complete", "minecraft:gold_block", "Marks Wild West complete."),
+                    new WaveReward(WaveRewardType.ITEM_UNLOCK, "wild_west_eye", "Wild West Eye", "pvz2mod:wild_west_eye", "Awakens the Wild West Portal Frame."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "speedy_minecart", "Speedy Minecart", "pvz2mod:speedy_minecart", "Ride without rails. Speed scales with Sun.")
             );
             default -> List.of();
