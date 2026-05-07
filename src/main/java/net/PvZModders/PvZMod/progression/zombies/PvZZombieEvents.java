@@ -148,6 +148,11 @@ public final class PvZZombieEvents {
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseSuperFanImp(zombie);
         }
+        if (zombie.definition().has(PvZZombieSpecial.GARGANTUAR_PRIME)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.GARGANTUAR_PRIME_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseBugBotImp(zombie);
+        }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
             return;
@@ -293,6 +298,17 @@ public final class PvZZombieEvents {
         Optional.ofNullable(ModEntities.ZOMBIES.get("super_fan_imp"))
                 .map(registryObject -> registryObject.get())
                 .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.ARMOR_EQUIP_LEATHER, ParticleTypes.CLOUD));
+    }
+
+    private static void releaseBugBotImp(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.GARGANTUAR_PRIME_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("bug_bot_imp"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.NOTE_BLOCK_BIT.get(), ParticleTypes.ELECTRIC_SPARK));
     }
 
     private static void breakSurferBoard(PvZZombieEntity surfer) {

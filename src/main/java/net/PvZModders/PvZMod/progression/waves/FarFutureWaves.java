@@ -35,7 +35,121 @@ public final class FarFutureWaves {
     private static List<WaveSpawnGroup> spawnGroupsFor(int wave) {
         int zombieCount = Math.min(58, 2 + wave + (wave / 5) * 3);
         int directionCount = wave >= 30 ? 4 : wave >= 20 ? 3 : wave >= 9 ? 2 : 1;
-        return List.of(new WaveSpawnGroup("minecraft:zombie", zombieCount, directionCount, List.of()));
+        List<WaveSpawnGroup> groups = new ArrayList<>();
+        if (wave <= 2) {
+            addGroup(groups, "future_zombie", zombieCount, directionCount);
+        } else if (wave == 3) {
+            addGroup(groups, "future_zombie", Math.max(1, zombieCount - 1), directionCount);
+            addGroup(groups, "flag_future_zombie", 1, directionCount);
+        } else if (wave <= 5) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 80),
+                    entry("conehead_future_zombie", 20));
+        } else if (wave <= 8) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 60),
+                    entry("conehead_future_zombie", 20),
+                    entry("jetpack_zombie", 15),
+                    entry("flag_future_zombie", 5));
+        } else if (wave <= 11) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 55),
+                    entry("conehead_future_zombie", 20),
+                    entry("jetpack_zombie", 10),
+                    entry("blastronaut_zombie", 10),
+                    entry("flag_future_zombie", 5));
+        } else if (wave <= 14) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 45),
+                    entry("conehead_future_zombie", 15),
+                    entry("buckethead_future_zombie", 15),
+                    entry("jetpack_zombie", 10),
+                    entry("blastronaut_zombie", 10),
+                    entry("flag_future_zombie", 5));
+        } else if (wave <= 17) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 40),
+                    entry("conehead_future_zombie", 15),
+                    entry("buckethead_future_zombie", 10),
+                    entry("jetpack_zombie", 10),
+                    entry("blastronaut_zombie", 10),
+                    entry("robo_cone_zombie", 15));
+        } else if (wave <= 21) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 38),
+                    entry("conehead_future_zombie", 13),
+                    entry("buckethead_future_zombie", 10),
+                    entry("jetpack_zombie", 10),
+                    entry("blastronaut_zombie", 10),
+                    entry("robo_cone_zombie", 12),
+                    entry("mecha_football_zombie", 7));
+        } else if (wave <= 24) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("future_zombie", 32),
+                    entry("conehead_future_zombie", 10),
+                    entry("buckethead_future_zombie", 14),
+                    entry("jetpack_zombie", 8),
+                    entry("blastronaut_zombie", 8),
+                    entry("robo_cone_zombie", 12),
+                    entry("mecha_football_zombie", 8),
+                    entry("disco_tron_3000", 3),
+                    entry("bug_bot_imp", 5));
+        } else if (wave <= 29) {
+            int gargantuars = wave >= 28 ? 1 : 0;
+            addWeighted(groups, zombieCount - gargantuars, directionCount,
+                    entry("future_zombie", 30),
+                    entry("conehead_future_zombie", 10),
+                    entry("buckethead_future_zombie", 15),
+                    entry("jetpack_zombie", 8),
+                    entry("blastronaut_zombie", 8),
+                    entry("robo_cone_zombie", 10),
+                    entry("mecha_football_zombie", 8),
+                    entry("disco_tron_3000", 6),
+                    entry("bug_bot_imp", 5));
+            addGroup(groups, "gargantuar_prime", gargantuars, directionCount);
+        } else {
+            addWeighted(groups, zombieCount - 2, directionCount,
+                    entry("future_zombie", 26),
+                    entry("conehead_future_zombie", 8),
+                    entry("buckethead_future_zombie", 13),
+                    entry("flag_future_zombie", 3),
+                    entry("jetpack_zombie", 8),
+                    entry("blastronaut_zombie", 8),
+                    entry("robo_cone_zombie", 10),
+                    entry("mecha_football_zombie", 9),
+                    entry("disco_tron_3000", 7),
+                    entry("bug_bot_imp", 8));
+            addGroup(groups, "gargantuar_prime", 2, directionCount);
+        }
+        return List.copyOf(groups);
+    }
+
+    private static void addWeighted(List<WaveSpawnGroup> groups, int totalCount, int directionCount, WeightedZombie... entries) {
+        int remaining = Math.max(0, totalCount);
+        int totalWeight = 0;
+        for (WeightedZombie entry : entries) {
+            totalWeight += entry.weight();
+        }
+        for (int i = 0; i < entries.length; i++) {
+            WeightedZombie entry = entries[i];
+            int count = i == entries.length - 1 ? remaining : (int) Math.floor(totalCount * (entry.weight() / (double) totalWeight));
+            count = Math.min(remaining, count);
+            addGroup(groups, entry.id(), count, directionCount);
+            remaining -= count;
+        }
+    }
+
+    private static void addGroup(List<WaveSpawnGroup> groups, String zombieId, int count, int directionCount) {
+        if (count > 0) {
+            groups.add(new WaveSpawnGroup("pvz2mod:" + zombieId, count, directionCount, List.of()));
+        }
+    }
+
+    private static WeightedZombie entry(String id, int weight) {
+        return new WeightedZombie(id, weight);
+    }
+
+    private record WeightedZombie(String id, int weight) {
     }
 
     private static String scanTextFor(int wave) {

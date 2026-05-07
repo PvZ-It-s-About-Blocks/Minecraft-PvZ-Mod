@@ -28,6 +28,7 @@ import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Snowball;
+import net.minecraft.world.entity.vehicle.Minecart;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -59,6 +60,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String DEEP_SEA_GARGANTUAR_THROWN_IMP_TAG = "PvZDeepSeaGargantuarThrownImp";
     public static final String PIRATE_GARGANTUAR_THROWN_IMP_TAG = "PvZPirateGargantuarThrownImp";
     public static final String MODERN_GARGANTUAR_THROWN_IMP_TAG = "PvZModernGargantuarThrownImp";
+    public static final String GARGANTUAR_PRIME_THROWN_IMP_TAG = "PvZGargantuarPrimeThrownImp";
     public static final String MUSIC_BOOSTED_TAG = "PvZMusicBoosted";
     public static final String MUSIC_BOOST_END_TICK_TAG = "PvZMusicBoostEndTick";
     public static final String MUSIC_BOOST_STRENGTH_TAG = "PvZMusicBoostStrength";
@@ -101,6 +103,12 @@ public class PvZZombieEntity extends Zombie {
     private static final String SUPER_FAN_EXPLODE_TICK_TAG = "PvZSuperFanExplodeTick";
     private static final String RALLY_NEXT_SUPPORT_TICK_TAG = "PvZRallyNextSupportTick";
     private static final String RALLY_BUFF_END_TICK_TAG = "PvZRallyBuffEndTick";
+    private static final String VEHICLE_MINECART_UUID_TAG = "PvZVehicleMinecart";
+    private static final String BLASTRONAUT_NEXT_BLAST_TICK_TAG = "PvZBlastronautNextBlastTick";
+    private static final String MECHA_NEXT_CHARGE_TICK_TAG = "PvZMechaNextChargeTick";
+    private static final String MECHA_CHARGE_END_TICK_TAG = "PvZMechaChargeEndTick";
+    private static final String DISCO_TRON_NEXT_SUMMON_TICK_TAG = "PvZDiscoTronNextSummonTick";
+    private static final String DISCO_TRON_SUMMON_COUNT_TAG = "PvZDiscoTronSummonCount";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -152,9 +160,21 @@ public class PvZZombieEntity extends Zombie {
     private static final float SUPER_FAN_EXPLOSION_RADIUS = 2.0F;
     private static final int RALLY_SUPPORT_INTERVAL_TICKS = 20 * 6;
     private static final int RALLY_SUPPORT_DURATION_TICKS = 20 * 3;
+    private static final int BLASTRONAUT_BLAST_INTERVAL_TICKS = 20 * 4;
+    private static final int MECHA_CHARGE_INTERVAL_TICKS = 20 * 7;
+    private static final int MECHA_CHARGE_DURATION_TICKS = 20 * 2;
+    private static final double MECHA_CHARGE_SPEED_MULTIPLIER = 1.75D;
+    private static final int DISCO_TRON_SUMMON_INTERVAL_TICKS = 20 * 9;
+    private static final int DISCO_TRON_MAX_SUMMONS = 6;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        cleanupVehicleMinecart();
+        super.remove(reason);
     }
 
     @Override
@@ -203,6 +223,10 @@ public class PvZZombieEntity extends Zombie {
         tickAllStarTackle(level);
         tickSuperFanImpExplosion(level);
         tickRallySupport(level);
+        tickVehicleMinecartShell(level);
+        tickBlastronautBlast(level);
+        tickMechaFootballCharge(level);
+        tickDiscoTronSummoner(level);
     }
 
     @Override
@@ -305,6 +329,9 @@ public class PvZZombieEntity extends Zombie {
         }
         if (definition.has(PvZZombieSpecial.ALL_STAR_TACKLE) && tag.contains(ALL_STAR_TACKLE_READY_TAG) && !tag.getBoolean(ALL_STAR_TACKLE_READY_TAG)) {
             multiplier = ALL_STAR_AFTER_TACKLE_SPEED_MULTIPLIER;
+        }
+        if (definition.has(PvZZombieSpecial.MECHA_FOOTBALL_CHARGE) && tag.getLong(MECHA_CHARGE_END_TICK_TAG) > level().getGameTime()) {
+            multiplier *= MECHA_CHARGE_SPEED_MULTIPLIER;
         }
         if (definition.has(PvZZombieSpecial.BULL_CHARGE) && tag.getLong(BULL_CHARGE_END_TICK_TAG) > level().getGameTime()) {
             multiplier = BULL_CHARGE_SPEED_MULTIPLIER;
@@ -1312,6 +1339,138 @@ public class PvZZombieEntity extends Zombie {
         level.sendParticles(ParticleTypes.HAPPY_VILLAGER, getX(), getY() + 1.2D, getZ(), 14, 0.6D, 0.4D, 0.6D, 0.02D);
         level.playSound(null, blockPosition(), SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 0.65F, 1.55F);
         tag.putLong(RALLY_NEXT_SUPPORT_TICK_TAG, gameTime + RALLY_SUPPORT_INTERVAL_TICKS);
+    }
+
+    private void tickVehicleMinecartShell(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.VEHICLE_MINECART)) {
+            return;
+        }
+
+        Minecart cart = getVehicleMinecart(level).orElseGet(() -> spawnVehicleMinecartForZombie(level));
+        if (cart == null) {
+            return;
+        }
+        if (getVehicle() != cart) {
+            startRiding(cart, true);
+        }
+        cart.setInvulnerable(true);
+        cart.getPersistentData().putBoolean("PvZVehicleZombieMinecart", true);
+        cart.getPersistentData().putUUID("PvZVehicleZombieOwner", getUUID());
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        double speed = Math.max(0.05D, configuredMovementSpeed() * 1.8D);
+        cart.setDeltaMovement(towardGarden.scale(speed));
+        cart.setYRot(getYRot());
+        cart.setNoGravity(false);
+    }
+
+    private Minecart spawnVehicleMinecartForZombie(ServerLevel level) {
+        Minecart cart = EntityType.MINECART.create(level);
+        if (cart == null) {
+            return null;
+        }
+        cart.moveTo(getX(), getY(), getZ(), getYRot(), 0.0F);
+        cart.setInvulnerable(true);
+        cart.setSilent(true);
+        cart.getPersistentData().putBoolean("PvZWaveZombie", getPersistentData().getBoolean("PvZWaveZombie"));
+        cart.getPersistentData().putBoolean("PvZVehicleZombieMinecart", true);
+        cart.getPersistentData().putUUID("PvZVehicleZombieOwner", getUUID());
+        level.addFreshEntity(cart);
+        getPersistentData().putUUID(VEHICLE_MINECART_UUID_TAG, cart.getUUID());
+        startRiding(cart, true);
+        return cart;
+    }
+
+    private Optional<Minecart> getVehicleMinecart(ServerLevel level) {
+        CompoundTag tag = getPersistentData();
+        if (!tag.hasUUID(VEHICLE_MINECART_UUID_TAG)) {
+            return Optional.empty();
+        }
+        if (level.getEntity(tag.getUUID(VEHICLE_MINECART_UUID_TAG)) instanceof Minecart cart && cart.isAlive()) {
+            return Optional.of(cart);
+        }
+        tag.remove(VEHICLE_MINECART_UUID_TAG);
+        return Optional.empty();
+    }
+
+    private void cleanupVehicleMinecart() {
+        if (!(level() instanceof ServerLevel level) || !getPersistentData().hasUUID(VEHICLE_MINECART_UUID_TAG)) {
+            return;
+        }
+        if (level.getEntity(getPersistentData().getUUID(VEHICLE_MINECART_UUID_TAG)) instanceof Minecart cart) {
+            cart.discard();
+        }
+        getPersistentData().remove(VEHICLE_MINECART_UUID_TAG);
+    }
+
+    private void tickBlastronautBlast(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BLASTRONAUT_BLAST)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(BLASTRONAUT_NEXT_BLAST_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(10.0D, 5.0D, 10.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(this::hasLineOfSight)
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            plant.hurt(level.damageSources().mobProjectile(this, this), 4.0F);
+            renderMagicLine(level, position().add(0.0D, 1.2D, 0.0D), plant.position().add(0.0D, 0.9D, 0.0D), ParticleTypes.ELECTRIC_SPARK);
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, plant.getX(), plant.getY() + 0.9D, plant.getZ(), 10, 0.25D, 0.25D, 0.25D, 0.02D);
+            level.playSound(null, blockPosition(), SoundEvents.BEACON_POWER_SELECT, SoundSource.HOSTILE, 0.45F, 1.7F);
+        });
+        tag.putLong(BLASTRONAUT_NEXT_BLAST_TICK_TAG, gameTime + BLASTRONAUT_BLAST_INTERVAL_TICKS);
+    }
+
+    private void tickMechaFootballCharge(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.MECHA_FOOTBALL_CHARGE) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime >= tag.getLong(MECHA_NEXT_CHARGE_TICK_TAG)) {
+            tag.putLong(MECHA_CHARGE_END_TICK_TAG, gameTime + MECHA_CHARGE_DURATION_TICKS);
+            tag.putLong(MECHA_NEXT_CHARGE_TICK_TAG, gameTime + MECHA_CHARGE_INTERVAL_TICKS);
+            setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+            level.sendParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY() + 0.8D, getZ(), 14, 0.35D, 0.35D, 0.35D, 0.04D);
+            level.playSound(null, blockPosition(), SoundEvents.MINECART_RIDING, SoundSource.HOSTILE, 0.8F, 1.4F);
+        }
+        if (gameTime >= tag.getLong(MECHA_CHARGE_END_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> plantTarget = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(2.0D, 0.8D, 2.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(plant -> isInFront(plant.position(), towardGarden))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        plantTarget.ifPresent(plant -> {
+            plant.hurt(level.damageSources().mobAttack(this), 16.0F);
+            level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 14, 0.3D, 0.35D, 0.3D, 0.05D);
+            level.playSound(null, plant.blockPosition(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 0.6F, 1.5F);
+        });
+    }
+
+    private void tickDiscoTronSummoner(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.DISCO_TRON_SUMMONER)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(DISCO_TRON_NEXT_SUMMON_TICK_TAG) || tag.getInt(DISCO_TRON_SUMMON_COUNT_TAG) >= DISCO_TRON_MAX_SUMMONS) {
+            return;
+        }
+
+        int count = Math.min(DISCO_TRON_MAX_SUMMONS - tag.getInt(DISCO_TRON_SUMMON_COUNT_TAG), 1 + level.random.nextInt(2));
+        spawnSummonedZombies(level, "bug_bot_imp", count, ParticleTypes.ELECTRIC_SPARK, SoundEvents.NOTE_BLOCK_BIT.get());
+        tag.putInt(DISCO_TRON_SUMMON_COUNT_TAG, tag.getInt(DISCO_TRON_SUMMON_COUNT_TAG) + count);
+        tag.putLong(DISCO_TRON_NEXT_SUMMON_TICK_TAG, gameTime + DISCO_TRON_SUMMON_INTERVAL_TICKS + level.random.nextInt(20 * 2));
     }
 
     private void pulseNearbyNeonZombies(ServerLevel level, double radius, boolean includeSelf) {

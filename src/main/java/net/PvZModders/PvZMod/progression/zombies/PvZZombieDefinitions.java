@@ -88,6 +88,11 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.PIRATE_SEAS;
     }
 
+    public static boolean isFarFutureZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.FAR_FUTURE;
+    }
+
     public static boolean isModernDayZombie(LivingEntity entity) {
         return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && zombie.definition().gardenSource() == GardenId.MODERN_DAY;
@@ -149,6 +154,11 @@ public final class PvZZombieDefinitions {
     public static boolean isStationaryZombie(LivingEntity entity) {
         return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && zombie.definition().has(PvZZombieSpecial.STATIONARY);
+    }
+
+    public static boolean isVehicleZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().has(PvZZombieSpecial.VEHICLE_MINECART);
     }
 
     private static Map<String, PvZZombieDefinition> createDefinitions() {
@@ -329,6 +339,28 @@ public final class PvZZombieDefinitions {
                 "Anti-defense bruiser that deals bonus damage to wall plants.", Set.of(PvZZombieSpecial.ROCKPUNCHER));
         register(definitions, GardenId.JURASSIC_MARSH, "jurassic_gargantuar", "Jurassic Gargantuar", 350.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Jurassic Marsh gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.JURASSIC_GARGANTUAR));
+        register(definitions, GardenId.FAR_FUTURE, "future_zombie", "Future Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Far Future zombie.", Set.of());
+        register(definitions, GardenId.FAR_FUTURE, "conehead_future_zombie", "Conehead Future Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Far Future zombie.", Set.of());
+        register(definitions, GardenId.FAR_FUTURE, "buckethead_future_zombie", "Buckethead Future Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Far Future zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.FAR_FUTURE, "flag_future_zombie", "Flag Future Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Far Future push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.FAR_FUTURE, "jetpack_zombie", "Jetpack Zombie", 30.0D, 1.3D, 4.0D, 0.0D, 1.0F,
+                "Flying Far Future bypass zombie.", Set.of(PvZZombieSpecial.FLYING));
+        register(definitions, GardenId.FAR_FUTURE, "blastronaut_zombie", "Blastronaut Zombie", 40.0D, 1.15D, 3.0D, 0.0D, 1.0F,
+                "Flying ranged pressure zombie.", Set.of(PvZZombieSpecial.FLYING, PvZZombieSpecial.BLASTRONAUT_BLAST));
+        register(definitions, GardenId.FAR_FUTURE, "robo_cone_zombie", "Robo-Cone Zombie", 120.0D, 0.85D, 5.0D, 0.45D, 1.0F,
+                "Advanced armored tech zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.FAR_FUTURE, "mecha_football_zombie", "Mecha-Football Zombie", 140.0D, 1.15D, 9.0D, 0.65D, 1.15F,
+                "Charging machine zombie with a minecart vehicle shell.", Set.of(PvZZombieSpecial.METAL, PvZZombieSpecial.MECHA_FOOTBALL_CHARGE, PvZZombieSpecial.VEHICLE_MINECART));
+        register(definitions, GardenId.FAR_FUTURE, "disco_tron_3000", "Disco-tron 3000", 110.0D, 0.75D, 4.0D, 0.55D, 1.2F,
+                "Machine summoner that creates Bug Bot Imps from a minecart shell.", Set.of(PvZZombieSpecial.DISCO_TRON_SUMMONER, PvZZombieSpecial.VEHICLE_MINECART, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.FAR_FUTURE, "bug_bot_imp", "Bug Bot Imp", 10.0D, 1.55D, 3.0D, 0.0D, 0.55F,
+                "Small, fast Far Future summoned imp.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.FAR_FUTURE, "gargantuar_prime", "Gargantuar Prime", 360.0D, 0.56D, 18.0D, 0.95D, 3.0F,
+                "Huge Far Future gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.METAL, PvZZombieSpecial.GARGANTUAR_PRIME));
         register(definitions, GardenId.BIG_WAVE_BEACH, "beach_zombie", "Beach Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
                 "Baseline Big Wave Beach zombie.", Set.of());
         register(definitions, GardenId.BIG_WAVE_BEACH, "conehead_beach_zombie", "Conehead Beach Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
