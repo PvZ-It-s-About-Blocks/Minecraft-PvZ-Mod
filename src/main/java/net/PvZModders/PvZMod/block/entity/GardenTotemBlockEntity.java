@@ -668,8 +668,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
 
     private void applyNeonSpeakerPulse(ServerLevel level, NeonSpeakerPulse pulse) {
         AABB pulseArea = new AABB(worldPosition).inflate(GARDEN_RADIUS + 4.0D, 4.0D, GARDEN_RADIUS + 4.0D);
-        for (net.minecraft.world.entity.monster.Zombie zombie : level.getEntitiesOfClass(net.minecraft.world.entity.monster.Zombie.class, pulseArea, net.minecraft.world.entity.monster.Zombie::isAlive)) {
-            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 20 * 3, 1));
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, pulseArea, zombie -> zombie.isAlive() && PvZZombieDefinitions.isNeonZombie(zombie))) {
+            PvZZombieEntity.applyNeonMusicBoost(level, zombie, 20 * 3, 0.2F);
         }
         level.sendParticles(ParticleTypes.NOTE, worldPosition.getX() + 0.5D, worldPosition.getY() + 2.0D, worldPosition.getZ() + 0.5D, 32, 4.0D, 1.0D, 4.0D, 0.0D);
         level.sendParticles(ParticleTypes.SONIC_BOOM, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.0D, worldPosition.getZ() + 0.5D, 1, 0.0D, 0.0D, 0.0D, 0.0D);

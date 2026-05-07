@@ -50,6 +50,10 @@ public class PvZZombieEntity extends Zombie {
     public static final String DARK_AGES_GARGANTUAR_THROWN_IMP_TAG = "PvZDarkAgesGargantuarThrownImp";
     public static final String JESTER_SPINNING_TAG = "PvZJesterSpinning";
     public static final String ROYAL_GUARD_END_TICK_TAG = "PvZRoyalGuardEndTick";
+    public static final String NEON_GARGANTUAR_THROWN_IMP_TAG = "PvZNeonGargantuarThrownImp";
+    public static final String MUSIC_BOOSTED_TAG = "PvZMusicBoosted";
+    public static final String MUSIC_BOOST_END_TICK_TAG = "PvZMusicBoostEndTick";
+    public static final String MUSIC_BOOST_STRENGTH_TAG = "PvZMusicBoostStrength";
     private static final String PROSPECTOR_LEAP_TICK_TAG = "PvZProspectorLeapTick";
     private static final String RELIC_HUNTER_LEAP_TICK_TAG = "PvZRelicHunterLeapTick";
     private static final String PIANIST_NEXT_SUPPORT_TICK_TAG = "PvZPianistNextSupportTick";
@@ -65,6 +69,13 @@ public class PvZZombieEntity extends Zombie {
     private static final String WIZARD_NEXT_CAST_TICK_TAG = "PvZWizardNextCastTick";
     private static final String KING_NEXT_SUPPORT_TICK_TAG = "PvZKingNextSupportTick";
     private static final String DRAGON_IMP_NEXT_FIRE_TICK_TAG = "PvZDragonImpNextFireTick";
+    private static final String PUNK_NEXT_SHOVE_TICK_TAG = "PvZPunkNextShoveTick";
+    private static final String GLITTER_NEXT_AURA_TICK_TAG = "PvZGlitterNextAuraTick";
+    private static final String MC_NEXT_MUSIC_TICK_TAG = "PvZMcNextMusicTick";
+    private static final String BREAKDANCER_NEXT_KICK_TICK_TAG = "PvZBreakdancerNextKickTick";
+    private static final String ARCADE_NEXT_SUMMON_TICK_TAG = "PvZArcadeNextSummonTick";
+    private static final String ARCADE_SUMMON_COUNT_TAG = "PvZArcadeSummonCount";
+    private static final String BOOMBOX_NEXT_PULSE_TICK_TAG = "PvZBoomboxNextPulseTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -91,6 +102,15 @@ public class PvZZombieEntity extends Zombie {
     private static final int KING_SUPPORT_INTERVAL_TICKS = 20 * 5;
     private static final int KING_SUPPORT_DURATION_TICKS = 20 * 5;
     private static final int DRAGON_IMP_FIRE_INTERVAL_TICKS = 20 * 4;
+    private static final int PUNK_SHOVE_INTERVAL_TICKS = 20 * 6;
+    private static final int GLITTER_AURA_INTERVAL_TICKS = 20 * 3;
+    private static final int GLITTER_AURA_DURATION_TICKS = 20 * 3;
+    private static final int MC_MUSIC_INTERVAL_TICKS = 20 * 7;
+    private static final int BREAKDANCER_KICK_INTERVAL_TICKS = 20 * 7;
+    private static final int ARCADE_SUMMON_INTERVAL_TICKS = 20 * 9;
+    private static final int ARCADE_MAX_SUMMONS = 6;
+    private static final int BOOMBOX_PULSE_INTERVAL_TICKS = 20 * 6;
+    private static final int MUSIC_BOOST_DURATION_TICKS = 20 * 3;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -121,6 +141,13 @@ public class PvZZombieEntity extends Zombie {
         tickWizardDisable(level);
         tickKingSupport(level);
         tickDragonImpFire(level);
+        tickMusicBoostState(level);
+        tickPunkShove(level);
+        tickGlitterAura(level);
+        tickMcMusicSupport(level);
+        tickBreakdancerKick(level);
+        tickArcadeSummoner(level);
+        tickBoomboxPulse(level);
     }
 
     @Override
@@ -219,6 +246,30 @@ public class PvZZombieEntity extends Zombie {
             multiplier = BULL_CHARGE_SPEED_MULTIPLIER;
         }
         return tag.getDouble(WAVE_BASE_SPEED_TAG) * multiplier;
+    }
+
+    public static void applyNeonMusicBoost(ServerLevel level, PvZZombieEntity zombie, int durationTicks, float strength) {
+        if (!PvZZombieDefinitions.isNeonZombie(zombie) || !zombie.isAlive()) {
+            return;
+        }
+
+        boolean gargantuar = PvZZombieDefinitions.isGargantuarLike(zombie);
+        int adjustedDuration = gargantuar ? Math.max(20, durationTicks / 2) : durationTicks;
+        float adjustedStrength = gargantuar ? strength * 0.5F : strength;
+        CompoundTag tag = zombie.getPersistentData();
+        long endTick = level.getGameTime() + adjustedDuration;
+        if (tag.getBoolean(MUSIC_BOOSTED_TAG)
+                && tag.getLong(MUSIC_BOOST_END_TICK_TAG) > level.getGameTime()
+                && tag.getFloat(MUSIC_BOOST_STRENGTH_TAG) > adjustedStrength) {
+            tag.putLong(MUSIC_BOOST_END_TICK_TAG, Math.max(tag.getLong(MUSIC_BOOST_END_TICK_TAG), endTick));
+            return;
+        }
+
+        tag.putBoolean(MUSIC_BOOSTED_TAG, true);
+        tag.putLong(MUSIC_BOOST_END_TICK_TAG, endTick);
+        tag.putFloat(MUSIC_BOOST_STRENGTH_TAG, adjustedStrength);
+        zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED, adjustedDuration, 0, false, true));
+        level.sendParticles(ParticleTypes.NOTE, zombie.getX(), zombie.getY() + 1.4D, zombie.getZ(), 5, 0.35D, 0.35D, 0.35D, 0.0D);
     }
 
     private void setAttribute(net.minecraft.world.entity.ai.attributes.Attribute attribute, double value) {
@@ -672,6 +723,177 @@ public class PvZZombieEntity extends Zombie {
             level.playSound(null, blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 0.55F, 1.5F);
         });
         tag.putLong(DRAGON_IMP_NEXT_FIRE_TICK_TAG, gameTime + DRAGON_IMP_FIRE_INTERVAL_TICKS);
+    }
+
+    private void tickMusicBoostState(ServerLevel level) {
+        CompoundTag tag = getPersistentData();
+        if (!tag.getBoolean(MUSIC_BOOSTED_TAG)) {
+            return;
+        }
+        if (level.getGameTime() >= tag.getLong(MUSIC_BOOST_END_TICK_TAG)) {
+            tag.remove(MUSIC_BOOSTED_TAG);
+            tag.remove(MUSIC_BOOST_END_TICK_TAG);
+            tag.remove(MUSIC_BOOST_STRENGTH_TAG);
+        } else if (level.getGameTime() % 10L == 0L) {
+            level.sendParticles(ParticleTypes.NOTE, getX(), getY() + 1.4D, getZ(), 2, 0.25D, 0.25D, 0.25D, 0.0D);
+        }
+    }
+
+    private void tickPunkShove(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.PUNK_SHOVE) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(PUNK_NEXT_SHOVE_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> plantTarget = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(2.0D, 1.0D, 2.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(plant -> isInFront(plant.position(), towardGarden))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        plantTarget.ifPresent(plant -> {
+            plant.hurt(level.damageSources().mobAttack(this), 6.0F);
+            PlantEntityManager.applyWizardDisable(level, plant, this, 20 * 2);
+            level.sendParticles(ParticleTypes.SONIC_BOOM, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        });
+
+        AABB area = getBoundingBox().inflate(2.5D, 1.0D, 2.5D);
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, area, zombie -> zombie.isAlive() && zombie != this && !PvZZombieDefinitions.isGargantuarLike(zombie))) {
+            zombie.setDeltaMovement(zombie.getDeltaMovement().add(towardGarden.scale(0.45D)));
+        }
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BASEDRUM.get(), SoundSource.HOSTILE, 0.9F, 0.7F);
+        tag.putLong(PUNK_NEXT_SHOVE_TICK_TAG, gameTime + PUNK_SHOVE_INTERVAL_TICKS);
+    }
+
+    private void tickGlitterAura(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.GLITTER_AURA)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(GLITTER_NEXT_AURA_TICK_TAG)) {
+            return;
+        }
+
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, getBoundingBox().inflate(5.0D, 2.0D, 5.0D), zombie -> zombie.isAlive() && zombie != this)) {
+            zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(net.minecraft.world.effect.MobEffects.DAMAGE_RESISTANCE, GLITTER_AURA_DURATION_TICKS, 0, false, true));
+            level.sendParticles(ParticleTypes.FIREWORK, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 3, 0.25D, 0.35D, 0.25D, 0.01D);
+            if (zombie.getPersistentData().getBoolean(MUSIC_BOOSTED_TAG)) {
+                applyNeonMusicBoost(level, zombie, MUSIC_BOOST_DURATION_TICKS, 0.2F);
+            }
+        }
+        level.sendParticles(ParticleTypes.FIREWORK, getX(), getY() + 1.3D, getZ(), 10, 0.6D, 0.45D, 0.6D, 0.01D);
+        tag.putLong(GLITTER_NEXT_AURA_TICK_TAG, gameTime + GLITTER_AURA_INTERVAL_TICKS);
+    }
+
+    private void tickMcMusicSupport(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.MC_MUSIC_SUPPORT)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(MC_NEXT_MUSIC_TICK_TAG)) {
+            return;
+        }
+
+        pulseNearbyNeonZombies(level, 6.0D, true);
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BANJO.get(), SoundSource.HOSTILE, 0.9F, 1.25F);
+        tag.putLong(MC_NEXT_MUSIC_TICK_TAG, gameTime + MC_MUSIC_INTERVAL_TICKS);
+    }
+
+    private void tickBreakdancerKick(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BREAKDANCER_KICK) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(BREAKDANCER_NEXT_KICK_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        int kicked = 0;
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, getBoundingBox().inflate(4.0D, 2.0D, 4.0D), zombie -> zombie.isAlive() && zombie != this && !PvZZombieDefinitions.isGargantuarLike(zombie))) {
+            zombie.setDeltaMovement(zombie.getDeltaMovement().add(towardGarden.scale(0.7D).add(0.0D, 0.12D, 0.0D)));
+            level.sendParticles(ParticleTypes.CLOUD, zombie.getX(), zombie.getY() + 0.3D, zombie.getZ(), 6, 0.25D, 0.1D, 0.25D, 0.03D);
+            if (++kicked >= 3) {
+                break;
+            }
+        }
+        level.sendParticles(ParticleTypes.NOTE, getX(), getY() + 1.2D, getZ(), 14, 0.7D, 0.3D, 0.7D, 0.0D);
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_SNARE.get(), SoundSource.HOSTILE, 0.8F, 1.1F);
+        tag.putLong(BREAKDANCER_NEXT_KICK_TICK_TAG, gameTime + BREAKDANCER_KICK_INTERVAL_TICKS);
+    }
+
+    private void tickArcadeSummoner(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.ARCADE_SUMMONER)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(ARCADE_NEXT_SUMMON_TICK_TAG) || tag.getInt(ARCADE_SUMMON_COUNT_TAG) >= ARCADE_MAX_SUMMONS) {
+            return;
+        }
+
+        int count = Math.min(ARCADE_MAX_SUMMONS - tag.getInt(ARCADE_SUMMON_COUNT_TAG), 1 + level.random.nextInt(2));
+        spawnSummonedZombies(level, "eight_bit_zombie", count, ParticleTypes.NOTE, SoundEvents.NOTE_BLOCK_PLING.get());
+        tag.putInt(ARCADE_SUMMON_COUNT_TAG, tag.getInt(ARCADE_SUMMON_COUNT_TAG) + count);
+        tag.putLong(ARCADE_NEXT_SUMMON_TICK_TAG, gameTime + ARCADE_SUMMON_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickBoomboxPulse(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.BOOMBOX_PULSE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(BOOMBOX_NEXT_PULSE_TICK_TAG)) {
+            return;
+        }
+
+        pulseNearbyNeonZombies(level, 6.0D, false);
+        level.sendParticles(ParticleTypes.SONIC_BOOM, getX(), getY() + 1.0D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+        level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BASS.get(), SoundSource.HOSTILE, 1.0F, 0.6F);
+        tag.putLong(BOOMBOX_NEXT_PULSE_TICK_TAG, gameTime + BOOMBOX_PULSE_INTERVAL_TICKS);
+    }
+
+    private void pulseNearbyNeonZombies(ServerLevel level, double radius, boolean includeSelf) {
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, getBoundingBox().inflate(radius, 2.0D, radius), zombie -> zombie.isAlive() && (includeSelf || zombie != this) && PvZZombieDefinitions.isNeonZombie(zombie))) {
+            applyNeonMusicBoost(level, zombie, MUSIC_BOOST_DURATION_TICKS, 0.2F);
+        }
+        level.sendParticles(ParticleTypes.NOTE, getX(), getY() + 1.4D, getZ(), 16, radius * 0.25D, 0.5D, radius * 0.25D, 0.0D);
+    }
+
+    private void spawnSummonedZombies(ServerLevel level, String zombieId, int count, net.minecraft.core.particles.ParticleOptions particle, net.minecraft.sounds.SoundEvent sound) {
+        Optional.ofNullable(ModEntities.ZOMBIES.get(zombieId))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(entityType -> {
+                    for (int i = 0; i < count; i++) {
+                        PvZZombieEntity summoned = entityType.create(level);
+                        if (summoned == null) {
+                            continue;
+                        }
+                        double x = getX() + (level.random.nextDouble() - 0.5D) * 2.0D;
+                        double z = getZ() + (level.random.nextDouble() - 0.5D) * 2.0D;
+                        summoned.moveTo(x, getY(), z, getYRot(), 0.0F);
+                        summoned.getPersistentData().putBoolean("PvZWaveZombie", getPersistentData().getBoolean("PvZWaveZombie"));
+                        copyGardenCenterTo(summoned);
+                        summoned.finalizeSpawn(level, level.getCurrentDifficultyAt(summoned.blockPosition()), MobSpawnType.EVENT, null, null);
+                        level.addFreshEntity(summoned);
+                        summoned.configureForWave(0.13D);
+                    }
+                });
+        level.sendParticles(particle, getX(), getY() + 1.0D, getZ(), 18, 0.5D, 0.4D, 0.5D, 0.02D);
+        level.playSound(null, blockPosition(), sound, SoundSource.HOSTILE, 0.9F, 0.9F);
     }
 
     private static boolean isDarkAgesSupportTarget(PvZZombieEntity zombie) {

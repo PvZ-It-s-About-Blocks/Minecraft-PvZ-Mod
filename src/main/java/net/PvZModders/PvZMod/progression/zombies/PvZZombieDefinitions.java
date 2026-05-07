@@ -68,6 +68,11 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.DARK_AGES;
     }
 
+    public static boolean isNeonZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.NEON_MIXTAPE;
+    }
+
     private static Map<String, PvZZombieDefinition> createDefinitions() {
         Map<String, PvZZombieDefinition> definitions = new LinkedHashMap<>();
         register(definitions, "basic_zombie", "Basic Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
@@ -202,6 +207,30 @@ public final class PvZZombieDefinitions {
                 "Small, fast fire-themed imp.", Set.of(PvZZombieSpecial.IMP, PvZZombieSpecial.DRAGON_IMP_FIRE));
         register(definitions, GardenId.DARK_AGES, "dark_ages_gargantuar", "Dark Ages Gargantuar", 340.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Dark Ages gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.DARK_AGES_GARGANTUAR));
+        register(definitions, GardenId.NEON_MIXTAPE, "neon_zombie", "Neon Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Neon Mixtape zombie.", Set.of());
+        register(definitions, GardenId.NEON_MIXTAPE, "conehead_neon_zombie", "Conehead Neon Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Neon Mixtape zombie.", Set.of());
+        register(definitions, GardenId.NEON_MIXTAPE, "buckethead_neon_zombie", "Buckethead Neon Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Neon Mixtape zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.NEON_MIXTAPE, "flag_neon_zombie", "Flag Neon Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Neon Mixtape push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.NEON_MIXTAPE, "punk_zombie", "Punk Zombie", 45.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Creates short-range shove pressure.", Set.of(PvZZombieSpecial.PUNK_SHOVE));
+        register(definitions, GardenId.NEON_MIXTAPE, "glitter_zombie", "Glitter Zombie", 50.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Gives nearby zombies a defensive aura.", Set.of(PvZZombieSpecial.GLITTER_AURA));
+        register(definitions, GardenId.NEON_MIXTAPE, "mc_zom_b", "MC Zom-B", 55.0D, 0.9D, 3.0D, 0.0D, 1.0F,
+                "Boosts nearby zombies with music pulses.", Set.of(PvZZombieSpecial.MC_MUSIC_SUPPORT));
+        register(definitions, GardenId.NEON_MIXTAPE, "breakdancer_zombie", "Breakdancer Zombie", 60.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Kicks nearby zombies forward.", Set.of(PvZZombieSpecial.BREAKDANCER_KICK));
+        register(definitions, GardenId.NEON_MIXTAPE, "arcade_zombie", "Arcade Zombie", 75.0D, 0.75D, 4.0D, 0.1D, 1.0F,
+                "Summons small 8-Bit Zombies.", Set.of(PvZZombieSpecial.ARCADE_SUMMONER));
+        register(definitions, GardenId.NEON_MIXTAPE, "eight_bit_zombie", "8-Bit Zombie", 8.0D, 1.55D, 2.0D, 0.0D, 0.55F,
+                "Small, fast summoned Neon swarm enemy.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.NEON_MIXTAPE, "boombox_zombie", "Boombox Zombie", 65.0D, 0.9D, 4.0D, 0.1D, 1.0F,
+                "Creates local speaker pulses.", Set.of(PvZZombieSpecial.BOOMBOX_PULSE));
+        register(definitions, GardenId.NEON_MIXTAPE, "neon_gargantuar", "Neon Gargantuar", 340.0D, 0.6D, 18.0D, 0.95D, 3.0F,
+                "Huge Neon Mixtape gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.NEON_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

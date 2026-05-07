@@ -108,6 +108,11 @@ public final class PvZZombieEvents {
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseDragonImp(zombie);
         }
+        if (zombie.definition().has(PvZZombieSpecial.NEON_GARGANTUAR)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.NEON_GARGANTUAR_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseEightBitZombie(zombie);
+        }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
             return;
@@ -198,6 +203,17 @@ public final class PvZZombieEvents {
         Optional.ofNullable(ModEntities.ZOMBIES.get("dragon_imp"))
                 .map(registryObject -> registryObject.get())
                 .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.BLAZE_SHOOT, ParticleTypes.FLAME));
+    }
+
+    private static void releaseEightBitZombie(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.NEON_GARGANTUAR_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("eight_bit_zombie"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(eightBitType -> spawnSwarm(level, gargantuar, eightBitType, 1, SoundEvents.NOTE_BLOCK_PLING.get(), ParticleTypes.NOTE));
     }
 
     private static void spawnSwarm(ServerLevel level, PvZZombieEntity source, EntityType<PvZZombieEntity> swarmType, int count, net.minecraft.sounds.SoundEvent sound, net.minecraft.core.particles.ParticleOptions particle) {
