@@ -312,4 +312,20 @@ public class JurassicDinosaurEntity extends Sniffer {
         setCustomName(Component.literal(prefix + type().displayName()));
         setCustomNameVisible(true);
     }
+
+    public static boolean isJurassicDinosaur(Entity entity) {
+        return entity instanceof JurassicDinosaurEntity;
+    }
+
+    public static boolean isDinosaurCharmed(Entity entity) {
+        return entity instanceof JurassicDinosaurEntity dinosaur && dinosaur.isCharmed();
+    }
+
+    public static boolean charmDinosaur(Entity entity, UUID owner, int durationTicks) {
+        if (!(entity instanceof JurassicDinosaurEntity dinosaur) || !dinosaur.isAlive()) {
+            return false;
+        }
+        dinosaur.charmFor(owner, durationTicks);
+        return true;
+    }
 }

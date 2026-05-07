@@ -73,6 +73,11 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.NEON_MIXTAPE;
     }
 
+    public static boolean isJurassicZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.JURASSIC_MARSH;
+    }
+
     private static Map<String, PvZZombieDefinition> createDefinitions() {
         Map<String, PvZZombieDefinition> definitions = new LinkedHashMap<>();
         register(definitions, "basic_zombie", "Basic Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
@@ -231,6 +236,26 @@ public final class PvZZombieDefinitions {
                 "Creates local speaker pulses.", Set.of(PvZZombieSpecial.BOOMBOX_PULSE));
         register(definitions, GardenId.NEON_MIXTAPE, "neon_gargantuar", "Neon Gargantuar", 340.0D, 0.6D, 18.0D, 0.95D, 3.0F,
                 "Huge Neon Mixtape gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.NEON_GARGANTUAR));
+        register(definitions, GardenId.JURASSIC_MARSH, "jurassic_zombie", "Jurassic Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Jurassic Marsh zombie.", Set.of());
+        register(definitions, GardenId.JURASSIC_MARSH, "conehead_jurassic_zombie", "Conehead Jurassic Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Jurassic Marsh zombie.", Set.of());
+        register(definitions, GardenId.JURASSIC_MARSH, "buckethead_jurassic_zombie", "Buckethead Jurassic Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Jurassic Marsh zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.JURASSIC_MARSH, "flag_jurassic_zombie", "Flag Jurassic Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Jurassic Marsh push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.JURASSIC_MARSH, "fossilhead_zombie", "Fossilhead Zombie", 110.0D, 0.85D, 5.0D, 0.38D, 1.0F,
+                "Durable fossil-armored tank with strong knockback resistance.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.JURASSIC_MARSH, "amberhead_zombie", "Amberhead Zombie", 140.0D, 0.75D, 6.0D, 0.5D, 1.0F,
+                "Very slow amber-armored heavy zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.JURASSIC_MARSH, "jurassic_imp", "Jurassic Imp", 10.0D, 1.45D, 3.0D, 0.0D, 0.55F,
+                "Small, fast Jurassic Marsh imp.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.JURASSIC_MARSH, "jurassic_bully", "Jurassic Bully", 80.0D, 1.0D, 6.0D, 0.25D, 1.1F,
+                "Strong body-pressure zombie that punishes blockers.", Set.of(PvZZombieSpecial.JURASSIC_BULLY));
+        register(definitions, GardenId.JURASSIC_MARSH, "rockpuncher_zombie", "Rockpuncher Zombie", 95.0D, 0.85D, 6.0D, 0.3D, 1.05F,
+                "Anti-defense bruiser that deals bonus damage to wall plants.", Set.of(PvZZombieSpecial.ROCKPUNCHER));
+        register(definitions, GardenId.JURASSIC_MARSH, "jurassic_gargantuar", "Jurassic Gargantuar", 350.0D, 0.58D, 18.0D, 0.95D, 3.0F,
+                "Huge Jurassic Marsh gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.JURASSIC_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

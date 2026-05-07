@@ -51,6 +51,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String JESTER_SPINNING_TAG = "PvZJesterSpinning";
     public static final String ROYAL_GUARD_END_TICK_TAG = "PvZRoyalGuardEndTick";
     public static final String NEON_GARGANTUAR_THROWN_IMP_TAG = "PvZNeonGargantuarThrownImp";
+    public static final String JURASSIC_GARGANTUAR_THROWN_IMP_TAG = "PvZJurassicGargantuarThrownImp";
     public static final String MUSIC_BOOSTED_TAG = "PvZMusicBoosted";
     public static final String MUSIC_BOOST_END_TICK_TAG = "PvZMusicBoostEndTick";
     public static final String MUSIC_BOOST_STRENGTH_TAG = "PvZMusicBoostStrength";

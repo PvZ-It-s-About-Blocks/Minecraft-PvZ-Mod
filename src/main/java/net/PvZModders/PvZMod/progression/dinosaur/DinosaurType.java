@@ -45,22 +45,27 @@ public enum DinosaurType {
     }
 
     public static DinosaurType forWave(int wave, RandomSource random) {
+        return switch (wave) {
+            case 5, 6, 7 -> RAPTOR;
+            case 8, 9, 10 -> STEGOSAURUS;
+            case 11, 12, 13, 14 -> PTEROSAUR;
+            case 15, 16, 17, 18, 19 -> T_REX;
+            case 20, 21, 22, 23, 24 -> ANKYLOSAURUS;
+            default -> scheduledLateWaveType(wave);
+        };
+    }
+
+    private static DinosaurType scheduledLateWaveType(int wave) {
+        if (wave < 5) {
+            return RAPTOR;
+        }
         if (wave >= 25) {
-            return values()[random.nextInt(values().length)];
-        }
-        if (wave >= 18) {
-            return switch (random.nextInt(4)) {
-                case 0 -> RAPTOR;
-                case 1 -> STEGOSAURUS;
-                case 2 -> PTEROSAUR;
+            return switch (Math.floorMod(wave, 5)) {
+                case 0 -> T_REX;
+                case 1 -> RAPTOR;
+                case 2 -> STEGOSAURUS;
+                case 3 -> PTEROSAUR;
                 default -> ANKYLOSAURUS;
-            };
-        }
-        if (wave >= 10) {
-            return switch (random.nextInt(3)) {
-                case 0 -> RAPTOR;
-                case 1 -> STEGOSAURUS;
-                default -> PTEROSAUR;
             };
         }
         return RAPTOR;

@@ -5,6 +5,7 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
 import net.PvZModders.PvZMod.entity.custom.PeaProjectileEntity;
+import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
@@ -14,6 +15,7 @@ import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieSpecial;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -384,7 +386,8 @@ public final class PlantEntityManager {
         mob.getLookControl().setLookAt(target);
         if ((level.getGameTime() + mob.getId()) % 20 == 0) {
             mob.swing(InteractionHand.MAIN_HAND);
-            target.hurt(level.damageSources().mobAttack(mob), damage);
+            float adjustedDamage = adjustedZombiePlantDamage(level, mob, target, damage);
+            target.hurt(level.damageSources().mobAttack(mob), adjustedDamage);
             if (behaviorFor(target) == PlantSeedDefinition.PlantBehavior.ENDURIAN) {
                 mob.hurt(level.damageSources().thorns(target), ENDURIAN_THORN_DAMAGE);
             }
@@ -393,6 +396,41 @@ public final class PlantEntityManager {
             }
         }
         return true;
+    }
+
+    private static float adjustedZombiePlantDamage(ServerLevel level, Mob mob, LivingEntity target, float baseDamage) {
+        if (!(mob instanceof PvZZombieEntity zombie)) {
+            return baseDamage;
+        }
+
+        float damage = baseDamage;
+        if (zombie.definition().has(PvZZombieSpecial.ROCKPUNCHER) && isDefensivePlant(target)) {
+            damage *= 2.0F;
+            if (target instanceof SnowGolem plant) {
+                PlantEntityManager.applyWizardDisable(level, plant, zombie, 20);
+            }
+            level.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY() + 0.8D, target.getZ(), 10, 0.25D, 0.25D, 0.25D, 0.03D);
+            level.playSound(null, target.blockPosition(), SoundEvents.STONE_BREAK, SoundSource.HOSTILE, 0.75F, 0.85F);
+        }
+        if (zombie.definition().has(PvZZombieSpecial.JURASSIC_BULLY)) {
+            damage *= isDefensivePlant(target) ? 1.5F : 1.25F;
+            if (level.getGameTime() % (20L * 6L) < 20L) {
+                level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, target.getX(), target.getY() + 0.9D, target.getZ(), 8, 0.3D, 0.25D, 0.3D, 0.02D);
+                level.playSound(null, target.blockPosition(), SoundEvents.HOGLIN_ATTACK, SoundSource.HOSTILE, 0.65F, 0.8F);
+            }
+        }
+        return damage;
+    }
+
+    public static boolean isDefensivePlant(Entity plant) {
+        PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
+        return behavior == PlantSeedDefinition.PlantBehavior.WALL_NUT
+                || behavior == PlantSeedDefinition.PlantBehavior.TALL_NUT
+                || behavior == PlantSeedDefinition.PlantBehavior.PRIMAL_WALL_NUT
+                || behavior == PlantSeedDefinition.PlantBehavior.CHARD_GUARD
+                || behavior == PlantSeedDefinition.PlantBehavior.INFI_NUT
+                || behavior == PlantSeedDefinition.PlantBehavior.ENDURIAN
+                || behavior == PlantSeedDefinition.PlantBehavior.SPIKEROCK;
     }
 
     public static boolean isPlant(Entity entity) {
