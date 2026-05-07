@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.progression.zombies;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -17,6 +18,13 @@ public final class PvZZombieEvents {
 
     @SubscribeEvent
     public static void onLivingHurt(LivingHurtEvent event) {
+        if (event.getEntity().getPersistentData().getBoolean(AncientEgyptSandstormManager.BOOSTED_TAG)
+                && event.getEntity().getPersistentData().contains(AncientEgyptSandstormManager.DAMAGE_REDUCTION_TAG)
+                && event.getEntity().getPersistentData().getBoolean("PvZWaveZombie")) {
+            float reduction = event.getEntity().getPersistentData().getFloat(AncientEgyptSandstormManager.DAMAGE_REDUCTION_TAG);
+            event.setAmount(event.getAmount() * Math.max(0.0F, 1.0F - reduction));
+        }
+
         if (!(event.getEntity() instanceof PvZZombieEntity zombie)
                 || !zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
             return;

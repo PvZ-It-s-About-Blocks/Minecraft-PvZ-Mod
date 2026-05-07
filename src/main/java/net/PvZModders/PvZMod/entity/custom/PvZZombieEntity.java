@@ -1,6 +1,8 @@
 package net.PvZModders.PvZMod.entity.custom;
 
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
+import net.PvZModders.PvZMod.progression.sun.SunManager;
+import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinition;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieSpecial;
@@ -18,6 +20,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -31,10 +34,19 @@ public class PvZZombieEntity extends Zombie {
     private static final String WAVE_BASE_SPEED_TAG = "PvZWaveBaseSpeed";
     private static final String NEWSPAPER_RAGED_TAG = "PvZNewspaperRaged";
     private static final String POLE_VAULT_READY_TAG = "PvZPoleVaultReady";
+    private static final String RA_NEXT_DRAIN_TICK_TAG = "PvZRaNextDrainTick";
+    private static final String TOMB_NEXT_RAISE_TICK_TAG = "PvZTombNextRaiseTick";
+    private static final String TOMB_RAISED_COUNT_TAG = "PvZTombRaisedCount";
+    public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
+    public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
+    public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
     private static final double DEFAULT_WAVE_BASE_SPEED = 0.13D;
     private static final float NEWSPAPER_RAGE_HEALTH_THRESHOLD = 15.0F;
     private static final double NEWSPAPER_RAGE_SPEED_MULTIPLIER = 1.5D;
     private static final double POLE_VAULT_AFTER_SPEED_MULTIPLIER = 0.9D;
+    private static final int RA_DRAIN_AMOUNT = 15;
+    private static final int RA_DRAIN_INTERVAL_TICKS = 20 * 3;
+    private static final int TOMB_RAISE_INTERVAL_TICKS = 20 * 10;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -51,6 +63,8 @@ public class PvZZombieEntity extends Zombie {
         setCustomNameVisible(true);
         tickNewspaperRage(level);
         tickPoleVault(level);
+        tickRaDrain(level);
+        tickTombRaiser(level);
     }
 
     @Override
@@ -98,6 +112,10 @@ public class PvZZombieEntity extends Zombie {
         return getPersistentData().getDouble(PvZZombieDefinitions.ATTACK_DAMAGE_TAG);
     }
 
+    public double configuredMovementSpeed() {
+        return movementSpeedFor(definition());
+    }
+
     private void ensureConfigured(double waveBaseSpeed) {
         CompoundTag tag = getPersistentData();
         PvZZombieDefinition definition = definition();
@@ -128,7 +146,15 @@ public class PvZZombieEntity extends Zombie {
     }
 
     private double movementSpeedFor(PvZZombieDefinition definition) {
-        return getPersistentData().getDouble(WAVE_BASE_SPEED_TAG) * definition.movementSpeedMultiplier();
+        double multiplier = definition.movementSpeedMultiplier();
+        CompoundTag tag = getPersistentData();
+        if (definition.has(PvZZombieSpecial.NEWSPAPER_RAGE) && tag.getBoolean(NEWSPAPER_RAGED_TAG)) {
+            multiplier = NEWSPAPER_RAGE_SPEED_MULTIPLIER;
+        }
+        if (definition.has(PvZZombieSpecial.POLE_VAULT) && tag.contains(POLE_VAULT_READY_TAG) && !tag.getBoolean(POLE_VAULT_READY_TAG)) {
+            multiplier = POLE_VAULT_AFTER_SPEED_MULTIPLIER;
+        }
+        return tag.getDouble(WAVE_BASE_SPEED_TAG) * multiplier;
     }
 
     private void setAttribute(net.minecraft.world.entity.ai.attributes.Attribute attribute, double value) {
@@ -148,7 +174,7 @@ public class PvZZombieEntity extends Zombie {
         }
 
         tag.putBoolean(NEWSPAPER_RAGED_TAG, true);
-        setAttribute(Attributes.MOVEMENT_SPEED, getPersistentData().getDouble(WAVE_BASE_SPEED_TAG) * NEWSPAPER_RAGE_SPEED_MULTIPLIER);
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
         level.sendParticles(ParticleTypes.ANGRY_VILLAGER, getX(), getY() + 1.2D, getZ(), 8, 0.3D, 0.35D, 0.3D, 0.02D);
         level.playSound(null, blockPosition(), SoundEvents.ZOMBIE_BREAK_WOODEN_DOOR, SoundSource.HOSTILE, 0.6F, 1.35F);
     }
@@ -178,9 +204,55 @@ public class PvZZombieEntity extends Zombie {
         moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), getXRot());
         setDeltaMovement(forward.scale(0.45D).add(0.0D, 0.25D, 0.0D));
         tag.putBoolean(POLE_VAULT_READY_TAG, false);
-        setAttribute(Attributes.MOVEMENT_SPEED, getPersistentData().getDouble(WAVE_BASE_SPEED_TAG) * POLE_VAULT_AFTER_SPEED_MULTIPLIER);
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
         level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.4D, getZ(), 16, 0.35D, 0.2D, 0.35D, 0.03D);
         level.playSound(null, blockPosition(), SoundEvents.SLIME_JUMP, SoundSource.HOSTILE, 0.8F, 0.8F);
+    }
+
+    private void tickRaDrain(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.RA_DRAIN)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(RA_NEXT_DRAIN_TICK_TAG)) {
+            return;
+        }
+
+        boolean drainedAny = false;
+        for (Player player : level.players()) {
+            if (player.distanceToSqr(this) > 24.0D * 24.0D || SunManager.getSun(player) <= 0) {
+                continue;
+            }
+            SunManager.setSun(player, Math.max(0, SunManager.getSun(player) - RA_DRAIN_AMOUNT));
+            drainedAny = true;
+        }
+
+        if (drainedAny) {
+            level.sendParticles(ParticleTypes.SMOKE, getX(), getY() + 1.3D, getZ(), 12, 0.35D, 0.45D, 0.35D, 0.03D);
+            level.playSound(null, blockPosition(), SoundEvents.SAND_BREAK, SoundSource.HOSTILE, 0.65F, 0.6F);
+        }
+        tag.putLong(RA_NEXT_DRAIN_TICK_TAG, gameTime + RA_DRAIN_INTERVAL_TICKS);
+    }
+
+    private void tickTombRaiser(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.TOMB_RAISER)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(TOMB_NEXT_RAISE_TICK_TAG) || !tag.contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        BlockPos gardenCenter = new BlockPos(tag.getInt(GARDEN_CENTER_X_TAG), tag.getInt(GARDEN_CENTER_Y_TAG), tag.getInt(GARDEN_CENTER_Z_TAG));
+        if (AncientEgyptTombManager.tryRaiseTomb(level, gardenCenter, blockPosition(), tag.getInt(TOMB_RAISED_COUNT_TAG))) {
+            tag.putInt(TOMB_RAISED_COUNT_TAG, tag.getInt(TOMB_RAISED_COUNT_TAG) + 1);
+            level.sendParticles(ParticleTypes.SOUL, getX(), getY() + 1.0D, getZ(), 10, 0.4D, 0.5D, 0.4D, 0.02D);
+        }
+        tag.putLong(TOMB_NEXT_RAISE_TICK_TAG, gameTime + TOMB_RAISE_INTERVAL_TICKS + level.random.nextInt(20 * 3));
     }
 
     private Vec3 horizontalForward() {

@@ -5,6 +5,9 @@ public enum PvZZombieSpecial {
     NEWSPAPER_RAGE,
     SCREEN_DOOR_SHIELD,
     POLE_VAULT,
+    RA_DRAIN,
+    EXPLORER_TORCH,
+    TOMB_RAISER,
     METAL,
     IMP,
     GARGANTUAR

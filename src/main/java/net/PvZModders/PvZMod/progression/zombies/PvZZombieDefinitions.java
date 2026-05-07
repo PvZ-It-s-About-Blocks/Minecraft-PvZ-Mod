@@ -73,16 +73,42 @@ public final class PvZZombieDefinitions {
                 "Small, fast, fragile zombie.", Set.of(PvZZombieSpecial.IMP));
         register(definitions, "gargantuar", "Gargantuar", 300.0D, 0.65D, 16.0D, 0.9D, 3.0F,
                 "Huge heavy threat with enormous health and knockback resistance.", Set.of(PvZZombieSpecial.GARGANTUAR));
+        register(definitions, GardenId.DESERT, "mummy_zombie", "Mummy Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Ancient Egypt mummy.", Set.of());
+        register(definitions, GardenId.DESERT, "conehead_mummy", "Conehead Mummy", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored mummy.", Set.of());
+        register(definitions, GardenId.DESERT, "buckethead_mummy", "Buckethead Mummy", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored mummy.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.DESERT, "flag_mummy_zombie", "Flag Mummy Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Ancient Egypt push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.DESERT, "ra_zombie", "Ra Zombie", 35.0D, 0.9D, 4.0D, 0.0D, 1.0F,
+                "Drains Sun from nearby defenders while alive.", Set.of(PvZZombieSpecial.RA_DRAIN));
+        register(definitions, GardenId.DESERT, "camel_zombie", "Camel Zombie", 70.0D, 0.95D, 4.0D, 0.12D, 1.0F,
+                "Shield-line mummy with frontal damage reduction.", Set.of(PvZZombieSpecial.SCREEN_DOOR_SHIELD));
+        register(definitions, GardenId.DESERT, "explorer_zombie", "Explorer Zombie", 35.0D, 1.0D, 6.0D, 0.0D, 1.0F,
+                "Torch-bearing zombie that pressures plants harder.", Set.of(PvZZombieSpecial.EXPLORER_TORCH));
+        register(definitions, GardenId.DESERT, "tomb_raiser_zombie", "Tomb Raiser Zombie", 45.0D, 0.9D, 4.0D, 0.0D, 1.0F,
+                "Raises temporary tombstone obstacles inside the garden.", Set.of(PvZZombieSpecial.TOMB_RAISER));
+        register(definitions, GardenId.DESERT, "pharaoh_zombie", "Pharaoh Zombie", 120.0D, 0.7D, 6.0D, 0.45D, 1.0F,
+                "Slow, coffin-armored heavy mummy.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.DESERT, "mummified_gargantuar", "Mummified Gargantuar", 330.0D, 0.62D, 18.0D, 0.95D, 3.0F,
+                "Huge Ancient Egypt gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 
     private static void register(Map<String, PvZZombieDefinition> definitions, String id, String displayName, double maxHealth,
                                  double movementSpeedMultiplier, double attackDamage, double knockbackResistance,
                                  float visualScale, String almanacText, Set<PvZZombieSpecial> specials) {
+        register(definitions, GardenId.INITIAL_PLAINS, id, displayName, maxHealth, movementSpeedMultiplier, attackDamage, knockbackResistance, visualScale, almanacText, specials);
+    }
+
+    private static void register(Map<String, PvZZombieDefinition> definitions, GardenId gardenId, String id, String displayName, double maxHealth,
+                                 double movementSpeedMultiplier, double attackDamage, double knockbackResistance,
+                                 float visualScale, String almanacText, Set<PvZZombieSpecial> specials) {
         definitions.put(id, new PvZZombieDefinition(
                 id,
                 displayName,
-                GardenId.INITIAL_PLAINS,
+                gardenId,
                 maxHealth,
                 movementSpeedMultiplier,
                 attackDamage,

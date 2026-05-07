@@ -30,6 +30,9 @@ import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
 import net.PvZModders.PvZMod.progression.waves.GardenWaves;
+import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
+import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormSchedule;
+import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
 import net.PvZModders.PvZMod.progression.waves.FrostbiteSnowfallSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule.NeonSpeakerPulse;
@@ -149,6 +152,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveSpawned;
     private boolean activeWaveFinalPushStarted;
     private int activeWaveSpeakerCursor;
+    private boolean activeWaveSandstormActive;
     private boolean wildWestWaveObjectsArranged;
     private boolean totemShieldUnlocked;
     private boolean totemShieldActive;
@@ -177,6 +181,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
         be.tickNeonSpeakerEffects(serverLevel);
+        be.tickAncientEgyptSandstormEffects(serverLevel);
         be.tickFrostbiteSnowfallEffects(serverLevel);
         be.tickBigWaveBeachTideEffects(serverLevel);
         be.tickPirateSeasPlankEffects(serverLevel);
@@ -498,6 +503,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
+        activeWaveSandstormActive = false;
         wildWestWaveObjectsArranged = false;
         List<WaveSpawnDirection> waveDirections = new ArrayList<>();
 
@@ -592,6 +598,38 @@ public class GardenTotemBlockEntity extends BlockEntity {
                     setChanged();
                 }
                 return;
+            }
+        }
+    }
+
+    private void tickAncientEgyptSandstormEffects(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (gardenId != GardenId.DESERT || !waveProgress.waveActive() || activeWaveStartTick < 0L) {
+            if (activeWaveSandstormActive) {
+                AncientEgyptSandstormManager.clearBoosts(level, activeWaveEntityIds);
+                activeWaveSandstormActive = false;
+            }
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        boolean startsNow = AncientEgyptSandstormSchedule.eventsForWave(waveProgress.currentWave()).stream()
+                .anyMatch(event -> event.startsNow(elapsed));
+        boolean active = AncientEgyptSandstormManager.tick(level, worldPosition, waveProgress.currentWave(), elapsed, activeWaveEntityIds);
+        if (startsNow) {
+            announceSandstorm(level);
+        }
+        if (activeWaveSandstormActive && !active) {
+            AncientEgyptSandstormManager.clearBoosts(level, activeWaveEntityIds);
+        }
+        activeWaveSandstormActive = active;
+    }
+
+    private void announceSandstorm(ServerLevel level) {
+        level.playSound(null, worldPosition, SoundEvents.SAND_BREAK, SoundSource.HOSTILE, 1.0F, 0.55F);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("Sandstorm!").withStyle(ChatFormatting.GOLD), true);
             }
         }
     }
@@ -713,6 +751,11 @@ public class GardenTotemBlockEntity extends BlockEntity {
             dinosaur.initializeForWave(definition.wave(), worldPosition);
         } else {
             entity.getPersistentData().putBoolean(WAVE_ZOMBIE_TAG, true);
+        }
+        if (entity instanceof PvZZombieEntity zombie) {
+            zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_X_TAG, worldPosition.getX());
+            zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Y_TAG, worldPosition.getY());
+            zombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Z_TAG, worldPosition.getZ());
         }
         if (entity instanceof Mob mob) {
             mob.setPersistenceRequired();
@@ -1243,6 +1286,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
+        activeWaveSandstormActive = false;
         activeWaveDirections.clear();
         playersSunAbsorbedThisWave.clear();
         wildWestWaveObjectsArranged = false;
@@ -1262,6 +1306,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
         if (level instanceof ServerLevel serverLevel && gardenId == GardenId.PIRATE_SEAS) {
             PirateSeasPlankManager.clearWavePlanks(serverLevel, worldPosition);
+        }
+        if (level instanceof ServerLevel serverLevel && gardenId == GardenId.DESERT) {
+            AncientEgyptSandstormManager.clearBoosts(serverLevel, activeWaveEntityIds);
+            AncientEgyptTombManager.clearTombs(serverLevel, worldPosition);
         }
     }
 
@@ -1818,6 +1866,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
             FarFuturePowerTileManager.clearPowerTiles(serverLevel, worldPosition);
             BigWaveBeachTideManager.clearTide(serverLevel, worldPosition);
             PirateSeasPlankManager.clearWavePlanks(serverLevel, worldPosition);
+            AncientEgyptSandstormManager.clearBoosts(serverLevel, activeWaveEntityIds);
+            AncientEgyptTombManager.clearTombs(serverLevel, worldPosition);
             WaveZombieSpawnManager.cleanupPortalVisuals(serverLevel, activeWavePortalVisualIds);
             activeWavePortalAnchors.clear();
             activeWavePortalRefreshTicks.clear();
