@@ -13,6 +13,11 @@ public enum PvZZombieSpecial {
     PONCHO_SHIELD,
     CHICKEN_WRANGLER,
     BULL_CHARGE,
+    HUNTER_FREEZE,
+    TROGLOBITE_PUSH,
+    ICE_BLOCK,
+    WEASEL_HOARDER,
+    DODO_HOP,
     METAL,
     IMP,
     GARGANTUAR

@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -12,9 +13,13 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.ProjectileImpactEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
@@ -42,11 +47,22 @@ public final class PvZZombieEvents {
         if (zombie.definition().has(PvZZombieSpecial.PONCHO_SHIELD)) {
             tickPonchoShield(zombie, event);
         }
+        if (zombie.definition().has(PvZZombieSpecial.ICE_BLOCK) && isHotDamage(event)) {
+            event.setAmount(event.getAmount() * 1.25F);
+            if (zombie.level() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.FLAME, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 6, 0.25D, 0.25D, 0.25D, 0.02D);
+            }
+        }
 
         if (zombie.definition().has(PvZZombieSpecial.CHICKEN_WRANGLER)
                 && !zombie.getPersistentData().getBoolean(PvZZombieEntity.CHICKEN_WRANGLER_RELEASED_TAG)
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseZombieChickens(zombie);
+        }
+        if (zombie.definition().has(PvZZombieSpecial.WEASEL_HOARDER)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.WEASEL_HOARDER_RELEASED_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseZombieWeasels(zombie);
         }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
@@ -62,6 +78,21 @@ public final class PvZZombieEvents {
         if (zombie.level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.CRIT, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 5, 0.25D, 0.25D, 0.25D, 0.02D);
         }
+    }
+
+    @SubscribeEvent
+    public static void onProjectileImpact(ProjectileImpactEvent event) {
+        if (!(event.getProjectile() instanceof Snowball snowball)
+                || !snowball.getPersistentData().getBoolean(PvZZombieEntity.HUNTER_FREEZE_SHOT_TAG)
+                || !(snowball.level() instanceof ServerLevel level)
+                || !(event.getRayTraceResult() instanceof EntityHitResult hit)
+                || !(hit.getEntity() instanceof SnowGolem plant)
+                || !PlantEntityManager.isPlant(plant)) {
+            return;
+        }
+
+        PlantEntityManager.addHunterFreezeStage(level, plant);
+        snowball.discard();
     }
 
     private static void tickPonchoShield(PvZZombieEntity zombie, LivingHurtEvent event) {
@@ -89,27 +120,46 @@ public final class PvZZombieEvents {
         wrangler.getPersistentData().putBoolean(PvZZombieEntity.CHICKEN_WRANGLER_RELEASED_TAG, true);
         Optional.ofNullable(ModEntities.ZOMBIES.get("zombie_chicken"))
                 .map(registryObject -> registryObject.get())
-                .ifPresent(chickenType -> spawnChickens(level, wrangler, chickenType));
+                .ifPresent(chickenType -> spawnSwarm(level, wrangler, chickenType, 4 + level.random.nextInt(3), SoundEvents.CHICKEN_AMBIENT, ParticleTypes.CLOUD));
     }
 
-    private static void spawnChickens(ServerLevel level, PvZZombieEntity wrangler, EntityType<PvZZombieEntity> chickenType) {
-        int count = 4 + level.random.nextInt(3);
+    private static void releaseZombieWeasels(PvZZombieEntity hoarder) {
+        if (!(hoarder.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        hoarder.getPersistentData().putBoolean(PvZZombieEntity.WEASEL_HOARDER_RELEASED_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("zombie_weasel"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(weaselType -> spawnSwarm(level, hoarder, weaselType, 4 + level.random.nextInt(3), SoundEvents.FOX_SCREECH, ParticleTypes.SNOWFLAKE));
+    }
+
+    private static void spawnSwarm(ServerLevel level, PvZZombieEntity source, EntityType<PvZZombieEntity> swarmType, int count, net.minecraft.sounds.SoundEvent sound, net.minecraft.core.particles.ParticleOptions particle) {
         for (int i = 0; i < count; i++) {
-            PvZZombieEntity chicken = chickenType.create(level);
-            if (chicken == null) {
+            PvZZombieEntity swarm = swarmType.create(level);
+            if (swarm == null) {
                 continue;
             }
-            double x = wrangler.getX() + (level.random.nextDouble() - 0.5D) * 1.6D;
-            double z = wrangler.getZ() + (level.random.nextDouble() - 0.5D) * 1.6D;
-            chicken.moveTo(x, wrangler.getY(), z, wrangler.getYRot(), 0.0F);
-            chicken.getPersistentData().putBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG, wrangler.getPersistentData().getBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG));
-            copyGardenCenter(wrangler, chicken);
-            chicken.finalizeSpawn(level, level.getCurrentDifficultyAt(chicken.blockPosition()), MobSpawnType.EVENT, null, null);
-            level.addFreshEntity(chicken);
-            chicken.configureForWave(0.13D);
+            double x = source.getX() + (level.random.nextDouble() - 0.5D) * 1.6D;
+            double z = source.getZ() + (level.random.nextDouble() - 0.5D) * 1.6D;
+            swarm.moveTo(x, source.getY(), z, source.getYRot(), 0.0F);
+            swarm.getPersistentData().putBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG, source.getPersistentData().getBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG));
+            copyGardenCenter(source, swarm);
+            swarm.finalizeSpawn(level, level.getCurrentDifficultyAt(swarm.blockPosition()), MobSpawnType.EVENT, null, null);
+            level.addFreshEntity(swarm);
+            swarm.configureForWave(0.13D);
         }
-        level.sendParticles(ParticleTypes.CLOUD, wrangler.getX(), wrangler.getY() + 0.8D, wrangler.getZ(), 30, 0.6D, 0.3D, 0.6D, 0.05D);
-        level.playSound(null, wrangler.blockPosition(), SoundEvents.CHICKEN_AMBIENT, SoundSource.HOSTILE, 0.9F, 0.65F);
+        level.sendParticles(particle, source.getX(), source.getY() + 0.8D, source.getZ(), 30, 0.6D, 0.3D, 0.6D, 0.05D);
+        level.playSound(null, source.blockPosition(), sound, SoundSource.HOSTILE, 0.9F, 0.65F);
+    }
+
+    private static boolean isHotDamage(LivingHurtEvent event) {
+        Entity source = event.getSource().getEntity();
+        Entity direct = event.getSource().getDirectEntity();
+        return event.getSource().is(net.minecraft.tags.DamageTypeTags.IS_FIRE)
+                || PlantEntityManager.isHotPlantEntity(source)
+                || PlantEntityManager.isHotPlantEntity(direct)
+                || direct instanceof Projectile projectile && projectile.isOnFire();
     }
 
     private static void copyGardenCenter(PvZZombieEntity from, PvZZombieEntity to) {

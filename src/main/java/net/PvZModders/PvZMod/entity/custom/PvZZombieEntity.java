@@ -1,5 +1,6 @@
 package net.PvZModders.PvZMod.entity.custom;
 
+import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
@@ -16,11 +17,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -39,11 +42,17 @@ public class PvZZombieEntity extends Zombie {
     private static final String TOMB_RAISED_COUNT_TAG = "PvZTombRaisedCount";
     public static final String PROSPECTOR_LEAPED_TAG = "PvZProspectorLeaped";
     public static final String CHICKEN_WRANGLER_RELEASED_TAG = "PvZChickenWranglerReleased";
+    public static final String WEASEL_HOARDER_RELEASED_TAG = "PvZWeaselHoarderReleased";
     public static final String PONCHO_SHIELD_ACTIVE_TAG = "PvZPonchoShieldActive";
+    public static final String HUNTER_FREEZE_SHOT_TAG = "PvZHunterFreezeShot";
     private static final String PROSPECTOR_LEAP_TICK_TAG = "PvZProspectorLeapTick";
     private static final String PIANIST_NEXT_SUPPORT_TICK_TAG = "PvZPianistNextSupportTick";
     private static final String BULL_NEXT_CHARGE_TICK_TAG = "PvZBullNextChargeTick";
     private static final String BULL_CHARGE_END_TICK_TAG = "PvZBullChargeEndTick";
+    private static final String HUNTER_NEXT_FREEZE_TICK_TAG = "PvZHunterNextFreezeTick";
+    private static final String TROGLOBITE_NEXT_PUSH_TICK_TAG = "PvZTroglobiteNextPushTick";
+    private static final String TROGLOBITE_ICE_CREATED_TAG = "PvZTroglobiteIceCreated";
+    private static final String DODO_NEXT_HOP_TICK_TAG = "PvZDodoNextHopTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -58,6 +67,9 @@ public class PvZZombieEntity extends Zombie {
     private static final int BULL_CHARGE_INTERVAL_TICKS = 20 * 7;
     private static final int BULL_CHARGE_DURATION_TICKS = 20 * 3;
     private static final double BULL_CHARGE_SPEED_MULTIPLIER = 2.25D;
+    private static final int HUNTER_FREEZE_INTERVAL_TICKS = 20 * 4;
+    private static final int TROGLOBITE_PUSH_INTERVAL_TICKS = 20 * 8;
+    private static final int DODO_HOP_INTERVAL_TICKS = 20 * 6;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -79,6 +91,9 @@ public class PvZZombieEntity extends Zombie {
         tickProspectorLeap(level);
         tickPianistSupport(level);
         tickBullCharge(level);
+        tickHunterFreeze(level);
+        tickTroglobitePush(level);
+        tickDodoHop(level);
     }
 
     @Override
@@ -359,6 +374,120 @@ public class PvZZombieEntity extends Zombie {
         Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
         setDeltaMovement(getDeltaMovement().add(towardGarden.scale(0.12D)));
         level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.25D, getZ(), 4, 0.25D, 0.1D, 0.25D, 0.03D);
+    }
+
+    private void tickHunterFreeze(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.HUNTER_FREEZE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(HUNTER_NEXT_FREEZE_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(10.0D, 4.0D, 10.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(this::hasLineOfSight)
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        if (target.isPresent()) {
+            SnowGolem plant = target.get();
+            Snowball snowball = new Snowball(level, this);
+            snowball.getPersistentData().putBoolean(HUNTER_FREEZE_SHOT_TAG, true);
+            snowball.setPos(getX(), getEyeY() - 0.15D, getZ());
+            Vec3 velocity = plant.position().add(0.0D, 0.9D, 0.0D).subtract(snowball.position()).normalize().scale(0.9D);
+            snowball.setDeltaMovement(velocity);
+            level.addFreshEntity(snowball);
+            level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getEyeY(), getZ(), 6, 0.2D, 0.2D, 0.2D, 0.02D);
+            level.playSound(null, blockPosition(), SoundEvents.SNOWBALL_THROW, SoundSource.HOSTILE, 0.8F, 0.8F);
+        }
+        tag.putLong(HUNTER_NEXT_FREEZE_TICK_TAG, gameTime + HUNTER_FREEZE_INTERVAL_TICKS);
+    }
+
+    private void tickTroglobitePush(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.TROGLOBITE_PUSH) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(TROGLOBITE_NEXT_PUSH_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        boolean pushed = false;
+        AABB area = getBoundingBox().inflate(7.0D, 2.0D, 7.0D);
+        for (PvZZombieEntity iceBlock : level.getEntitiesOfClass(PvZZombieEntity.class, area, zombie -> zombie.isAlive() && "ice_block_zombie".equals(zombie.definition().id()))) {
+            iceBlock.setDeltaMovement(iceBlock.getDeltaMovement().add(towardGarden.scale(0.55D)));
+            iceBlock.setAttribute(Attributes.MOVEMENT_SPEED, Math.max(iceBlock.configuredMovementSpeed(), 0.18D));
+            pushed = true;
+        }
+
+        if (!pushed && tag.getInt(TROGLOBITE_ICE_CREATED_TAG) < 2) {
+            spawnIceBlockZombie(level, towardGarden);
+            tag.putInt(TROGLOBITE_ICE_CREATED_TAG, tag.getInt(TROGLOBITE_ICE_CREATED_TAG) + 1);
+            pushed = true;
+        }
+
+        if (pushed) {
+            level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 0.9D, getZ(), 18, 0.6D, 0.25D, 0.6D, 0.03D);
+            level.playSound(null, blockPosition(), SoundEvents.PACKED_MUD_PLACE, SoundSource.HOSTILE, 0.75F, 0.7F);
+        }
+        tag.putLong(TROGLOBITE_NEXT_PUSH_TICK_TAG, gameTime + TROGLOBITE_PUSH_INTERVAL_TICKS + level.random.nextInt(20 * 3));
+    }
+
+    private void spawnIceBlockZombie(ServerLevel level, Vec3 towardGarden) {
+        Optional.ofNullable(ModEntities.ZOMBIES.get("ice_block_zombie"))
+                .map(registryObject -> registryObject.get())
+                .map(entityType -> entityType.create(level))
+                .ifPresent(iceBlock -> {
+                    BlockPos spawnPos = BlockPos.containing(position().add(towardGarden.scale(1.8D)));
+                    spawnPos = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, spawnPos);
+                    if (!isSafeLanding(level, spawnPos)) {
+                        return;
+                    }
+                    iceBlock.moveTo(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D, getYRot(), 0.0F);
+                    iceBlock.getPersistentData().putBoolean("PvZWaveZombie", getPersistentData().getBoolean("PvZWaveZombie"));
+                    copyGardenCenterTo(iceBlock);
+                    iceBlock.finalizeSpawn(level, level.getCurrentDifficultyAt(iceBlock.blockPosition()), MobSpawnType.EVENT, null, null);
+                    level.addFreshEntity(iceBlock);
+                    iceBlock.configureForWave(0.13D);
+                });
+    }
+
+    private void tickDodoHop(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.DODO_HOP) || !getPersistentData().contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(DODO_NEXT_HOP_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 towardGarden = vectorTowardGarden().orElse(horizontalForward());
+        BlockPos landing = BlockPos.containing(position().add(towardGarden.scale(2.4D)));
+        landing = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing);
+        if (isSafeLanding(level, landing)) {
+            setDeltaMovement(towardGarden.scale(0.55D).add(0.0D, 0.65D, 0.0D));
+            moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), getXRot());
+            level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.35D, getZ(), 10, 0.35D, 0.15D, 0.35D, 0.03D);
+            level.playSound(null, blockPosition(), SoundEvents.RABBIT_JUMP, SoundSource.HOSTILE, 0.8F, 0.7F);
+        }
+        tag.putLong(DODO_NEXT_HOP_TICK_TAG, gameTime + DODO_HOP_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void copyGardenCenterTo(PvZZombieEntity other) {
+        CompoundTag tag = getPersistentData();
+        if (!tag.contains(GARDEN_CENTER_X_TAG)) {
+            return;
+        }
+        other.getPersistentData().putInt(GARDEN_CENTER_X_TAG, tag.getInt(GARDEN_CENTER_X_TAG));
+        other.getPersistentData().putInt(GARDEN_CENTER_Y_TAG, tag.getInt(GARDEN_CENTER_Y_TAG));
+        other.getPersistentData().putInt(GARDEN_CENTER_Z_TAG, tag.getInt(GARDEN_CENTER_Z_TAG));
     }
 
     private Optional<Vec3> vectorTowardGarden() {

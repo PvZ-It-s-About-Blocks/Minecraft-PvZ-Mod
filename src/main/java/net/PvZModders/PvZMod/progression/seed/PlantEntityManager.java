@@ -1995,6 +1995,28 @@ public final class PlantEntityManager {
         cleanupFreezeOverlay(level, plant);
     }
 
+    public static boolean addHunterFreezeStage(ServerLevel level, SnowGolem plant) {
+        if (!isPlant(plant) || isHotPlant(behaviorFor(plant))) {
+            level.sendParticles(ParticleTypes.SMOKE, plant.getX(), plant.getY() + 0.9D, plant.getZ(), 6, 0.25D, 0.25D, 0.25D, 0.01D);
+            return false;
+        }
+
+        int stage = getFreezeStage(plant);
+        if (stage >= 3) {
+            syncFreezeOverlay(level, plant);
+            return false;
+        }
+
+        setFreezeStage(level, plant, stage + 1);
+        plant.getPersistentData().putLong(FREEZE_NEXT_STAGE_TICK_TAG, level.getGameTime() + FREEZE_STAGE_INTERVAL_TICKS);
+        level.sendParticles(ParticleTypes.SNOWFLAKE, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 14, 0.35D, 0.45D, 0.35D, 0.02D);
+        return true;
+    }
+
+    public static boolean isHotPlantEntity(Entity entity) {
+        return entity instanceof SnowGolem plant && isPlant(plant) && isHotPlant(behaviorFor(plant));
+    }
+
     private static boolean isPlantWarmedByHotPlant(ServerLevel level, SnowGolem plant) {
         return level.getEntitiesOfClass(SnowGolem.class, plant.getBoundingBox().inflate(PEPPER_WARM_RADIUS), other -> other != plant && isPlant(other) && isHotPlant(behaviorFor(other)))
                 .stream()

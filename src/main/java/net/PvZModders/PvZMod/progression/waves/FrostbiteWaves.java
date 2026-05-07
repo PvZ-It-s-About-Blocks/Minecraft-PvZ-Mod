@@ -33,9 +33,127 @@ public final class FrostbiteWaves {
     }
 
     private static List<WaveSpawnGroup> spawnGroupsFor(int wave) {
-        int zombieCount = Math.min(55, 2 + wave + (wave / 4) * 2);
+        int zombieCount = Math.min(55, 3 + wave + (wave / 4) * 2);
         int directionCount = wave >= 30 ? 4 : wave >= 20 ? 3 : wave >= 10 ? 2 : 1;
-        return List.of(new WaveSpawnGroup("minecraft:zombie", zombieCount, directionCount, List.of()));
+        List<WaveSpawnGroup> groups = new ArrayList<>();
+        if (wave <= 2) {
+            addGroup(groups, "cave_zombie", zombieCount, directionCount);
+        } else if (wave == 3) {
+            addGroup(groups, "cave_zombie", Math.max(1, zombieCount - 1), directionCount);
+            addGroup(groups, "flag_cave_zombie", 1, directionCount);
+        } else if (wave <= 5) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 80),
+                    entry("conehead_cave_zombie", 20));
+        } else if (wave <= 8) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 58),
+                    entry("conehead_cave_zombie", 24),
+                    entry("hunter_zombie", 13),
+                    entry("flag_cave_zombie", 5));
+        } else if (wave <= 11) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 45),
+                    entry("conehead_cave_zombie", 20),
+                    entry("hunter_zombie", 10),
+                    entry("weasel_hoarder", 12),
+                    entry("zombie_weasel", 8),
+                    entry("flag_cave_zombie", 5));
+        } else if (wave <= 14) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 42),
+                    entry("conehead_cave_zombie", 18),
+                    entry("hunter_zombie", 10),
+                    entry("weasel_hoarder", 10),
+                    entry("ice_block_zombie", 12),
+                    entry("zombie_weasel", 8));
+        } else if (wave <= 17) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 40),
+                    entry("conehead_cave_zombie", 15),
+                    entry("hunter_zombie", 10),
+                    entry("weasel_hoarder", 10),
+                    entry("ice_block_zombie", 12),
+                    entry("troglobite", 8),
+                    entry("zombie_weasel", 5));
+        } else if (wave <= 20) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 34),
+                    entry("conehead_cave_zombie", 14),
+                    entry("buckethead_cave_zombie", 15),
+                    entry("hunter_zombie", 10),
+                    entry("weasel_hoarder", 9),
+                    entry("ice_block_zombie", 10),
+                    entry("troglobite", 8));
+        } else if (wave <= 23) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("cave_zombie", 30),
+                    entry("conehead_cave_zombie", 12),
+                    entry("buckethead_cave_zombie", 14),
+                    entry("hunter_zombie", 9),
+                    entry("weasel_hoarder", 9),
+                    entry("ice_block_zombie", 10),
+                    entry("troglobite", 7),
+                    entry("dodo_rider_zombie", 5),
+                    entry("dodo", 4));
+        } else if (wave <= 29) {
+            int gargantuars = wave >= 27 ? 1 : 0;
+            addWeighted(groups, zombieCount - gargantuars, directionCount,
+                    entry("cave_zombie", 28),
+                    entry("conehead_cave_zombie", 10),
+                    entry("buckethead_cave_zombie", 14),
+                    entry("hunter_zombie", 10),
+                    entry("weasel_hoarder", 9),
+                    entry("zombie_weasel", 5),
+                    entry("ice_block_zombie", 10),
+                    entry("troglobite", 7),
+                    entry("dodo_rider_zombie", 4),
+                    entry("dodo", 3));
+            addGroup(groups, "sloth_gargantuar", gargantuars, directionCount);
+        } else {
+            addWeighted(groups, zombieCount - 2, directionCount,
+                    entry("cave_zombie", 24),
+                    entry("conehead_cave_zombie", 8),
+                    entry("buckethead_cave_zombie", 12),
+                    entry("flag_cave_zombie", 4),
+                    entry("hunter_zombie", 10),
+                    entry("troglobite", 8),
+                    entry("ice_block_zombie", 10),
+                    entry("weasel_hoarder", 8),
+                    entry("zombie_weasel", 6),
+                    entry("dodo_rider_zombie", 5),
+                    entry("dodo", 5));
+            addGroup(groups, "sloth_gargantuar", 2, directionCount);
+        }
+        return List.copyOf(groups);
+    }
+
+    private static void addWeighted(List<WaveSpawnGroup> groups, int totalCount, int directionCount, WeightedZombie... entries) {
+        int remaining = Math.max(0, totalCount);
+        int totalWeight = 0;
+        for (WeightedZombie entry : entries) {
+            totalWeight += entry.weight();
+        }
+        for (int i = 0; i < entries.length; i++) {
+            WeightedZombie entry = entries[i];
+            int count = i == entries.length - 1 ? remaining : (int) Math.floor(totalCount * (entry.weight() / (double) totalWeight));
+            count = Math.min(remaining, count);
+            addGroup(groups, entry.id(), count, directionCount);
+            remaining -= count;
+        }
+    }
+
+    private static void addGroup(List<WaveSpawnGroup> groups, String zombieId, int count, int directionCount) {
+        if (count > 0) {
+            groups.add(new WaveSpawnGroup("pvz2mod:" + zombieId, count, directionCount, List.of()));
+        }
+    }
+
+    private static WeightedZombie entry(String id, int weight) {
+        return new WeightedZombie(id, weight);
+    }
+
+    private record WeightedZombie(String id, int weight) {
     }
 
     private static String scanTextFor(int wave) {
@@ -45,7 +163,7 @@ public final class FrostbiteWaves {
             case 6, 11, 19, 26 -> "Plant unlock detected. Clear the wave to expand your Frostbite loadout.";
             case 10, 15, 22, 27 -> "Frostbite garden upgrade placeholder detected.";
             case 30 -> "Completion Wave: survive a long Heavy Snowfall and claim the Freeze Ray.";
-            default -> "Basic zombies approach through the cold. Watch for preset Heavy Snowfall windows.";
+            default -> "Frostbite Caves zombies approach through the cold with hunters, ice blocks, and swarm pressure.";
         };
     }
 

@@ -117,6 +117,30 @@ public final class PvZZombieDefinitions {
                 "Charging bull enemy.", Set.of(PvZZombieSpecial.BULL_CHARGE));
         register(definitions, GardenId.WILD_WEST, "wild_west_gargantuar", "Wild West Gargantuar", 330.0D, 0.62D, 18.0D, 0.95D, 3.0F,
                 "Huge Wild West gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
+        register(definitions, GardenId.FROSTBITE, "cave_zombie", "Cave Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Frostbite Caves zombie.", Set.of());
+        register(definitions, GardenId.FROSTBITE, "conehead_cave_zombie", "Conehead Cave Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Frostbite Caves zombie.", Set.of());
+        register(definitions, GardenId.FROSTBITE, "buckethead_cave_zombie", "Buckethead Cave Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Frostbite Caves zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.FROSTBITE, "flag_cave_zombie", "Flag Cave Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Frostbite Caves push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.FROSTBITE, "hunter_zombie", "Hunter Zombie", 45.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Throws freezing shots at plants.", Set.of(PvZZombieSpecial.HUNTER_FREEZE));
+        register(definitions, GardenId.FROSTBITE, "troglobite", "Troglobite", 50.0D, 0.9D, 4.0D, 0.1D, 1.0F,
+                "Pushes or creates Ice Block Zombie pressure.", Set.of(PvZZombieSpecial.TROGLOBITE_PUSH));
+        register(definitions, GardenId.FROSTBITE, "ice_block_zombie", "Ice Block Zombie", 70.0D, 0.45D, 3.0D, 0.75D, 1.05F,
+                "Slow icy obstacle zombie.", Set.of(PvZZombieSpecial.ICE_BLOCK, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.FROSTBITE, "weasel_hoarder", "Weasel Hoarder", 50.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Releases fast Zombie Weasels when damaged.", Set.of(PvZZombieSpecial.WEASEL_HOARDER));
+        register(definitions, GardenId.FROSTBITE, "zombie_weasel", "Zombie Weasel", 4.0D, 2.05D, 2.0D, 0.0D, 0.4F,
+                "Tiny fast Frostbite swarm zombie.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.FROSTBITE, "dodo_rider_zombie", "Dodo Rider Zombie", 60.0D, 1.05D, 4.0D, 0.05D, 1.1F,
+                "Hopping pressure enemy.", Set.of(PvZZombieSpecial.DODO_HOP));
+        register(definitions, GardenId.FROSTBITE, "dodo", "Dodo", 35.0D, 1.15D, 3.0D, 0.0D, 0.9F,
+                "Standalone hopping Frostbite creature enemy.", Set.of(PvZZombieSpecial.DODO_HOP));
+        register(definitions, GardenId.FROSTBITE, "sloth_gargantuar", "Sloth Gargantuar", 340.0D, 0.52D, 18.0D, 0.95D, 3.0F,
+                "Huge slow Frostbite gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 
