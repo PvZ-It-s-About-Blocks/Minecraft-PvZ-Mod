@@ -109,6 +109,14 @@ public class PvZZombieEntity extends Zombie {
     private static final String MECHA_CHARGE_END_TICK_TAG = "PvZMechaChargeEndTick";
     private static final String DISCO_TRON_NEXT_SUMMON_TICK_TAG = "PvZDiscoTronNextSummonTick";
     private static final String DISCO_TRON_SUMMON_COUNT_TAG = "PvZDiscoTronSummonCount";
+    private static final String DANCING_NEXT_SUMMON_TICK_TAG = "PvZDancingNextSummonTick";
+    private static final String DANCING_SUMMON_COUNT_TAG = "PvZDancingSummonCount";
+    private static final String POGO_READY_TAG = "PvZPogoReady";
+    private static final String POGO_JUMP_TICK_TAG = "PvZPogoJumpTick";
+    private static final String LADDER_USED_TAG = "PvZLadderUsed";
+    private static final String JACK_WINDUP_START_TICK_TAG = "PvZJackWindupStartTick";
+    private static final String JACK_EXPLODE_TICK_TAG = "PvZJackExplodeTick";
+    private static final String YETI_FLEE_START_TICK_TAG = "PvZYetiFleeStartTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -166,6 +174,12 @@ public class PvZZombieEntity extends Zombie {
     private static final double MECHA_CHARGE_SPEED_MULTIPLIER = 1.75D;
     private static final int DISCO_TRON_SUMMON_INTERVAL_TICKS = 20 * 9;
     private static final int DISCO_TRON_MAX_SUMMONS = 6;
+    private static final int DANCING_SUMMON_INTERVAL_TICKS = 20 * 9;
+    private static final int DANCING_MAX_SUMMONS = 6;
+    private static final double POGO_AFTER_SPEED_MULTIPLIER = 0.95D;
+    private static final int JACK_WINDUP_TICKS = 20 * 2;
+    private static final float JACK_EXPLOSION_RADIUS = 3.0F;
+    private static final int YETI_FLEE_DELAY_TICKS = 20 * 6;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -227,6 +241,11 @@ public class PvZZombieEntity extends Zombie {
         tickBlastronautBlast(level);
         tickMechaFootballCharge(level);
         tickDiscoTronSummoner(level);
+        tickDancingSummoner(level);
+        tickPogoJump(level);
+        tickLadderPlant(level);
+        tickJackInTheBox(level);
+        tickYetiFlee(level);
     }
 
     @Override
@@ -302,6 +321,9 @@ public class PvZZombieEntity extends Zombie {
         if (definition.has(PvZZombieSpecial.ALL_STAR_TACKLE) && !tag.contains(ALL_STAR_TACKLE_READY_TAG)) {
             tag.putBoolean(ALL_STAR_TACKLE_READY_TAG, true);
         }
+        if (definition.has(PvZZombieSpecial.POGO_JUMP) && !tag.contains(POGO_READY_TAG)) {
+            tag.putBoolean(POGO_READY_TAG, true);
+        }
 
         setAttribute(Attributes.MAX_HEALTH, definition.maxHealth());
         setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
@@ -327,6 +349,9 @@ public class PvZZombieEntity extends Zombie {
         if (definition.has(PvZZombieSpecial.POLE_VAULT) && tag.contains(POLE_VAULT_READY_TAG) && !tag.getBoolean(POLE_VAULT_READY_TAG)) {
             multiplier = POLE_VAULT_AFTER_SPEED_MULTIPLIER;
         }
+        if (definition.has(PvZZombieSpecial.POGO_JUMP) && tag.contains(POGO_READY_TAG) && !tag.getBoolean(POGO_READY_TAG)) {
+            multiplier = POGO_AFTER_SPEED_MULTIPLIER;
+        }
         if (definition.has(PvZZombieSpecial.ALL_STAR_TACKLE) && tag.contains(ALL_STAR_TACKLE_READY_TAG) && !tag.getBoolean(ALL_STAR_TACKLE_READY_TAG)) {
             multiplier = ALL_STAR_AFTER_TACKLE_SPEED_MULTIPLIER;
         }
@@ -335,6 +360,9 @@ public class PvZZombieEntity extends Zombie {
         }
         if (definition.has(PvZZombieSpecial.BULL_CHARGE) && tag.getLong(BULL_CHARGE_END_TICK_TAG) > level().getGameTime()) {
             multiplier = BULL_CHARGE_SPEED_MULTIPLIER;
+        }
+        if (definition.has(PvZZombieSpecial.YETI_FLEE) && tag.getBoolean("PvZYetiFleeing")) {
+            multiplier *= 1.45D;
         }
         if (definition.has(PvZZombieSpecial.SURFER) && !tag.getBoolean(SURFER_BOARD_ACTIVE_TAG)) {
             multiplier = 1.0D;
@@ -1471,6 +1499,155 @@ public class PvZZombieEntity extends Zombie {
         spawnSummonedZombies(level, "bug_bot_imp", count, ParticleTypes.ELECTRIC_SPARK, SoundEvents.NOTE_BLOCK_BIT.get());
         tag.putInt(DISCO_TRON_SUMMON_COUNT_TAG, tag.getInt(DISCO_TRON_SUMMON_COUNT_TAG) + count);
         tag.putLong(DISCO_TRON_NEXT_SUMMON_TICK_TAG, gameTime + DISCO_TRON_SUMMON_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickDancingSummoner(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.DANCING_SUMMONER)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(DANCING_NEXT_SUMMON_TICK_TAG) || tag.getInt(DANCING_SUMMON_COUNT_TAG) >= DANCING_MAX_SUMMONS) {
+            return;
+        }
+
+        int count = Math.min(DANCING_MAX_SUMMONS - tag.getInt(DANCING_SUMMON_COUNT_TAG), 2);
+        spawnSummonedZombies(level, "backup_dancer_zombie", count, ParticleTypes.NOTE, SoundEvents.NOTE_BLOCK_BASS.get());
+        tag.putInt(DANCING_SUMMON_COUNT_TAG, tag.getInt(DANCING_SUMMON_COUNT_TAG) + count);
+        tag.putLong(DANCING_NEXT_SUMMON_TICK_TAG, gameTime + DANCING_SUMMON_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickPogoJump(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.POGO_JUMP)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (!tag.getBoolean(POGO_READY_TAG)) {
+            return;
+        }
+        if (!tag.contains(POGO_JUMP_TICK_TAG)) {
+            tag.putLong(POGO_JUMP_TICK_TAG, gameTime + 20L);
+            return;
+        }
+        if (gameTime < tag.getLong(POGO_JUMP_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 forward = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> blocker = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(2.4D, 1.0D, 2.4D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .filter(plant -> isInFront(plant.position(), forward))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        if (blocker.isEmpty()) {
+            tag.putLong(POGO_JUMP_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        BlockPos landing = BlockPos.containing(blocker.get().position().add(forward.scale(2.6D)));
+        landing = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing);
+        if (!isSafeLanding(level, landing)) {
+            tag.putBoolean(POGO_READY_TAG, false);
+            setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+            return;
+        }
+
+        moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), getXRot());
+        setDeltaMovement(forward.scale(0.65D).add(0.0D, 0.55D, 0.0D));
+        tag.putBoolean(POGO_READY_TAG, false);
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+        level.sendParticles(ParticleTypes.CLOUD, getX(), getY() + 0.35D, getZ(), 14, 0.35D, 0.15D, 0.35D, 0.04D);
+        level.playSound(null, blockPosition(), SoundEvents.SLIME_JUMP, SoundSource.HOSTILE, 0.8F, 1.4F);
+    }
+
+    private void tickLadderPlant(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.LADDER_PLANT) || getPersistentData().getBoolean(LADDER_USED_TAG)) {
+            return;
+        }
+
+        Vec3 forward = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(1.8D, 0.8D, 1.8D), plant ->
+                        plant.isAlive() && PlantEntityManager.isPlant(plant) && PlantEntityManager.isDefensivePlant(plant) && !PlantEntityManager.isLadderedPlant(plant))
+                .stream()
+                .filter(plant -> isInFront(plant.position(), forward))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            PlantEntityManager.applyLadderedState(level, plant);
+            getPersistentData().putBoolean(LADDER_USED_TAG, true);
+        });
+    }
+
+    private void tickJackInTheBox(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.JACK_IN_BOX_EXPLODE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        boolean nearPlant = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(2.0D, 1.0D, 2.0D), plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))
+                .stream()
+                .findAny()
+                .isPresent();
+        if ((nearPlant || tickCount > 20 * 9) && !tag.contains(JACK_WINDUP_START_TICK_TAG)) {
+            tag.putLong(JACK_WINDUP_START_TICK_TAG, gameTime);
+            tag.putLong(JACK_EXPLODE_TICK_TAG, gameTime + JACK_WINDUP_TICKS);
+            level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_CHIME.get(), SoundSource.HOSTILE, 0.8F, 1.8F);
+        }
+        if (!tag.contains(JACK_EXPLODE_TICK_TAG)) {
+            return;
+        }
+        if (gameTime < tag.getLong(JACK_EXPLODE_TICK_TAG)) {
+            level.sendParticles(ParticleTypes.NOTE, getX(), getY() + 1.2D, getZ(), 3, 0.2D, 0.2D, 0.2D, 0.0D);
+            return;
+        }
+
+        AABB area = getBoundingBox().inflate(JACK_EXPLOSION_RADIUS, 1.2D, JACK_EXPLOSION_RADIUS);
+        for (SnowGolem plant : level.getEntitiesOfClass(SnowGolem.class, area, plant -> plant.isAlive() && PlantEntityManager.isPlant(plant))) {
+            plant.hurt(level.damageSources().explosion(null, this), 22.0F);
+        }
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, area, zombie -> zombie.isAlive() && zombie != this)) {
+            zombie.hurt(level.damageSources().explosion(null, this), 12.0F);
+        }
+        level.sendParticles(ParticleTypes.EXPLOSION, getX(), getY() + 0.5D, getZ(), 4, 0.8D, 0.35D, 0.8D, 0.0D);
+        level.playSound(null, blockPosition(), SoundEvents.GENERIC_EXPLODE, SoundSource.HOSTILE, 0.8F, 1.1F);
+        discard();
+    }
+
+    private void tickYetiFlee(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.YETI_FLEE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (!tag.contains(YETI_FLEE_START_TICK_TAG)) {
+            tag.putLong(YETI_FLEE_START_TICK_TAG, gameTime + YETI_FLEE_DELAY_TICKS);
+            return;
+        }
+        if (gameTime < tag.getLong(YETI_FLEE_START_TICK_TAG)) {
+            return;
+        }
+
+        tag.putBoolean("PvZYetiFleeing", true);
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition()));
+        Vec3 away = vectorTowardGarden().map(vector -> vector.scale(-1.0D)).orElseGet(() -> {
+            Player nearest = level.getNearestPlayer(this, 24.0D);
+            if (nearest == null) {
+                return horizontalForward();
+            }
+            Vec3 delta = position().subtract(nearest.position()).multiply(1.0D, 0.0D, 1.0D);
+            return delta.lengthSqr() < 1.0E-4D ? horizontalForward() : delta.normalize();
+        });
+        setDeltaMovement(getDeltaMovement().add(away.scale(0.09D)));
+        if (gameTime % 10L == 0L) {
+            level.sendParticles(ParticleTypes.SNOWFLAKE, getX(), getY() + 1.0D, getZ(), 3, 0.25D, 0.25D, 0.25D, 0.02D);
+        }
+        if (tag.contains(GARDEN_CENTER_X_TAG)
+                && distanceToSqr(tag.getInt(GARDEN_CENTER_X_TAG) + 0.5D, tag.getInt(GARDEN_CENTER_Y_TAG) + 0.5D, tag.getInt(GARDEN_CENTER_Z_TAG) + 0.5D) > 42.0D * 42.0D) {
+            discard();
+        }
     }
 
     private void pulseNearbyNeonZombies(ServerLevel level, double radius, boolean includeSelf) {

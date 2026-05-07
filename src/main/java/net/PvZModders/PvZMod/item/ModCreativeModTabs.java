@@ -82,6 +82,12 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.SHADOW_SHROOM_SEED_PACKET.get());
                         output.accept(ModItems.DUSK_LOBBER_SEED_PACKET.get());
                         output.accept(ModItems.GRIMROSE_SEED_PACKET.get());
+                        output.accept(ModItems.SQUASH_SEED_PACKET.get());
+                        output.accept(ModItems.JALAPENO_SEED_PACKET.get());
+                        output.accept(ModItems.MARIGOLD_SEED_PACKET.get());
+                        output.accept(ModItems.GOLD_MAGNET_SEED_PACKET.get());
+                        output.accept(ModItems.CACTUS_SEED_PACKET.get());
+                        output.accept(ModItems.ALOE_SEED_PACKET.get());
                         output.accept(ModItems.GARDEN_PLOTTER.get());
                         output.accept(ModItems.BIOME_DETECTOR.get());
                         output.accept(ModItems.SEED_HOLDER.get());
@@ -105,6 +111,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.PIRATE_SHIP.get());
                         output.accept(ModItems.MYSTICAL_EYE.get());
                         output.accept(ModItems.PEA.get());
+                        output.accept(ModItems.COIN.get());
                     })
                     .build());
 

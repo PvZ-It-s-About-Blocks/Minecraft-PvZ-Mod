@@ -98,6 +98,11 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.MODERN_DAY;
     }
 
+    public static boolean isGreenhouseZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.GREENHOUSE;
+    }
+
     public static boolean isMachineZombie(LivingEntity entity) {
         return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && Set.of("robo_cone_zombie", "mecha_football_zombie", "disco_tron_3000", "gargantuar_prime").contains(zombie.definition().id());
@@ -108,7 +113,8 @@ public final class PvZZombieDefinitions {
                 && (zombie.definition().has(PvZZombieSpecial.ARCADE_SUMMONER)
                 || zombie.definition().has(PvZZombieSpecial.IMP_CANNON)
                 || zombie.definition().has(PvZZombieSpecial.CHICKEN_WRANGLER)
-                || zombie.definition().has(PvZZombieSpecial.WEASEL_HOARDER));
+                || zombie.definition().has(PvZZombieSpecial.WEASEL_HOARDER)
+                || zombie.definition().has(PvZZombieSpecial.DANCING_SUMMONER));
     }
 
     public static boolean isControlZombie(LivingEntity entity) {
@@ -138,7 +144,8 @@ public final class PvZZombieDefinitions {
                 || zombie.definition().has(PvZZombieSpecial.BREAKDANCER_KICK)
                 || zombie.definition().has(PvZZombieSpecial.SWASHBUCKLER)
                 || zombie.definition().has(PvZZombieSpecial.JURASSIC_BULLY)
-                || zombie.definition().has(PvZZombieSpecial.ALL_STAR_TACKLE));
+                || zombie.definition().has(PvZZombieSpecial.ALL_STAR_TACKLE)
+                || zombie.definition().has(PvZZombieSpecial.POGO_JUMP));
     }
 
     public static boolean isAquaticZombie(LivingEntity entity) {
@@ -407,6 +414,26 @@ public final class PvZZombieDefinitions {
                 "Supports nearby Pirate Seas zombies.", Set.of(PvZZombieSpecial.PIRATE_CAPTAIN));
         register(definitions, GardenId.PIRATE_SEAS, "pirate_gargantuar", "Pirate Gargantuar", 340.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Pirate Seas gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.PIRATE_GARGANTUAR));
+        register(definitions, GardenId.GREENHOUSE, "browncoat_zombie", "Browncoat Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Greenhouse zombie.", Set.of());
+        register(definitions, GardenId.GREENHOUSE, "conehead_browncoat", "Conehead Browncoat", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Greenhouse zombie.", Set.of());
+        register(definitions, GardenId.GREENHOUSE, "buckethead_browncoat", "Buckethead Browncoat", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Greenhouse zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.GREENHOUSE, "flag_browncoat", "Flag Browncoat", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Greenhouse push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.GREENHOUSE, "dancing_zombie", "Dancing Zombie", 50.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Summons capped Backup Dancer Zombies.", Set.of(PvZZombieSpecial.DANCING_SUMMONER));
+        register(definitions, GardenId.GREENHOUSE, "backup_dancer_zombie", "Backup Dancer Zombie", 18.0D, 1.1D, 4.0D, 0.0D, 1.0F,
+                "Summoned support dancer zombie.", Set.of());
+        register(definitions, GardenId.GREENHOUSE, "pogo_zombie", "Pogo Zombie", 45.0D, 1.25D, 4.0D, 0.0D, 1.0F,
+                "Jumps over the first blocker once, then slows.", Set.of(PvZZombieSpecial.POGO_JUMP));
+        register(definitions, GardenId.GREENHOUSE, "ladder_zombie", "Ladder Zombie", 70.0D, 0.9D, 4.0D, 0.15D, 1.0F,
+                "Applies laddered state to defensive plants so zombies damage them faster.", Set.of(PvZZombieSpecial.LADDER_PLANT, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.GREENHOUSE, "jack_in_the_box_zombie", "Jack-in-the-Box Zombie", 40.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Winds up and explodes near plants without terrain damage.", Set.of(PvZZombieSpecial.JACK_IN_BOX_EXPLODE));
+        register(definitions, GardenId.GREENHOUSE, "yeti_zombie", "Yeti Zombie", 60.0D, 1.3D, 3.0D, 0.0D, 1.0F,
+                "Rare bonus zombie that flees and grants coins when defeated.", Set.of(PvZZombieSpecial.YETI_FLEE));
         register(definitions, GardenId.MODERN_DAY, "modern_zombie", "Modern Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
                 "Baseline Modern Day zombie.", Set.of());
         register(definitions, GardenId.MODERN_DAY, "conehead_modern_zombie", "Conehead Modern Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,

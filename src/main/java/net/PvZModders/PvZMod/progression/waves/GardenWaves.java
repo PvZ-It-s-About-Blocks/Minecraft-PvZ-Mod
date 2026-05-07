@@ -21,6 +21,7 @@ public final class GardenWaves {
             case FAR_FUTURE -> FarFutureWaves.all();
             case BIG_WAVE_BEACH -> BigWaveBeachWaves.all();
             case MODERN_DAY -> ModernDayWaves.all();
+            case GREENHOUSE -> GreenhouseWaves.all();
             default -> OriginalGardenWaves.all();
         };
     }
@@ -38,6 +39,7 @@ public final class GardenWaves {
             case FAR_FUTURE -> FarFutureWaves.get(wave);
             case BIG_WAVE_BEACH -> BigWaveBeachWaves.get(wave);
             case MODERN_DAY -> ModernDayWaves.get(wave);
+            case GREENHOUSE -> GreenhouseWaves.get(wave);
             default -> OriginalGardenWaves.get(wave);
         };
     }

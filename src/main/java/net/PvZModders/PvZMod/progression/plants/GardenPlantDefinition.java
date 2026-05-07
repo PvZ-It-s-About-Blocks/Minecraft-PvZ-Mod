@@ -83,6 +83,10 @@ public record GardenPlantDefinition(
         return ModernDayPlants.PLANTS;
     }
 
+    public static List<GardenPlantDefinition> greenhousePlants() {
+        return GreenhousePlants.PLANTS;
+    }
+
     public static List<GardenPlantDefinition> forGarden(GardenId gardenId) {
         return switch (gardenId) {
             case INITIAL_PLAINS -> originalGardenPlants();
@@ -97,6 +101,7 @@ public record GardenPlantDefinition(
             case FAR_FUTURE -> farFuturePlants();
             case BIG_WAVE_BEACH -> bigWaveBeachPlants();
             case MODERN_DAY -> modernDayPlants();
+            case GREENHOUSE -> greenhousePlants();
             default -> List.of();
         };
     }
@@ -104,7 +109,7 @@ public record GardenPlantDefinition(
     public static int maxKnownGardenPlantCount() {
         return Math.max(
                 Math.max(Math.max(originalGardenPlants().size(), ancientEgyptPlants().size()), Math.max(wildWestPlants().size(), lostCityPlants().size())),
-                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), Math.max(Math.max(bigWaveBeachPlants().size(), pirateSeasPlants().size()), modernDayPlants().size()))), frostbitePlants().size())
+                Math.max(Math.max(Math.max(darkAgesPlants().size(), jurassicMarshPlants().size()), Math.max(Math.max(neonMixtapePlants().size(), farFuturePlants().size()), Math.max(Math.max(bigWaveBeachPlants().size(), pirateSeasPlants().size()), Math.max(modernDayPlants().size(), greenhousePlants().size())))), frostbitePlants().size())
         );
     }
 
@@ -202,6 +207,14 @@ public record GardenPlantDefinition(
                 .map(PlantSeedDefinition::seedPacketId)
                 .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
         return new GardenPlantDefinition(GardenId.MODERN_DAY, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
+    }
+
+    private static GardenPlantDefinition greenhouse(String plantId, String displayName, String description, int sunCost, int unlockWave) {
+        Optional<PlantSeedDefinition> seedDefinition = PlantSeedDefinition.getByPlantId(plantId);
+        ResourceLocation seedPacketId = seedDefinition
+                .map(PlantSeedDefinition::seedPacketId)
+                .orElse(new ResourceLocation("pvz2mod", plantId + "_seed_packet"));
+        return new GardenPlantDefinition(GardenId.GREENHOUSE, plantId, displayName, description, sunCost, unlockWave, seedPacketId);
     }
 
     private static final class OriginalGardenPlants {
@@ -331,6 +344,17 @@ public record GardenPlantDefinition(
                 modernDay("shadow_shroom", "Shadow-shroom", "Curses zombies with shadow damage over time.", 50, 8),
                 modernDay("dusk_lobber", "Dusk Lobber", "Lobs shadow splash projectiles.", 150, 15),
                 modernDay("grimrose", "Grimrose", "Drags normal zombies into the shadows.", 75, 22)
+        );
+    }
+
+    private static final class GreenhousePlants {
+        private static final List<GardenPlantDefinition> PLANTS = List.of(
+                greenhouse("squash", "Squash", "Crushes the first nearby zombie, then disappears.", 50, 1),
+                greenhouse("marigold", "Marigold", "Produces coins for the future shop economy.", 50, 3),
+                greenhouse("gold_magnet", "Gold Magnet", "Collects nearby coin drops automatically.", 50, 5),
+                greenhouse("cactus", "Cactus", "Fires piercing thorns and prioritizes flying zombies.", 175, 7),
+                greenhouse("aloe", "Aloe", "Heals damaged nearby plants over time.", 75, 9),
+                greenhouse("jalapeno", "Jalapeno", "Burns a straight lane without terrain damage.", 125, 12)
         );
     }
 }

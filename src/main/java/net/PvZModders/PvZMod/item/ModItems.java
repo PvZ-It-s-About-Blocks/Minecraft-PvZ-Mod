@@ -167,7 +167,21 @@ public class ModItems {
             () -> new SeedPacketItem("dusk_lobber", new Item.Properties()));
     public static final RegistryObject<Item> GRIMROSE_SEED_PACKET = ITEMS.register("grimrose_seed_packet",
             () -> new SeedPacketItem("grimrose", new Item.Properties()));
+    public static final RegistryObject<Item> SQUASH_SEED_PACKET = ITEMS.register("squash_seed_packet",
+            () -> new SeedPacketItem("squash", new Item.Properties()));
+    public static final RegistryObject<Item> JALAPENO_SEED_PACKET = ITEMS.register("jalapeno_seed_packet",
+            () -> new SeedPacketItem("jalapeno", new Item.Properties()));
+    public static final RegistryObject<Item> MARIGOLD_SEED_PACKET = ITEMS.register("marigold_seed_packet",
+            () -> new SeedPacketItem("marigold", new Item.Properties()));
+    public static final RegistryObject<Item> GOLD_MAGNET_SEED_PACKET = ITEMS.register("gold_magnet_seed_packet",
+            () -> new SeedPacketItem("gold_magnet", new Item.Properties()));
+    public static final RegistryObject<Item> CACTUS_SEED_PACKET = ITEMS.register("cactus_seed_packet",
+            () -> new SeedPacketItem("cactus", new Item.Properties()));
+    public static final RegistryObject<Item> ALOE_SEED_PACKET = ITEMS.register("aloe_seed_packet",
+            () -> new SeedPacketItem("aloe", new Item.Properties()));
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
+            () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> COIN = ITEMS.register("coin",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
             () -> new Item(new Item.Properties()));

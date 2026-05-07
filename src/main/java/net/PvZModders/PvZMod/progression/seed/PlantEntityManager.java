@@ -9,6 +9,7 @@ import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
+import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
 import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
@@ -115,6 +116,7 @@ public final class PlantEntityManager {
     private static final String RECENTLY_HOOKED_END_TICK_TAG = "PvZRecentlyHookedEndTick";
     private static final String GUACODILE_RUSHING_TAG = "PvZGuacodileRushing";
     private static final String GUACODILE_RUSH_END_TICK_TAG = "PvZGuacodileRushEndTick";
+    public static final String LADDERED_TAG = "PvZLaddered";
 
     private static final double PLANT_SCAN_RADIUS = 128.0D;
     private static final double SHOOTER_RANGE = 14.0D;
@@ -172,6 +174,15 @@ public final class PlantEntityManager {
     private static final int WARMED_THAW_INTERVAL_TICKS = 20 * 2;
     private static final double PEPPER_WARM_RADIUS = 3.0D;
     private static final double ROTOBAGA_RANGE = 14.0D;
+    private static final int MARIGOLD_COIN_INTERVAL_TICKS = 20 * 25;
+    private static final int GOLD_MAGNET_INTERVAL_TICKS = 20;
+    private static final double GOLD_MAGNET_RANGE = 8.0D;
+    private static final int ALOE_HEAL_INTERVAL_TICKS = 20 * 5;
+    private static final double ALOE_HEAL_RANGE = 4.0D;
+    private static final int JALAPENO_FUSE_TICKS = 12;
+    private static final double JALAPENO_RANGE = 16.0D;
+    private static final double CACTUS_RANGE = 15.0D;
+    private static final int CACTUS_PIERCE_LIMIT = 3;
     private static final float PEA_DAMAGE = 4.0F;
     private static final float PRIMAL_PEA_DAMAGE = 7.0F;
     private static final float PUFF_SHROOM_DAMAGE = 2.0F;
@@ -218,6 +229,11 @@ public final class PlantEntityManager {
     private static final float SHADOW_SHROOM_DAMAGE = 2.5F;
     private static final float DUSK_LOBBER_DIRECT_DAMAGE = 8.0F;
     private static final float DUSK_LOBBER_SPLASH_DAMAGE = 4.0F;
+    private static final float SQUASH_DAMAGE = 999.0F;
+    private static final float SQUASH_GARGANTUAR_DAMAGE = 90.0F;
+    private static final float JALAPENO_DAMAGE = 120.0F;
+    private static final float JALAPENO_GARGANTUAR_DAMAGE = 100.0F;
+    private static final float CACTUS_DAMAGE = 6.0F;
     private static final float POWERED_DUSK_LOBBER_SPLASH_DAMAGE = 6.0F;
     private static final float GRIMROSE_DAMAGE = 60.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
@@ -376,6 +392,9 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.CHERRY_BOMB) {
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + CHERRY_BOMB_FUSE_TICKS);
         }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.JALAPENO) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + JALAPENO_FUSE_TICKS);
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -430,6 +449,9 @@ public final class PlantEntityManager {
                 level.playSound(null, target.blockPosition(), SoundEvents.HOGLIN_ATTACK, SoundSource.HOSTILE, 0.65F, 0.8F);
             }
         }
+        if (isLadderedPlant(target)) {
+            damage *= 1.5F;
+        }
         return damage;
     }
 
@@ -442,6 +464,20 @@ public final class PlantEntityManager {
                 || behavior == PlantSeedDefinition.PlantBehavior.INFI_NUT
                 || behavior == PlantSeedDefinition.PlantBehavior.ENDURIAN
                 || behavior == PlantSeedDefinition.PlantBehavior.SPIKEROCK;
+    }
+
+    public static void applyLadderedState(ServerLevel level, SnowGolem plant) {
+        if (!isPlant(plant)) {
+            return;
+        }
+        plant.getPersistentData().putBoolean(LADDERED_TAG, true);
+        plant.setCustomName(Component.literal(plant.getDisplayName().getString().replace(" (Laddered)", "") + " (Laddered)").withStyle(ChatFormatting.GRAY));
+        level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 0.9D, plant.getZ(), 14, 0.3D, 0.35D, 0.3D, 0.03D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.LADDER_PLACE, SoundSource.HOSTILE, 0.8F, 0.8F);
+    }
+
+    public static boolean isLadderedPlant(Entity plant) {
+        return isPlant(plant) && plant.getPersistentData().getBoolean(LADDERED_TAG);
     }
 
     public static boolean isPlant(Entity entity) {
@@ -646,6 +682,12 @@ public final class PlantEntityManager {
             case SHADOW_SHROOM -> tickShadowShroom(level, plant);
             case DUSK_LOBBER -> tickDuskLobber(level, plant);
             case GRIMROSE -> tickGrimrose(level, plant);
+            case SQUASH -> tickSquash(level, plant);
+            case JALAPENO -> tickJalapeno(level, plant);
+            case MARIGOLD -> tickMarigold(level, plant);
+            case GOLD_MAGNET -> tickGoldMagnet(level, plant);
+            case CACTUS -> tickCactus(level, plant);
+            case ALOE -> tickAloe(level, plant);
             case WALL_NUT, PRIMAL_WALL_NUT, TALL_NUT, TORCHWOOD, GARLIC, LILY_PAD, PLACEHOLDER -> {
             }
         }
@@ -709,6 +751,129 @@ public final class PlantEntityManager {
         tag.putBoolean(REPEATER_PENDING_SECOND_SHOT_TAG, true);
         tag.putUUID(REPEATER_TARGET_UUID_TAG, target.get().getUUID());
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + REPEATER_SECOND_SHOT_DELAY_TICKS);
+    }
+
+    private static void tickSquash(ServerLevel level, SnowGolem plant) {
+        Optional<Zombie> target = selectZombie(level, plant, 2.0D);
+        if (target.isEmpty()) {
+            return;
+        }
+
+        Zombie zombie = target.get();
+        float damage = isGargantuarLike(zombie) ? SQUASH_GARGANTUAR_DAMAGE : SQUASH_DAMAGE;
+        hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, damage));
+        plant.setDeltaMovement(new Vec3(0.0D, 0.45D, 0.0D));
+        level.sendParticles(ParticleTypes.EXPLOSION, zombie.getX(), zombie.getY() + 0.5D, zombie.getZ(), 3, 0.4D, 0.2D, 0.4D, 0.0D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.ANVIL_LAND, SoundSource.HOSTILE, 0.75F, 1.4F);
+        plant.discard();
+    }
+
+    private static void tickJalapeno(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            level.sendParticles(ParticleTypes.SMOKE, plant.getX(), plant.getY() + 0.7D, plant.getZ(), 2, 0.15D, 0.15D, 0.15D, 0.01D);
+            return;
+        }
+
+        Vec3 facing = facingVector(plant);
+        Vec3 start = plant.position().add(0.0D, 0.9D, 0.0D);
+        Vec3 end = start.add(facing.scale(JALAPENO_RANGE));
+        for (Zombie zombie : level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(JALAPENO_RANGE, 2.0D, JALAPENO_RANGE), Zombie::isAlive)) {
+            Vec3 toZombie = zombie.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+            if (toZombie.lengthSqr() < 1.0E-4D || toZombie.length() > JALAPENO_RANGE || toZombie.normalize().dot(facing) < 0.92D) {
+                continue;
+            }
+            float damage = isGargantuarLike(zombie) ? JALAPENO_GARGANTUAR_DAMAGE : JALAPENO_DAMAGE;
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, damage));
+            zombie.setSecondsOnFire(2);
+        }
+        renderBeam(level, start, end, ParticleTypes.FLAME);
+        level.sendParticles(ParticleTypes.FLAME, plant.getX(), plant.getY() + 0.6D, plant.getZ(), 36, 1.0D, 0.3D, 1.0D, 0.08D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BLAZE_SHOOT, SoundSource.HOSTILE, 0.95F, 0.7F);
+        plant.discard();
+    }
+
+    private static void tickMarigold(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        GreenhouseCoinManager.addCoinsToNearestPlayer(level, plant.position().add(0.0D, 1.0D, 0.0D), 1);
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.25D, 0.25D, 0.02D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.35F, 1.7F);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + MARIGOLD_COIN_INTERVAL_TICKS);
+    }
+
+    private static void tickGoldMagnet(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        int collected = GreenhouseCoinManager.collectCoinsNearby(level, plant.position().add(0.0D, 0.8D, 0.0D), GOLD_MAGNET_RANGE);
+        if (collected > 0) {
+            level.sendParticles(ParticleTypes.ENCHANT, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 18, 0.4D, 0.35D, 0.4D, 0.04D);
+            level.playSound(null, plant.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.45F, 1.2F);
+        }
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + GOLD_MAGNET_INTERVAL_TICKS);
+    }
+
+    private static void tickCactus(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 facing = facingVector(plant);
+        List<Zombie> candidates = level.getEntitiesOfClass(Zombie.class, plant.getBoundingBox().inflate(CACTUS_RANGE, 4.0D, CACTUS_RANGE), Zombie::isAlive)
+                .stream()
+                .filter(zombie -> isFlyingZombie(zombie) || isInFrontCone(plant, zombie, facing, CACTUS_RANGE))
+                .sorted((first, second) -> {
+                    boolean firstFlying = isFlyingZombie(first);
+                    boolean secondFlying = isFlyingZombie(second);
+                    if (firstFlying != secondFlying) {
+                        return firstFlying ? -1 : 1;
+                    }
+                    return Double.compare(plant.distanceToSqr(first), plant.distanceToSqr(second));
+                })
+                .limit(CACTUS_PIERCE_LIMIT)
+                .toList();
+        if (candidates.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        for (Zombie zombie : candidates) {
+            hurtWithoutKnockback(zombie, level.damageSources().mobAttack(plant), scaledPlantDamage(level, plant, CACTUS_DAMAGE));
+        }
+        shootSnowballVisual(level, plant, candidates.get(0), false, "cactus_thorn");
+        level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 1.1D, plant.getZ(), 8, 0.2D, 0.12D, 0.2D, 0.02D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+    }
+
+    private static void tickAloe(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, plant.getBoundingBox().inflate(ALOE_HEAL_RANGE), other ->
+                        other != plant && other.isAlive() && isPlant(other) && other.getHealth() < other.getMaxHealth())
+                .stream()
+                .min((first, second) -> Float.compare(first.getHealth() / first.getMaxHealth(), second.getHealth() / second.getMaxHealth()));
+        target.ifPresent(healed -> {
+            healed.heal(6.0F);
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, healed.getX(), healed.getY() + 1.0D, healed.getZ(), 10, 0.25D, 0.25D, 0.25D, 0.02D);
+            renderBeam(level, plant.position().add(0.0D, 1.0D, 0.0D), healed.position().add(0.0D, 1.0D, 0.0D), ParticleTypes.HAPPY_VILLAGER);
+            level.playSound(null, healed.blockPosition(), SoundEvents.BREWING_STAND_BREW, SoundSource.PLAYERS, 0.45F, 1.4F);
+        });
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + ALOE_HEAL_INTERVAL_TICKS);
     }
 
     private static void tickSunflower(ServerLevel level, SnowGolem plant) {

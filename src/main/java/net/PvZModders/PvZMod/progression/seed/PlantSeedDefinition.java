@@ -91,6 +91,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.MODERN_DAY, ModItems.SHADOW_SHROOM_SEED_PACKET.getId(), "shadow_shroom", "Shadow-shroom", 50, PlantBehavior.SHADOW_SHROOM);
         register(GardenId.MODERN_DAY, ModItems.DUSK_LOBBER_SEED_PACKET.getId(), "dusk_lobber", "Dusk Lobber", 150, PlantBehavior.DUSK_LOBBER);
         register(GardenId.MODERN_DAY, ModItems.GRIMROSE_SEED_PACKET.getId(), "grimrose", "Grimrose", 75, PlantBehavior.GRIMROSE);
+        register(GardenId.GREENHOUSE, ModItems.SQUASH_SEED_PACKET.getId(), "squash", "Squash", 50, PlantBehavior.SQUASH);
+        register(GardenId.GREENHOUSE, ModItems.MARIGOLD_SEED_PACKET.getId(), "marigold", "Marigold", 50, PlantBehavior.MARIGOLD);
+        register(GardenId.GREENHOUSE, ModItems.GOLD_MAGNET_SEED_PACKET.getId(), "gold_magnet", "Gold Magnet", 50, PlantBehavior.GOLD_MAGNET);
+        register(GardenId.GREENHOUSE, ModItems.CACTUS_SEED_PACKET.getId(), "cactus", "Cactus", 175, PlantBehavior.CACTUS);
+        register(GardenId.GREENHOUSE, ModItems.ALOE_SEED_PACKET.getId(), "aloe", "Aloe", 75, PlantBehavior.ALOE);
+        register(GardenId.GREENHOUSE, ModItems.JALAPENO_SEED_PACKET.getId(), "jalapeno", "Jalapeno", 125, PlantBehavior.JALAPENO);
     }
 
     public static Optional<PlantSeedDefinition> get(ResourceLocation seedPacketId) {
@@ -213,6 +219,12 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         NIGHTSHADE,
         SHADOW_SHROOM,
         DUSK_LOBBER,
-        GRIMROSE
+        GRIMROSE,
+        SQUASH,
+        JALAPENO,
+        MARIGOLD,
+        GOLD_MAGNET,
+        CACTUS,
+        ALOE
     }
 }
