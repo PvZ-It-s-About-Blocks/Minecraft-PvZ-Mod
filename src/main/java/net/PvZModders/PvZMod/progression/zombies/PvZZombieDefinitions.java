@@ -88,6 +88,54 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.PIRATE_SEAS;
     }
 
+    public static boolean isModernDayZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.MODERN_DAY;
+    }
+
+    public static boolean isMachineZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && Set.of("robo_cone_zombie", "mecha_football_zombie", "disco_tron_3000", "gargantuar_prime").contains(zombie.definition().id());
+    }
+
+    public static boolean isSummonerZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && (zombie.definition().has(PvZZombieSpecial.ARCADE_SUMMONER)
+                || zombie.definition().has(PvZZombieSpecial.IMP_CANNON)
+                || zombie.definition().has(PvZZombieSpecial.CHICKEN_WRANGLER)
+                || zombie.definition().has(PvZZombieSpecial.WEASEL_HOARDER));
+    }
+
+    public static boolean isControlZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && (zombie.definition().has(PvZZombieSpecial.WIZARD_DISABLE)
+                || zombie.definition().has(PvZZombieSpecial.OCTO_DISABLE)
+                || zombie.definition().has(PvZZombieSpecial.FISHERMAN_HOOK)
+                || zombie.definition().has(PvZZombieSpecial.HUNTER_FREEZE));
+    }
+
+    public static boolean isSupportZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && (zombie.definition().has(PvZZombieSpecial.KING_SUPPORT)
+                || zombie.definition().has(PvZZombieSpecial.GLITTER_AURA)
+                || zombie.definition().has(PvZZombieSpecial.MC_MUSIC_SUPPORT)
+                || zombie.definition().has(PvZZombieSpecial.BOOMBOX_PULSE)
+                || zombie.definition().has(PvZZombieSpecial.PIRATE_CAPTAIN)
+                || zombie.definition().has(PvZZombieSpecial.RALLY_SUPPORT));
+    }
+
+    public static boolean isDisplacementZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && (zombie.definition().has(PvZZombieSpecial.POLE_VAULT)
+                || zombie.definition().has(PvZZombieSpecial.PROSPECTOR_LEAP)
+                || zombie.definition().has(PvZZombieSpecial.RELIC_HUNTER_LEAP)
+                || zombie.definition().has(PvZZombieSpecial.PUNK_SHOVE)
+                || zombie.definition().has(PvZZombieSpecial.BREAKDANCER_KICK)
+                || zombie.definition().has(PvZZombieSpecial.SWASHBUCKLER)
+                || zombie.definition().has(PvZZombieSpecial.JURASSIC_BULLY)
+                || zombie.definition().has(PvZZombieSpecial.ALL_STAR_TACKLE));
+    }
+
     public static boolean isAquaticZombie(LivingEntity entity) {
         return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && zombie.definition().has(PvZZombieSpecial.AQUATIC);
@@ -327,6 +375,28 @@ public final class PvZZombieDefinitions {
                 "Supports nearby Pirate Seas zombies.", Set.of(PvZZombieSpecial.PIRATE_CAPTAIN));
         register(definitions, GardenId.PIRATE_SEAS, "pirate_gargantuar", "Pirate Gargantuar", 340.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Pirate Seas gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.PIRATE_GARGANTUAR));
+        register(definitions, GardenId.MODERN_DAY, "modern_zombie", "Modern Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Modern Day zombie.", Set.of());
+        register(definitions, GardenId.MODERN_DAY, "conehead_modern_zombie", "Conehead Modern Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Armored Modern Day zombie.", Set.of());
+        register(definitions, GardenId.MODERN_DAY, "buckethead_modern_zombie", "Buckethead Modern Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Modern Day zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.MODERN_DAY, "flag_modern_zombie", "Flag Modern Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Modern Day push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.MODERN_DAY, "sunday_edition_zombie", "Sunday Edition Zombie", 120.0D, 0.8D, 5.0D, 0.2D, 1.0F,
+                "Durable newspaper variant that rages after its Sunday edition breaks.", Set.of(PvZZombieSpecial.NEWSPAPER_RAGE, PvZZombieSpecial.SUNDAY_EDITION));
+        register(definitions, GardenId.MODERN_DAY, "balloon_zombie", "Balloon Zombie", 40.0D, 1.25D, 4.0D, 0.0D, 1.0F,
+                "Flying Modern Day bypass zombie.", Set.of(PvZZombieSpecial.FLYING));
+        register(definitions, GardenId.MODERN_DAY, "all_star_zombie", "All-Star Zombie", 110.0D, 1.3D, 8.0D, 0.35D, 1.0F,
+                "Fast tackle tank that can kick Super-Fan Imps.", Set.of(PvZZombieSpecial.ALL_STAR_TACKLE, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.MODERN_DAY, "super_fan_imp", "Super-Fan Imp", 12.0D, 1.45D, 3.0D, 0.0D, 0.55F,
+                "Small fast imp that explodes near plants.", Set.of(PvZZombieSpecial.IMP, PvZZombieSpecial.SUPER_FAN_EXPLODE));
+        register(definitions, GardenId.MODERN_DAY, "rally_zombie", "Rally Zombie", 45.0D, 1.2D, 4.0D, 0.0D, 1.0F,
+                "Large-wave support zombie that briefly rallies nearby zombies.", Set.of(PvZZombieSpecial.RALLY_SUPPORT));
+        register(definitions, GardenId.MODERN_DAY, "brickhead_zombie", "Brickhead Zombie", 140.0D, 0.9D, 5.0D, 0.35D, 1.0F,
+                "Extremely durable brick-armored zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.MODERN_DAY, "modern_gargantuar", "Modern Gargantuar", 360.0D, 0.58D, 18.0D, 0.95D, 3.0F,
+                "Huge final easy-mode gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.MODERN_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

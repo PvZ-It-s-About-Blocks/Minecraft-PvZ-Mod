@@ -34,6 +34,8 @@ import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormSchedule;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
 import net.PvZModders.PvZMod.progression.waves.FrostbiteSnowfallSchedule;
+import net.PvZModders.PvZMod.progression.waves.ModernDayPortalBurstSchedule;
+import net.PvZModders.PvZMod.progression.waves.ModernDayZombiePool;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule;
 import net.PvZModders.PvZMod.progression.waves.NeonSpeakerSchedule.NeonSpeakerPulse;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -152,6 +154,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveSpawned;
     private boolean activeWaveFinalPushStarted;
     private int activeWaveSpeakerCursor;
+    private int activeWaveModernDayPortalBurstCursor;
     private boolean activeWaveSandstormActive;
     private boolean wildWestWaveObjectsArranged;
     private boolean totemShieldUnlocked;
@@ -180,6 +183,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.absorbSunFromPlayersDuringWave(serverLevel, false);
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
+        be.tickModernDayPortalBurstEffects(serverLevel);
         be.tickNeonSpeakerEffects(serverLevel);
         be.tickAncientEgyptSandstormEffects(serverLevel);
         be.tickFrostbiteSnowfallEffects(serverLevel);
@@ -503,6 +507,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
+        activeWaveModernDayPortalBurstCursor = 0;
         activeWaveSandstormActive = false;
         wildWestWaveObjectsArranged = false;
         List<WaveSpawnDirection> waveDirections = new ArrayList<>();
@@ -570,6 +575,68 @@ public class GardenTotemBlockEntity extends BlockEntity {
             if (spawnScheduledZombie(level, definition, activeWaveSpawned)) {
                 activeWaveSpawned++;
                 scheduleNormalNextSpawn(level);
+            }
+        }
+    }
+
+    private void tickModernDayPortalBurstEffects(ServerLevel level) {
+        GardenWaveProgress waveProgress = getWaveProgress(level);
+        if (gardenId != GardenId.MODERN_DAY || !waveProgress.waveActive() || activeWaveStartTick < 0L) {
+            return;
+        }
+
+        List<ModernDayPortalBurstSchedule.PortalBurst> bursts = ModernDayPortalBurstSchedule.burstsForWave(waveProgress.currentWave());
+        if (bursts.isEmpty()) {
+            return;
+        }
+
+        long elapsed = Math.max(0L, level.getGameTime() - activeWaveStartTick);
+        int cursor = 0;
+        for (ModernDayPortalBurstSchedule.PortalBurst burst : bursts) {
+            if (cursor++ < activeWaveModernDayPortalBurstCursor) {
+                continue;
+            }
+            if (elapsed >= burst.activationTick()) {
+                spawnModernDayPortalBurst(level, burst, cursor);
+                activeWaveModernDayPortalBurstCursor = cursor;
+                setChanged();
+            }
+            return;
+        }
+    }
+
+    private void spawnModernDayPortalBurst(ServerLevel level, ModernDayPortalBurstSchedule.PortalBurst burst, int seed) {
+        BlockPos anchor = WaveZombieSpawnManager.findWaveSpawnPosition(level, worldPosition, burst.direction(), 1337 + burst.wave() * 31 + seed);
+        activeWavePortalVisualIds.putAll(WaveZombieSpawnManager.spawnPortalVisual(level, anchor));
+        for (ModernDayPortalBurstSchedule.BurstZombie zombie : burst.zombies()) {
+            Optional<EntityType<?>> entityType = BuiltInRegistries.ENTITY_TYPE.getOptional(new ResourceLocation(ModernDayZombiePool.resolveZombieEntityTypeId(zombie.zombieId(), burst.group())));
+            if (entityType.isEmpty()) {
+                continue;
+            }
+            for (int i = 0; i < zombie.count(); i++) {
+                BlockPos spawnPos = WaveZombieSpawnManager.findNearbySpawnPosition(level, worldPosition, anchor, seed + i);
+                Entity entity = spawnWaveEntity(level, entityType.get(), spawnPos);
+                if (entity == null) {
+                    continue;
+                }
+                entity.getPersistentData().putBoolean(WAVE_ZOMBIE_TAG, true);
+                if (entity instanceof PvZZombieEntity pvzZombie) {
+                    pvzZombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_X_TAG, worldPosition.getX());
+                    pvzZombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Y_TAG, worldPosition.getY());
+                    pvzZombie.getPersistentData().putInt(PvZZombieEntity.GARDEN_CENTER_Z_TAG, worldPosition.getZ());
+                }
+                if (entity instanceof Mob mob) {
+                    mob.setPersistenceRequired();
+                    applyWaveZombieTuning(mob);
+                    moveMobTowardTotem(mob);
+                }
+                activeWaveEntityIds.add(entity.getUUID());
+            }
+        }
+        level.playSound(null, anchor, SoundEvents.PORTAL_TRAVEL, SoundSource.HOSTILE, 0.55F, 1.25F);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("Modern Day portal burst: " + burst.group().name().replace('_', ' ')).withStyle(ChatFormatting.LIGHT_PURPLE), true);
             }
         }
     }
@@ -1307,6 +1374,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = 0;
         activeWaveFinalPushStarted = false;
         activeWaveSpeakerCursor = 0;
+        activeWaveModernDayPortalBurstCursor = 0;
         activeWaveSandstormActive = false;
         activeWaveDirections.clear();
         playersSunAbsorbedThisWave.clear();
@@ -1793,6 +1861,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveSpawned = tag.getInt("ActiveWaveSpawned");
         activeWaveFinalPushStarted = tag.getBoolean("ActiveWaveFinalPushStarted");
         activeWaveSpeakerCursor = tag.getInt("ActiveWaveSpeakerCursor");
+        activeWaveModernDayPortalBurstCursor = tag.getInt("ActiveWaveModernDayPortalBurstCursor");
         totemShieldUnlocked = tag.getBoolean("TotemShieldUnlocked");
         totemShieldActive = tag.getBoolean("TotemShieldActive");
         totemShieldHealth = tag.getInt("TotemShieldHealth");
@@ -1845,6 +1914,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         tag.putInt("ActiveWaveSpawned", activeWaveSpawned);
         tag.putBoolean("ActiveWaveFinalPushStarted", activeWaveFinalPushStarted);
         tag.putInt("ActiveWaveSpeakerCursor", activeWaveSpeakerCursor);
+        tag.putInt("ActiveWaveModernDayPortalBurstCursor", activeWaveModernDayPortalBurstCursor);
         tag.putBoolean("TotemShieldUnlocked", totemShieldUnlocked);
         tag.putBoolean("TotemShieldActive", totemShieldActive);
         tag.putInt("TotemShieldHealth", totemShieldHealth);
