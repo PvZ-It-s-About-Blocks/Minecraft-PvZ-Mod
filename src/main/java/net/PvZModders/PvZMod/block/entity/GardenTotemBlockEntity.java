@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.block.custom.GardenTotemBlock;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.entity.custom.JurassicDinosaurEntity;
+import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenDefinition;
@@ -23,6 +24,8 @@ import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieSpecial;
 import net.PvZModders.PvZMod.network.ModMessages;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveProgress;
@@ -718,12 +721,24 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 moveMobTowardTotem(mob);
             }
         }
+        if (entity instanceof PvZZombieEntity zombie && zombie.definition().has(PvZZombieSpecial.FLAG)) {
+            announceFlagZombie(level);
+        }
         if (entity instanceof JurassicDinosaurEntity) {
             activeWaveDinosaurIds.add(entity.getUUID());
         } else {
             activeWaveEntityIds.add(entity.getUUID());
         }
         return true;
+    }
+
+    private void announceFlagZombie(ServerLevel level) {
+        level.playSound(null, worldPosition, SoundEvents.RAID_HORN.value(), SoundSource.HOSTILE, 0.9F, 1.25F);
+        for (ServerPlayer player : level.players()) {
+            if (player.distanceToSqr(worldPosition.getX() + 0.5D, worldPosition.getY() + 0.5D, worldPosition.getZ() + 0.5D) <= 4096.0D) {
+                player.displayClientMessage(Component.literal("A huge wave is approaching!").withStyle(ChatFormatting.RED), true);
+            }
+        }
     }
 
     private WaveSpawnGroup groupForSpawnIndex(GardenWaveDefinition definition, int spawnIndex) {
@@ -806,7 +821,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 continue;
             }
 
-            if (PlantEntityManager.attackNearbyPlant(level, mob, ZOMBIE_TOTEM_DAMAGE)) {
+            if (PlantEntityManager.attackNearbyPlant(level, mob, waveZombieAttackDamage(mob))) {
                 continue;
             }
 
@@ -815,7 +830,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 mob.getLookControl().setLookAt(worldPosition.getX() + 0.5D, worldPosition.getY() + 1.5D, worldPosition.getZ() + 0.5D);
                 if ((level.getGameTime() + entity.getId()) % 20 == 0) {
                     mob.swing(InteractionHand.MAIN_HAND);
-                    damageTotem(level, ZOMBIE_TOTEM_DAMAGE);
+                    damageTotem(level, Math.max(1, Math.round(waveZombieAttackDamage(mob))));
                 }
                 continue;
             }
@@ -832,10 +847,22 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private void applyWaveZombieTuning(Mob mob) {
+        if (mob instanceof PvZZombieEntity zombie) {
+            zombie.configureForWave(WAVE_ZOMBIE_MOVEMENT_SPEED);
+            return;
+        }
+
         AttributeInstance movementSpeed = mob.getAttribute(Attributes.MOVEMENT_SPEED);
         if (movementSpeed != null) {
             movementSpeed.setBaseValue(WAVE_ZOMBIE_MOVEMENT_SPEED);
         }
+    }
+
+    private float waveZombieAttackDamage(Mob mob) {
+        if (mob instanceof PvZZombieEntity zombie) {
+            return (float) Math.max(1.0D, zombie.pvzAttackDamage());
+        }
+        return ZOMBIE_TOTEM_DAMAGE;
     }
 
     private BlockPos getTotemApproachPos(Mob mob) {
@@ -928,9 +955,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     private boolean isGargantuarLike(Mob mob) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
-        String path = id == null ? "" : id.getPath();
-        return path.contains("gargantuar") || mob.getMaxHealth() >= 80.0F;
+        return PvZZombieDefinitions.isGargantuarLike(mob);
     }
 
     private void completeCurrentWaveForNearbyPlayers(ServerLevel level) {

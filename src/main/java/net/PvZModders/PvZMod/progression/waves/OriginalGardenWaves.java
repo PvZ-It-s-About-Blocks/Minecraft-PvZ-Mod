@@ -36,7 +36,117 @@ public final class OriginalGardenWaves {
     private static List<WaveSpawnGroup> spawnGroupsFor(int wave) {
         int zombieCount = Math.min(45, 2 + wave + (wave / 5) * 2);
         int directionCount = wave >= 30 ? 4 : wave >= 20 ? 3 : wave >= 10 ? 2 : 1;
-        return List.of(new WaveSpawnGroup("minecraft:zombie", zombieCount, directionCount, List.of()));
+        List<WaveSpawnGroup> groups = new ArrayList<>();
+        if (wave <= 2) {
+            addGroup(groups, "basic_zombie", zombieCount, directionCount);
+        } else if (wave == 3) {
+            addGroup(groups, "basic_zombie", Math.max(1, zombieCount - 1), directionCount);
+            addGroup(groups, "flag_zombie", 1, directionCount);
+        } else if (wave <= 5) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 75),
+                    entry("conehead_zombie", 25));
+        } else if (wave <= 7) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 65),
+                    entry("conehead_zombie", 25),
+                    entry("newspaper_zombie", 10));
+        } else if (wave <= 10) {
+            addWeighted(groups, zombieCount - (wave == 10 ? 1 : 0), directionCount,
+                    entry("basic_zombie", 55),
+                    entry("conehead_zombie", 25),
+                    entry("newspaper_zombie", 10),
+                    entry("buckethead_zombie", 10));
+            if (wave == 10) {
+                addGroup(groups, "flag_zombie", 1, directionCount);
+            }
+        } else if (wave <= 13) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 45),
+                    entry("conehead_zombie", 20),
+                    entry("buckethead_zombie", 15),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 10));
+        } else if (wave <= 16) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 45),
+                    entry("conehead_zombie", 20),
+                    entry("buckethead_zombie", 12),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 8),
+                    entry("pole_vaulting_zombie", 5));
+        } else if (wave <= 20) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 40),
+                    entry("conehead_zombie", 18),
+                    entry("buckethead_zombie", 14),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 8),
+                    entry("pole_vaulting_zombie", 5),
+                    entry("football_zombie", 5));
+        } else if (wave <= 24) {
+            addWeighted(groups, zombieCount, directionCount,
+                    entry("basic_zombie", 35),
+                    entry("conehead_zombie", 15),
+                    entry("buckethead_zombie", 15),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 10),
+                    entry("pole_vaulting_zombie", 5),
+                    entry("football_zombie", 5),
+                    entry("imp", 5));
+        } else if (wave <= 29) {
+            int gargantuars = wave >= 28 ? 1 : 0;
+            addWeighted(groups, zombieCount - gargantuars, directionCount,
+                    entry("basic_zombie", 33),
+                    entry("conehead_zombie", 14),
+                    entry("buckethead_zombie", 14),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 10),
+                    entry("pole_vaulting_zombie", 6),
+                    entry("football_zombie", 6),
+                    entry("imp", 7));
+            addGroup(groups, "gargantuar", gargantuars, directionCount);
+        } else {
+            addWeighted(groups, zombieCount - 2, directionCount,
+                    entry("basic_zombie", 28),
+                    entry("conehead_zombie", 12),
+                    entry("buckethead_zombie", 14),
+                    entry("newspaper_zombie", 10),
+                    entry("screen_door_zombie", 10),
+                    entry("pole_vaulting_zombie", 7),
+                    entry("football_zombie", 7),
+                    entry("imp", 12));
+            addGroup(groups, "gargantuar", 2, directionCount);
+        }
+        return List.copyOf(groups);
+    }
+
+    private static void addWeighted(List<WaveSpawnGroup> groups, int totalCount, int directionCount, WeightedZombie... entries) {
+        int remaining = Math.max(0, totalCount);
+        int totalWeight = 0;
+        for (WeightedZombie entry : entries) {
+            totalWeight += entry.weight();
+        }
+        for (int i = 0; i < entries.length; i++) {
+            WeightedZombie entry = entries[i];
+            int count = i == entries.length - 1 ? remaining : (int) Math.floor(totalCount * (entry.weight() / (double) totalWeight));
+            count = Math.min(remaining, count);
+            addGroup(groups, entry.id(), count, directionCount);
+            remaining -= count;
+        }
+    }
+
+    private static void addGroup(List<WaveSpawnGroup> groups, String zombieId, int count, int directionCount) {
+        if (count > 0) {
+            groups.add(new WaveSpawnGroup("pvz2mod:" + zombieId, count, directionCount, List.of()));
+        }
+    }
+
+    private static WeightedZombie entry(String id, int weight) {
+        return new WeightedZombie(id, weight);
+    }
+
+    private record WeightedZombie(String id, int weight) {
     }
 
     private static String scanTextFor(int wave) {

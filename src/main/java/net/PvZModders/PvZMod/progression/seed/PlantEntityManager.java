@@ -13,6 +13,7 @@ import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleOptions;
@@ -2429,9 +2430,7 @@ public final class PlantEntityManager {
     }
 
     private static boolean isGargantuarLike(Mob mob) {
-        ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType());
-        String path = id == null ? "" : id.getPath();
-        return path.contains("gargantuar") || mob.getMaxHealth() >= 80.0F;
+        return PvZZombieDefinitions.isGargantuarLike(mob);
     }
 
     private static boolean hasMetalOrArmor(Zombie zombie) {

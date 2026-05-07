@@ -11,6 +11,7 @@ import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
 import net.PvZModders.PvZMod.entity.client.PeaProjectileRenderer;
 import net.PvZModders.PvZMod.entity.client.PeashooterModel;
 import net.PvZModders.PvZMod.entity.client.PeashooterRenderer;
+import net.PvZModders.PvZMod.entity.client.PvZZombieRenderer;
 import net.PvZModders.PvZMod.entity.client.WildWestMinecartRenderer;
 import net.PvZModders.PvZMod.entity.client.pennytest;
 import net.PvZModders.PvZMod.entity.ModEntities;
@@ -177,7 +178,9 @@ public class PvZ2Mod {
 
     private void registerEntityAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.PENNY_VAN.get(), PennyVanEntity.createAttributes().build());
-        event.put(ModEntities.GARDEN_ZOMBIE.get(), Zombie.createAttributes().build());
+        for (var zombieEntityType : ModEntities.zombieEntityTypes()) {
+            event.put(zombieEntityType.get(), Zombie.createAttributes().build());
+        }
         event.put(ModEntities.ALL_PLANTS.get(), SnowGolem.createAttributes().build());
         event.put(ModEntities.JURASSIC_DINOSAUR.get(), Sniffer.createAttributes().build());
         for (var plantEntityType : ModEntities.plantEntityTypes()) {
@@ -195,7 +198,10 @@ public class PvZ2Mod {
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.PENNY_VAN.get(), PennyVanRenderer::new);
-                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), ZombieRenderer::new);
+                net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.GARDEN_ZOMBIE.get(), PvZZombieRenderer::new);
+                for (var zombieEntry : ModEntities.ZOMBIES.values()) {
+                    net.minecraft.client.renderer.entity.EntityRenderers.register(zombieEntry.get(), PvZZombieRenderer::new);
+                }
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.ALL_PLANTS.get(), SnowGolemRenderer::new);
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.SPEEDY_MINECART.get(), context -> new MinecartRenderer<>(context, ModelLayers.MINECART));
                 net.minecraft.client.renderer.entity.EntityRenderers.register(ModEntities.WILD_WEST_MINECART.get(), WildWestMinecartRenderer::new);

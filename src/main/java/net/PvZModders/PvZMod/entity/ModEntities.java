@@ -12,6 +12,8 @@ import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
 import net.PvZModders.PvZMod.entity.custom.SpeedyMinecartEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinition;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.MobCategory;
@@ -23,6 +25,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ModEntities {
@@ -50,6 +53,7 @@ public class ModEntities {
                     .sized(0.6F, 1.95F)
                     .clientTrackingRange(8)
                     .build(PvZ2Mod.MOD_ID + ":garden_zombie"));
+    public static final Map<String, RegistryObject<EntityType<PvZZombieEntity>>> ZOMBIES = registerZombieEntities();
     public static final RegistryObject<EntityType<AllPlantsDevSummonEntity>> ALL_PLANTS =
             ENTITY_TYPES.register("all_plants", () -> EntityType.Builder.<AllPlantsDevSummonEntity>of(AllPlantsDevSummonEntity::new, MobCategory.MISC)
                     .sized(0.7F, 1.9F)
@@ -94,6 +98,25 @@ public class ModEntities {
 
     public static Iterable<RegistryObject<EntityType<PvZPlantEntity>>> plantEntityTypes() {
         return PLANTS.values();
+    }
+
+    private static Map<String, RegistryObject<EntityType<PvZZombieEntity>>> registerZombieEntities() {
+        Map<String, RegistryObject<EntityType<PvZZombieEntity>>> zombies = new LinkedHashMap<>();
+        for (PvZZombieDefinition definition : PvZZombieDefinitions.all()) {
+            float scale = definition.visualScale();
+            zombies.put(definition.id(), ENTITY_TYPES.register(definition.id(), () -> EntityType.Builder.<PvZZombieEntity>of(PvZZombieEntity::new, MobCategory.MONSTER)
+                    .sized(0.6F * scale, 1.95F * scale)
+                    .clientTrackingRange(scale >= 2.0F ? 16 : 8)
+                    .build(PvZ2Mod.MOD_ID + ":" + definition.id())));
+        }
+        return Map.copyOf(zombies);
+    }
+
+    public static Iterable<RegistryObject<EntityType<PvZZombieEntity>>> zombieEntityTypes() {
+        List<RegistryObject<EntityType<PvZZombieEntity>>> types = new java.util.ArrayList<>();
+        types.add(GARDEN_ZOMBIE);
+        types.addAll(ZOMBIES.values());
+        return types;
     }
 
 }

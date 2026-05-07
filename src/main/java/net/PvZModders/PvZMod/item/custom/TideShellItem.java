@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.item.custom;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
+import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -78,7 +79,7 @@ public class TideShellItem extends Item {
     }
 
     private static boolean isPushResistantEnemy(LivingEntity entity) {
-        return entity.getMaxHealth() >= 80.0F || entity.getPersistentData().getBoolean("PvZGargantuarLike");
+        return PvZZombieDefinitions.isGargantuarLike(entity);
     }
 
     @SubscribeEvent
