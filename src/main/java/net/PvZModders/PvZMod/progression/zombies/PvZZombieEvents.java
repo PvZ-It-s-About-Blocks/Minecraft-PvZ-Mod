@@ -4,6 +4,7 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
 import net.minecraft.core.particles.ParticleTypes;
@@ -87,6 +88,20 @@ public final class PvZZombieEvents {
                 level.sendParticles(ParticleTypes.FLAME, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 6, 0.25D, 0.25D, 0.25D, 0.02D);
             }
         }
+        if (zombie.definition().id().equals("snorkel_zombie") && isBeachWaterTile(zombie) && isStraightProjectileDamage(event)) {
+            event.setAmount(event.getAmount() * 0.75F);
+            if (zombie.level() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.BUBBLE, zombie.getX(), zombie.getY() + 0.7D, zombie.getZ(), 6, 0.25D, 0.25D, 0.25D, 0.02D);
+            }
+        }
+        if (zombie.definition().has(PvZZombieSpecial.SURFER)
+                && zombie.getPersistentData().getBoolean("PvZSurferBoardActive")) {
+            double taken = zombie.getPersistentData().getDouble("PvZSurferDamageTaken") + event.getAmount();
+            zombie.getPersistentData().putDouble("PvZSurferDamageTaken", taken);
+            if (taken >= 25.0D) {
+                breakSurferBoard(zombie);
+            }
+        }
 
         if (zombie.definition().has(PvZZombieSpecial.CHICKEN_WRANGLER)
                 && !zombie.getPersistentData().getBoolean(PvZZombieEntity.CHICKEN_WRANGLER_RELEASED_TAG)
@@ -117,6 +132,11 @@ public final class PvZZombieEvents {
                 && !zombie.getPersistentData().getBoolean(PvZZombieEntity.JURASSIC_GARGANTUAR_THROWN_IMP_TAG)
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseJurassicImp(zombie);
+        }
+        if (zombie.definition().has(PvZZombieSpecial.DEEP_SEA_GARGANTUAR)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.DEEP_SEA_GARGANTUAR_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseMermaidImp(zombie);
         }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
@@ -232,6 +252,26 @@ public final class PvZZombieEvents {
                 .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.SNIFFER_DIGGING, ParticleTypes.CAMPFIRE_COSY_SMOKE));
     }
 
+    private static void releaseMermaidImp(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.DEEP_SEA_GARGANTUAR_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("mermaid_imp"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.DOLPHIN_SPLASH, ParticleTypes.BUBBLE));
+    }
+
+    private static void breakSurferBoard(PvZZombieEntity surfer) {
+        surfer.getPersistentData().putBoolean("PvZSurferBoardActive", false);
+        surfer.configureForWave(0.13D);
+        if (surfer.level() instanceof ServerLevel level) {
+            level.sendParticles(ParticleTypes.SPLASH, surfer.getX(), surfer.getY() + 0.5D, surfer.getZ(), 16, 0.35D, 0.25D, 0.35D, 0.04D);
+            level.playSound(null, surfer.blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.75F, 1.1F);
+        }
+    }
+
     private static void spawnSwarm(ServerLevel level, PvZZombieEntity source, EntityType<PvZZombieEntity> swarmType, int count, net.minecraft.sounds.SoundEvent sound, net.minecraft.core.particles.ParticleOptions particle) {
         for (int i = 0; i < count; i++) {
             PvZZombieEntity swarm = swarmType.create(level);
@@ -258,6 +298,17 @@ public final class PvZZombieEvents {
                 || PlantEntityManager.isHotPlantEntity(source)
                 || PlantEntityManager.isHotPlantEntity(direct)
                 || direct instanceof Projectile projectile && projectile.isOnFire();
+    }
+
+    private static boolean isBeachWaterTile(PvZZombieEntity zombie) {
+        if (!(zombie.level() instanceof ServerLevel level)) {
+            return zombie.isInWater();
+        }
+        net.minecraft.core.BlockPos pos = zombie.blockPosition();
+        return zombie.isInWater()
+                || level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos.below());
     }
 
     private static boolean isStraightProjectileDamage(LivingHurtEvent event) {

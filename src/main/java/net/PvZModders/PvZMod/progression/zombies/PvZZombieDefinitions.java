@@ -78,6 +78,16 @@ public final class PvZZombieDefinitions {
                 && zombie.definition().gardenSource() == GardenId.JURASSIC_MARSH;
     }
 
+    public static boolean isBigWaveBeachZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.BIG_WAVE_BEACH;
+    }
+
+    public static boolean isAquaticZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().has(PvZZombieSpecial.AQUATIC);
+    }
+
     private static Map<String, PvZZombieDefinition> createDefinitions() {
         Map<String, PvZZombieDefinition> definitions = new LinkedHashMap<>();
         register(definitions, "basic_zombie", "Basic Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
@@ -256,6 +266,26 @@ public final class PvZZombieDefinitions {
                 "Anti-defense bruiser that deals bonus damage to wall plants.", Set.of(PvZZombieSpecial.ROCKPUNCHER));
         register(definitions, GardenId.JURASSIC_MARSH, "jurassic_gargantuar", "Jurassic Gargantuar", 350.0D, 0.58D, 18.0D, 0.95D, 3.0F,
                 "Huge Jurassic Marsh gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.JURASSIC_GARGANTUAR));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "beach_zombie", "Beach Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Big Wave Beach zombie.", Set.of());
+        register(definitions, GardenId.BIG_WAVE_BEACH, "conehead_beach_zombie", "Conehead Beach Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Big Wave Beach zombie.", Set.of());
+        register(definitions, GardenId.BIG_WAVE_BEACH, "buckethead_beach_zombie", "Buckethead Beach Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Big Wave Beach zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "flag_beach_zombie", "Flag Beach Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Big Wave Beach push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "snorkel_zombie", "Snorkel Zombie", 35.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Aquatic sneak zombie that benefits from flooded tiles.", Set.of(PvZZombieSpecial.AQUATIC));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "surfer_zombie", "Surfer Zombie", 45.0D, 1.35D, 4.0D, 0.12D, 1.0F,
+                "Fast surfboard pressure zombie that slows after the board breaks.", Set.of(PvZZombieSpecial.SURFER));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "fisherman_zombie", "Fisherman Zombie", 50.0D, 0.9D, 4.0D, 0.0D, 1.0F,
+                "Hooks land plants into flooded tiles so they begin drowning.", Set.of(PvZZombieSpecial.FISHERMAN_HOOK));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "octo_zombie", "Octo Zombie", 60.0D, 0.9D, 4.0D, 0.05D, 1.0F,
+                "Temporarily disables plants with octopus ink.", Set.of(PvZZombieSpecial.OCTO_DISABLE));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "mermaid_imp", "Mermaid Imp", 10.0D, 1.45D, 3.0D, 0.0D, 0.55F,
+                "Small, fast aquatic imp.", Set.of(PvZZombieSpecial.IMP, PvZZombieSpecial.AQUATIC));
+        register(definitions, GardenId.BIG_WAVE_BEACH, "deep_sea_gargantuar", "Deep Sea Gargantuar", 350.0D, 0.58D, 18.0D, 0.95D, 3.0F,
+                "Huge Big Wave Beach gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.AQUATIC, PvZZombieSpecial.DEEP_SEA_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 

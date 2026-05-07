@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.entity.custom;
 
 import net.PvZModders.PvZMod.entity.ModEntities;
+import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptTombManager;
@@ -52,6 +53,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String ROYAL_GUARD_END_TICK_TAG = "PvZRoyalGuardEndTick";
     public static final String NEON_GARGANTUAR_THROWN_IMP_TAG = "PvZNeonGargantuarThrownImp";
     public static final String JURASSIC_GARGANTUAR_THROWN_IMP_TAG = "PvZJurassicGargantuarThrownImp";
+    public static final String DEEP_SEA_GARGANTUAR_THROWN_IMP_TAG = "PvZDeepSeaGargantuarThrownImp";
     public static final String MUSIC_BOOSTED_TAG = "PvZMusicBoosted";
     public static final String MUSIC_BOOST_END_TICK_TAG = "PvZMusicBoostEndTick";
     public static final String MUSIC_BOOST_STRENGTH_TAG = "PvZMusicBoostStrength";
@@ -77,6 +79,10 @@ public class PvZZombieEntity extends Zombie {
     private static final String ARCADE_NEXT_SUMMON_TICK_TAG = "PvZArcadeNextSummonTick";
     private static final String ARCADE_SUMMON_COUNT_TAG = "PvZArcadeSummonCount";
     private static final String BOOMBOX_NEXT_PULSE_TICK_TAG = "PvZBoomboxNextPulseTick";
+    private static final String SURFER_BOARD_ACTIVE_TAG = "PvZSurferBoardActive";
+    private static final String SURFER_DAMAGE_TAKEN_TAG = "PvZSurferDamageTaken";
+    private static final String FISHERMAN_NEXT_HOOK_TICK_TAG = "PvZFishermanNextHookTick";
+    private static final String OCTO_NEXT_DISABLE_TICK_TAG = "PvZOctoNextDisableTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -112,6 +118,10 @@ public class PvZZombieEntity extends Zombie {
     private static final int ARCADE_MAX_SUMMONS = 6;
     private static final int BOOMBOX_PULSE_INTERVAL_TICKS = 20 * 6;
     private static final int MUSIC_BOOST_DURATION_TICKS = 20 * 3;
+    private static final int FISHERMAN_HOOK_INTERVAL_TICKS = 20 * 8;
+    private static final int FISHERMAN_HOOK_RANGE = 8;
+    private static final int OCTO_DISABLE_INTERVAL_TICKS = 20 * 8;
+    private static final int OCTO_DISABLE_DURATION_TICKS = 20 * 6;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -149,6 +159,9 @@ public class PvZZombieEntity extends Zombie {
         tickBreakdancerKick(level);
         tickArcadeSummoner(level);
         tickBoomboxPulse(level);
+        tickBeachWaterMovement(level);
+        tickFishermanHook(level);
+        tickOctoDisable(level);
     }
 
     @Override
@@ -218,6 +231,9 @@ public class PvZZombieEntity extends Zombie {
         if (definition.has(PvZZombieSpecial.PONCHO_SHIELD) && !tag.contains(PONCHO_SHIELD_ACTIVE_TAG)) {
             tag.putBoolean(PONCHO_SHIELD_ACTIVE_TAG, true);
         }
+        if (definition.has(PvZZombieSpecial.SURFER) && !tag.contains(SURFER_BOARD_ACTIVE_TAG)) {
+            tag.putBoolean(SURFER_BOARD_ACTIVE_TAG, true);
+        }
 
         setAttribute(Attributes.MAX_HEALTH, definition.maxHealth());
         setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
@@ -245,6 +261,12 @@ public class PvZZombieEntity extends Zombie {
         }
         if (definition.has(PvZZombieSpecial.BULL_CHARGE) && tag.getLong(BULL_CHARGE_END_TICK_TAG) > level().getGameTime()) {
             multiplier = BULL_CHARGE_SPEED_MULTIPLIER;
+        }
+        if (definition.has(PvZZombieSpecial.SURFER) && !tag.getBoolean(SURFER_BOARD_ACTIVE_TAG)) {
+            multiplier = 1.0D;
+        }
+        if (definition.has(PvZZombieSpecial.AQUATIC) && isOnBeachWaterTile()) {
+            multiplier *= definition.has(PvZZombieSpecial.GARGANTUAR) ? 1.15D : 1.25D;
         }
         return tag.getDouble(WAVE_BASE_SPEED_TAG) * multiplier;
     }
@@ -865,6 +887,81 @@ public class PvZZombieEntity extends Zombie {
         level.sendParticles(ParticleTypes.SONIC_BOOM, getX(), getY() + 1.0D, getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
         level.playSound(null, blockPosition(), SoundEvents.NOTE_BLOCK_BASS.get(), SoundSource.HOSTILE, 1.0F, 0.6F);
         tag.putLong(BOOMBOX_NEXT_PULSE_TICK_TAG, gameTime + BOOMBOX_PULSE_INTERVAL_TICKS);
+    }
+
+    private void tickBeachWaterMovement(ServerLevel level) {
+        PvZZombieDefinition definition = definition();
+        if (!definition.has(PvZZombieSpecial.AQUATIC) && !definition.has(PvZZombieSpecial.SURFER)) {
+            return;
+        }
+        if (tickCount % 20 != 0) {
+            return;
+        }
+        setAttribute(Attributes.MOVEMENT_SPEED, movementSpeedFor(definition));
+        if (definition.has(PvZZombieSpecial.AQUATIC) && isOnBeachWaterTile()) {
+            level.sendParticles(ParticleTypes.BUBBLE, getX(), getY() + 0.4D, getZ(), 4, 0.25D, 0.2D, 0.25D, 0.01D);
+        }
+    }
+
+    private void tickFishermanHook(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.FISHERMAN_HOOK)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(FISHERMAN_NEXT_HOOK_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(FISHERMAN_HOOK_RANGE, 3.0D, FISHERMAN_HOOK_RANGE),
+                        plant -> plant.isAlive()
+                                && PlantEntityManager.canFishermanHookPlant(plant)
+                                && !PlantEntityManager.isRecentlyHooked(level, plant)
+                                && hasLineOfSight(plant))
+                .stream()
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            Optional<BlockPos> destination = PlantEntityManager.findNearestHookWaterDestination(level, plant, this);
+            if (destination.isPresent() && PlantEntityManager.pullPlantTowardWater(level, plant, destination.get())) {
+                renderMagicLine(level, position().add(0.0D, 1.2D, 0.0D), plant.position().add(0.0D, 0.8D, 0.0D), ParticleTypes.FISHING);
+                level.playSound(null, blockPosition(), SoundEvents.FISHING_BOBBER_RETRIEVE, SoundSource.HOSTILE, 0.8F, 0.8F);
+            }
+        });
+        tag.putLong(FISHERMAN_NEXT_HOOK_TICK_TAG, gameTime + FISHERMAN_HOOK_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickOctoDisable(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.OCTO_DISABLE)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(OCTO_NEXT_DISABLE_TICK_TAG)) {
+            return;
+        }
+
+        Optional<SnowGolem> target = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(9.0D, 4.0D, 9.0D),
+                        plant -> plant.isAlive() && PlantEntityManager.isPlant(plant) && !PlantEntityManager.isOctoDisabled(level, plant) && hasLineOfSight(plant))
+                .stream()
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        target.ifPresent(plant -> {
+            PlantEntityManager.applyOctoDisable(level, plant, this, OCTO_DISABLE_DURATION_TICKS);
+            renderMagicLine(level, position().add(0.0D, 1.2D, 0.0D), plant.position().add(0.0D, 0.9D, 0.0D), ParticleTypes.SQUID_INK);
+        });
+        tag.putLong(OCTO_NEXT_DISABLE_TICK_TAG, gameTime + OCTO_DISABLE_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private boolean isOnBeachWaterTile() {
+        if (!(level() instanceof ServerLevel level)) {
+            return isInWater();
+        }
+        BlockPos pos = blockPosition();
+        return isInWater()
+                || level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos)
+                || BigWaveBeachTideManager.isTileFlooded(level, pos.below());
     }
 
     private void pulseNearbyNeonZombies(ServerLevel level, double radius, boolean includeSelf) {
