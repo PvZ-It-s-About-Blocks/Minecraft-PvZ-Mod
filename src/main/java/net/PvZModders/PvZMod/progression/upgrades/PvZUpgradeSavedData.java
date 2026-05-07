@@ -61,6 +61,70 @@ public class PvZUpgradeSavedData extends SavedData {
         }
     }
 
+    @SubscribeEvent
+    public static void onPlayerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            get(player.serverLevel()).applyToPlayer(player);
+        }
+    }
+
+    public static boolean unlockWorldUpgrade(ServerLevel level, GardenUpgrade upgrade) {
+        PvZUpgradeSavedData data = get(level);
+        boolean unlockedNow = data.unlock(upgrade);
+        if (unlockedNow) {
+            data.applyToAllPlayers(level);
+        }
+        return unlockedNow;
+    }
+
+    public static boolean isWorldUpgradeUnlocked(ServerLevel level, GardenUpgrade upgrade) {
+        return get(level).isUnlocked(upgrade);
+    }
+
+    public static java.util.Set<GardenUpgrade> getUnlockedWorldUpgrades(ServerLevel level) {
+        return java.util.Collections.unmodifiableSet(get(level).unlocked);
+    }
+
+    public static void applyWorldUpgradeBenefitsToPlayer(ServerPlayer player) {
+        get(player.serverLevel()).applyToPlayer(player);
+    }
+
+    public static void applyWorldUpgradeBenefitsToAllOnlinePlayers(ServerLevel level) {
+        get(level).applyToAllPlayers(level);
+    }
+
+    public static int recalculatePlayerSunCapFromWorldUpgrades(ServerPlayer player) {
+        return PvZUpgradeValues.playerSunCap(get(player.serverLevel()));
+    }
+
+    public static int recalculateSeedHolderSlotsFromWorldUpgrades(ServerPlayer player) {
+        return PvZUpgradeValues.pageOneUnlockedSlots(get(player.serverLevel()));
+    }
+
+    public static int recalculateSeedStorageCapacityFromWorldUpgrades(ServerPlayer player) {
+        return PvZUpgradeValues.playerSeedPacketCap(get(player.serverLevel()));
+    }
+
+    public static int recalculateTotemSeedStorageFromWorldUpgrades(ServerLevel level) {
+        return PvZUpgradeValues.gardenPacketCap(get(level));
+    }
+
+    public static float recalculateSeedReplenishmentSpeedFromWorldUpgrades(ServerLevel level) {
+        return PvZUpgradeValues.seedRefillMultiplier(get(level));
+    }
+
+    public static int getMinimumWaveStartSun(ServerPlayer player, GardenId gardenId) {
+        return Math.min(SunManager.getSunCap(player), PvZUpgradeValues.minimumWaveStartSun(get(player.serverLevel())));
+    }
+
+    public static void ensureMinimumSunOnWaveStart(ServerPlayer player, GardenId gardenId) {
+        int targetSun = getMinimumWaveStartSun(player, gardenId);
+        if (SunManager.getSun(player) < targetSun) {
+            SunManager.setSun(player, targetSun);
+            SunManager.syncSunBar(player);
+        }
+    }
+
     public boolean unlockByRewardId(String rewardId) {
         return GardenUpgrade.byId(rewardId).map(this::unlock).orElse(false);
     }

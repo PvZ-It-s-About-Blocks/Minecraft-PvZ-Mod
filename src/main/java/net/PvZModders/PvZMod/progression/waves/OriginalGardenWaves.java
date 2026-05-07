@@ -178,11 +178,11 @@ public final class OriginalGardenWaves {
                     "Confirms the player has started the first real garden defense."
             ));
             case 3 -> List.of(new WaveReward(
-                    WaveRewardType.RESOURCE_REWARD,
-                    "small_seed_packet_refill",
-                    "Small Seed Packet Refill",
+                    WaveRewardType.GARDEN_UPGRADE,
+                    "minimum_starting_sun_1",
+                    "Starting Sun Upgrade I",
                     "minecraft:wheat_seeds",
-                    "Placeholder resource refill reward."
+                    "World-wide: raises the minimum Sun players begin a wave with to 75."
             ));
             case 5 -> List.of(new WaveReward(
                     WaveRewardType.PLANT_UNLOCK,
@@ -217,7 +217,7 @@ public final class OriginalGardenWaves {
                     "sun_cap_1",
                     "Sun Cap I",
                     "minecraft:sunflower",
-                    "Increases your maximum Sun by 100."
+                    "World-wide: permanently increases maximum Sun for everyone by 100."
             ));
             case 18 -> List.of(new WaveReward(
                     WaveRewardType.PLANT_UNLOCK,
@@ -231,7 +231,7 @@ public final class OriginalGardenWaves {
                     "active_seed_slot_1",
                     "Seed Holder Active Slots I",
                     "minecraft:bundle",
-                    "Unlocks a 7th active plant slot."
+                    "World-wide: permanently unlocks a 7th active plant slot for everyone."
             ));
             case 23 -> List.of(new WaveReward(
                     WaveRewardType.ITEM_UNLOCK,
@@ -245,7 +245,7 @@ public final class OriginalGardenWaves {
                     "seed_storage_capacity_1",
                     "Seed Storage Capacity I",
                     "minecraft:chest",
-                    "Increases how many seed packets each Seed Holder slot can carry."
+                    "World-wide: permanently increases how many seed packets each Seed Holder slot can carry."
             ));
             case 30 -> List.of(
                     new WaveReward(

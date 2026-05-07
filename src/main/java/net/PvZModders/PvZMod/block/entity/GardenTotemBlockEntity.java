@@ -138,7 +138,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private final GardenWaveProgress legacyWaveProgress = new GardenWaveProgress();
     private final Set<UUID> activeWaveEntityIds = new HashSet<>();
     private final Set<UUID> activeWaveDinosaurIds = new HashSet<>();
-    private final Set<UUID> playersSunAbsorbedThisWave = new HashSet<>();
+    private final Set<UUID> playersStartingSunCheckedThisWave = new HashSet<>();
     private final Set<BlockPos> activeWildWestRailPositions = new HashSet<>();
     private final List<WaveSpawnDirection> activeWaveDirections = new ArrayList<>();
     private final Map<WaveSpawnDirection, BlockPos> activeWavePortalAnchors = new EnumMap<>(WaveSpawnDirection.class);
@@ -181,7 +181,6 @@ public class GardenTotemBlockEntity extends BlockEntity {
         be.tickGoldTileSunProduction(serverLevel);
         be.tickSinkingPlotter(serverLevel, pos);
         be.syncHealthBar(serverLevel, pos);
-        be.absorbSunFromPlayersDuringWave(serverLevel, false);
         be.ensureWildWestMinecarts(serverLevel);
         be.tickWaveSpawnSchedule(serverLevel);
         be.tickModernDayPortalBurstEffects(serverLevel);
@@ -396,7 +395,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
-        absorbSunFromPlayersDuringWave(player.serverLevel(), true);
+        ensureMinimumSunForWaveParticipants(player.serverLevel(), true);
         showWaveDirectionTitle(player, directions);
         player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
         setChanged();
@@ -425,7 +424,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         if (!SeedStorage.addPlantPacketsToLoadout(player, plant.seedPacketId(), 1)) {
-            production.addPacket(gardenId, plant.plantId());
+            production.addPacket(player.serverLevel(), gardenId, plant.plantId());
             player.displayClientMessage(Component.literal("Your seed storage is full.").withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -497,7 +496,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private List<WaveSpawnDirection> prepareWaveSpawnSchedule(ServerLevel level, GardenWaveDefinition definition) {
         activeWaveEntityIds.clear();
         activeWaveDinosaurIds.clear();
-        playersSunAbsorbedThisWave.clear();
+        playersStartingSunCheckedThisWave.clear();
         activeWaveDirections.clear();
         activeWavePortalAnchors.clear();
         activeWavePortalRefreshTicks.clear();
@@ -1322,7 +1321,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
     }
 
-    private void absorbSunFromPlayersDuringWave(ServerLevel level, boolean announce) {
+    private void ensureMinimumSunForWaveParticipants(ServerLevel level, boolean announce) {
         if (!getWaveProgress(level).waveActive()) {
             return;
         }
@@ -1332,21 +1331,28 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 continue;
             }
             UUID playerId = player.getUUID();
-            if (playersSunAbsorbedThisWave.contains(playerId)) {
+            if (playersStartingSunCheckedThisWave.contains(playerId)) {
                 continue;
             }
 
-            int drained = SunManager.drainSun(player);
-            playersSunAbsorbedThisWave.add(playerId);
-            if (drained <= 0) {
+            playersStartingSunCheckedThisWave.add(playerId);
+            int targetSun = getMinimumWaveStartSun(player);
+            int currentSun = SunManager.getSun(player);
+            if (currentSun >= targetSun) {
                 continue;
             }
 
-            animateSunAbsorption(level, player, drained);
+            SunManager.setSun(player, targetSun);
+            SunManager.syncSunBar(player);
+            animateStartingSunBoost(level, player, targetSun - currentSun);
             if (announce) {
-                player.displayClientMessage(Component.literal("The Totem absorbs your Sun to begin the defense.").withStyle(ChatFormatting.GOLD), true);
+                player.displayClientMessage(Component.literal("The Totem steadies your starting Sun at " + targetSun + ".").withStyle(ChatFormatting.GOLD), true);
             }
         }
+    }
+
+    private int getMinimumWaveStartSun(ServerPlayer player) {
+        return PvZUpgradeSavedData.getMinimumWaveStartSun(player, gardenId);
     }
 
     private boolean isPlayerInsideGarden(ServerPlayer player) {
@@ -1357,8 +1363,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 && player.getY() <= worldPosition.getY() + 8.0D;
     }
 
-    private void animateSunAbsorption(ServerLevel level, ServerPlayer player, int drainedSun) {
-        int particleBursts = Math.min(18, Math.max(4, drainedSun / 25));
+    private void animateStartingSunBoost(ServerLevel level, ServerPlayer player, int gainedSun) {
+        int particleBursts = Math.min(18, Math.max(4, gainedSun / 25));
         Vec3 start = player.position().add(0.0D, player.getBbHeight() * 0.65D, 0.0D);
         Vec3 end = Vec3.atCenterOf(worldPosition).add(0.0D, 1.2D, 0.0D);
         Vec3 delta = end.subtract(start);
@@ -1386,7 +1392,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         activeWaveModernDayPortalBurstCursor = 0;
         activeWaveSandstormActive = false;
         activeWaveDirections.clear();
-        playersSunAbsorbedThisWave.clear();
+        playersStartingSunCheckedThisWave.clear();
         wildWestWaveObjectsArranged = false;
         waveBossBar.removeAllPlayers();
         discardActiveWaveDinosaurs();

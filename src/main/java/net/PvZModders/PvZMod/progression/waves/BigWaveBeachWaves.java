@@ -167,9 +167,9 @@ public final class BigWaveBeachWaves {
             case 6 -> plant("tangle_kelp", "Tangle Kelp", "pvz2mod:tangle_kelp_seed_packet", "Aquatic trap for nearby zombies.");
             case 9 -> List.of(new WaveReward(WaveRewardType.ITEM_UNLOCK, "sea_pickle", "Sea Pickle", "minecraft:sea_pickle", "Utility light source unlock."));
             case 11 -> plant("bowling_bulb", "Bowling Bulb", "pvz2mod:bowling_bulb_seed_packet", "Bounces rolling shots between zombies.");
-            case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_6", "Totem Seed Storage VI", "minecraft:prismarine_shard", "Totems can store more generated seeds."));
+            case 15 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_6", "Totem Seed Storage VI", "minecraft:prismarine_shard", "World-wide: permanently lets totems store more generated seeds."));
             case 19 -> plant("guacodile", "Guacodile", "pvz2mod:guacodile_seed_packet", "Amphibious ranged attacker that can rush.");
-            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_6", "Seed Replenishment Speed VI", "minecraft:kelp", "Gardens replenish seeds 35% faster."));
+            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_6", "Seed Replenishment Speed VI", "minecraft:kelp", "World-wide: permanently makes gardens replenish seeds 35% faster."));
             case 27 -> List.of(
                     new WaveReward(WaveRewardType.PLANT_UNLOCK, "banana_launcher", "Banana Launcher", "pvz2mod:banana_launcher_seed_packet", "Heavy splash artillery."),
                     new WaveReward(WaveRewardType.GARDEN_UPGRADE, "water_garden_capacity", "Water Garden Capacity", "minecraft:water_bucket", "Future hook for aquatic plant support and seed capacity.")

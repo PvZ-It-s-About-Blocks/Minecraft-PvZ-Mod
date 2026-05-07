@@ -183,12 +183,12 @@ public final class NeonMixtapeWaves {
             case 3 -> List.of(new WaveReward(WaveRewardType.GARDEN_SYSTEM_UNLOCK, "speaker_mechanic", "Speaker Mechanic", "minecraft:note_block", "Speakers pulse during selected Neon Mixtape waves."));
             case 5 -> plant("celery_stalker", "Celery Stalker", "pvz2mod:celery_stalker_seed_packet", "Ambushes zombies that pass it.");
             case 9 -> plant("thyme_warp", "Thyme Warp", "pvz2mod:thyme_warp_seed_packet", "Warps zombies backward.");
-            case 13 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_5", "Totem Storage V", "minecraft:jukebox", "Totems can store more generated seeds."));
+            case 13 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_5", "Totem Storage V", "minecraft:jukebox", "World-wide: permanently lets totems store more generated seeds."));
             case 17 -> plant("garlic", "Garlic", "pvz2mod:garlic_seed_packet", "Diverts and disrupts zombies.");
-            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_4", "Seed Holder Capacity IV", "minecraft:note_block", "Increases Seed Holder packet capacity."));
+            case 20 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_4", "Seed Holder Capacity IV", "minecraft:note_block", "World-wide: permanently increases Seed Holder packet capacity."));
             case 21 -> plant("spore_shroom", "Spore-shroom", "pvz2mod:spore_shroom_seed_packet", "Can sprout copies from defeated zombies.");
             case 26 -> plant("intensive_carrot", "Intensive Carrot", "pvz2mod:intensive_carrot_seed_packet", "Revives recently destroyed plants.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_5", "Seed Replenishment Speed V", "minecraft:diamond", "Gardens replenish seeds 30% faster."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_5", "Seed Replenishment Speed V", "minecraft:diamond", "World-wide: permanently makes gardens replenish seeds 30% faster."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "neon_mixtape_complete", "Neon Mixtape Garden Complete", "minecraft:note_block", "Marks Neon Mixtape complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "neon_mixtape_eye", "Neon Mixtape Eye", "pvz2mod:neon_mixtape_eye", "Awakens the Neon Mixtape Portal Frame."),

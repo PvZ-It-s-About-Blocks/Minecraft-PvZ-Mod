@@ -474,7 +474,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                     ? barW
                     : (int) (barW * (1.0F - Math.min(1.0F, remaining / (float) refillSeconds)));
             guiGraphics.fill(barX + 1, barY + 1, barX + 1 + Math.max(0, fillW - 2), barY + 4, 0xFF000000 | gardenColor);
-            String timerText = count >= packetCap ? "Ready" : remaining + "s";
+            String timerText = count >= packetCap ? "Ready" : "Next " + remaining + "s";
             guiGraphics.drawString(font, timerText, cardX + 150, cardY + 4, count >= packetCap ? gardenColor : 0x6F6F6F, false);
             guiGraphics.drawString(font, count + "/" + packetCap, cardX + 190, cardY + 4, count > 0 ? gardenColor : 0x5F5F5F, false);
         }

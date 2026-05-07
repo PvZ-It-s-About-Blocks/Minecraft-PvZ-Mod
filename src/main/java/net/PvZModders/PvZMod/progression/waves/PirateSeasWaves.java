@@ -187,16 +187,16 @@ public final class PirateSeasWaves {
             case 7 -> plant("spikeweed", "Spikeweed", "pvz2mod:spikeweed_seed_packet", "Damages zombies that walk over it.");
             case 9 -> List.of(new WaveReward(WaveRewardType.ITEM_UNLOCK, "sea_pickle", "Sea Pickle", "minecraft:sea_pickle", "Utility light source unlock."));
             case 10 -> plant("spring_bean", "Spring Bean", "pvz2mod:spring_bean_seed_packet", "Pushes zombies backward, possibly into churning water.");
-            case 13 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "active_seed_slot_2", "Seed Holder Active Slots II", "minecraft:oak_planks", "Unlocks an 8th active plant slot."));
+            case 13 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "active_seed_slot_2", "Seed Holder Active Slots II", "minecraft:oak_planks", "World-wide: permanently unlocks an 8th active plant slot for everyone."));
             case 15 -> plant("coconut_cannon", "Coconut Cannon", "pvz2mod:coconut_cannon_seed_packet", "Heavy splash cannon plant.");
             case 18 -> plant("threepeater", "Threepeater", "pvz2mod:threepeater_seed_packet", "Fires three projectiles at nearby lanes.");
             case 22 -> plant("spikerock", "Spikerock", "pvz2mod:spikerock_seed_packet", "Stronger Spikeweed.");
             case 24 -> List.of(
-                    new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_2", "Totem Seed Storage II", "minecraft:barrel", "Totems can store more generated seeds."),
+                    new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_2", "Totem Seed Storage II", "minecraft:barrel", "World-wide: permanently lets totems store more generated seeds."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "pirate_cannon", "Pirate Cannon", "pvz2mod:pirate_cannon", "Placeholder cannon foundation reward.")
             );
             case 26 -> plant("cherry_bomb", "Cherry Bomb", "pvz2mod:cherry_bomb_seed_packet", "Short-fuse area explosion.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_2", "Seed Storage Capacity II", "minecraft:heart_of_the_sea", "Increases Seed Holder packet capacity again."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_storage_capacity_2", "Seed Storage Capacity II", "minecraft:heart_of_the_sea", "World-wide: permanently increases Seed Holder packet capacity again."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "pirate_seas_complete", "Pirate Seas Garden Complete", "minecraft:filled_map", "Marks Pirate Seas complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "pirate_seas_eye", "Pirate Seas Eye", "pvz2mod:pirate_seas_eye", "Awakens the Pirate Seas Portal Frame."),

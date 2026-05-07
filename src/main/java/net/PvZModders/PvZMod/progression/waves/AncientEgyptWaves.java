@@ -156,11 +156,11 @@ public final class AncientEgyptWaves {
             case 5 -> plant("iceberg_lettuce", "Iceberg Lettuce", "pvz2mod:iceberg_lettuce_seed_packet", "Freezes one nearby zombie.");
             case 9 -> plant("grave_buster", "Grave Buster", "pvz2mod:grave_buster_seed_packet", "Consumes grave obstacles.");
             case 13 -> plant("bonk_choy", "Bonk Choy", "pvz2mod:bonk_choy_seed_packet", "Rapid close-range punching plant.");
-            case 16 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_1", "Totem Seed Storage I", "minecraft:gold_ingot", "Totems can store more generated seeds."));
+            case 16 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_1", "Totem Seed Storage I", "minecraft:gold_ingot", "World-wide: permanently lets totems store more generated seeds."));
             case 19 -> plant("torchwood", "Torchwood", "pvz2mod:torchwood_seed_packet", "Doubles compatible pea projectile damage.");
-            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_1", "Seed Replenishment Speed I", "minecraft:emerald", "Gardens replenish seeds 10% faster."));
+            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_1", "Seed Replenishment Speed I", "minecraft:emerald", "World-wide: permanently makes gardens replenish seeds 10% faster."));
             case 24 -> plant("twin_sunflower", "Twin Sunflower", "pvz2mod:twin_sunflower_seed_packet", "Produces 50 sun every few seconds.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_2", "Sun Cap II", "minecraft:diamond", "Increases your maximum Sun by 100."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_2", "Sun Cap II", "minecraft:diamond", "World-wide: permanently increases maximum Sun for everyone by 100."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "ancient_egypt_complete", "Ancient Egypt Garden Complete", "minecraft:gold_block", "Marks Ancient Egypt complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "ancient_egypt_eye", "Ancient Egypt Eye", "pvz2mod:ancient_egypt_eye", "Awakens the Ancient Egypt Portal Frame."),

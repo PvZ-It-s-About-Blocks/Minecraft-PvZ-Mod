@@ -170,12 +170,12 @@ public final class LostCityWaves {
             case 3 -> List.of(new WaveReward(WaveRewardType.GARDEN_SYSTEM_UNLOCK, "gold_tiles_unlocked", "Gold Tile Mechanic", "minecraft:gold_block", "Plants on Gold Tiles produce Sun."));
             case 6 -> plant("akee", "A.K.E.E.", "pvz2mod:akee_seed_packet", "Bounces seed shots between zombies.");
             case 10 -> plant("endurian", "Endurian", "pvz2mod:endurian_seed_packet", "Defensive thorn blocker.");
-            case 13 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_4", "Sun Cap IV", "minecraft:gold_ingot", "Increases your maximum Sun by 150."));
+            case 13 -> List.of(new WaveReward(WaveRewardType.PLAYER_UPGRADE, "sun_cap_4", "Sun Cap IV", "minecraft:gold_ingot", "World-wide: permanently increases maximum Sun for everyone by 150."));
             case 16 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "gold_tile_replenishment_synergy", "Gold Tile Replenishment Synergy", "minecraft:gold_nugget", "Future hook for better Gold Tile economy."));
             case 19 -> plant("stallia", "Stallia", "pvz2mod:stallia_seed_packet", "Slows zombies in a perfume cloud.");
-            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_3", "Seed Replenishment Speed III", "minecraft:emerald", "Gardens replenish seeds 20% faster."));
+            case 22 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "seed_replenishment_speed_3", "Seed Replenishment Speed III", "minecraft:emerald", "World-wide: permanently makes gardens replenish seeds 20% faster."));
             case 26 -> plant("gold_leaf", "Gold Leaf", "pvz2mod:gold_leaf_seed_packet", "Creates a Gold Tile.");
-            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_4", "Totem Seed Storage IV", "minecraft:diamond", "Totems can store more generated seeds."));
+            case 27 -> List.of(new WaveReward(WaveRewardType.GARDEN_UPGRADE, "totem_seed_storage_4", "Totem Seed Storage IV", "minecraft:diamond", "World-wide: permanently lets totems store more generated seeds."));
             case 30 -> List.of(
                     new WaveReward(WaveRewardType.COMPLETION, "lost_city_complete", "Lost City Garden Complete", "minecraft:gold_block", "Marks Lost City complete."),
                     new WaveReward(WaveRewardType.ITEM_UNLOCK, "lost_city_eye", "Lost City Eye", "pvz2mod:lost_city_eye", "Awakens the Lost City Portal Frame."),

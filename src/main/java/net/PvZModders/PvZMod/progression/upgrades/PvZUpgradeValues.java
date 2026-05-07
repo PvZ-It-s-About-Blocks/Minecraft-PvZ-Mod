@@ -11,6 +11,7 @@ public final class PvZUpgradeValues {
     public static final int MIN_SEED_REFILL_TIME_TICKS = 100;
     public static final int MIN_UPGRADED_SEED_REFILL_TIME_TICKS = 60;
     public static final int BASE_GARDEN_PACKET_CAP = 40;
+    public static final int BASE_MINIMUM_WAVE_START_SUN = 50;
 
     private PvZUpgradeValues() {
     }
@@ -33,6 +34,12 @@ public final class PvZUpgradeValues {
 
     public static int getSeedRefillTimeTicks(ResourceLocation seedPacketId, PvZUpgradeSavedData upgrades) {
         return PlantSeedDefinition.get(seedPacketId)
+                .map(definition -> getSeedRefillTimeTicks(definition, upgrades))
+                .orElse(MIN_SEED_REFILL_TIME_TICKS);
+    }
+
+    public static int getSeedRefillTimeTicks(String plantId, PvZUpgradeSavedData upgrades) {
+        return PlantSeedDefinition.getByPlantId(plantId)
                 .map(definition -> getSeedRefillTimeTicks(definition, upgrades))
                 .orElse(MIN_SEED_REFILL_TIME_TICKS);
     }
@@ -118,5 +125,18 @@ public final class PvZUpgradeValues {
         if (upgrades.isUnlocked(GardenUpgrade.TOTEM_SEED_STORAGE_VI)) cap += 20;
         if (upgrades.isUnlocked(GardenUpgrade.FINAL_GARDEN_STORAGE)) cap += 30;
         return cap;
+    }
+
+    public static int minimumWaveStartSun(PvZUpgradeSavedData upgrades) {
+        if (upgrades.isUnlocked(GardenUpgrade.MINIMUM_STARTING_SUN_III)) {
+            return 150;
+        }
+        if (upgrades.isUnlocked(GardenUpgrade.MINIMUM_STARTING_SUN_II)) {
+            return 100;
+        }
+        if (upgrades.isUnlocked(GardenUpgrade.MINIMUM_STARTING_SUN_I)) {
+            return 75;
+        }
+        return BASE_MINIMUM_WAVE_START_SUN;
     }
 }

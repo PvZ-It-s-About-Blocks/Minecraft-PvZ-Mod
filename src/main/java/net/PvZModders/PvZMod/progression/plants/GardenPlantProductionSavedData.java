@@ -108,8 +108,16 @@ public class GardenPlantProductionSavedData extends SavedData {
     }
 
     public void addPacket(GardenId gardenId, String plantId) {
+        addPacket(gardenId, plantId, GARDEN_PACKET_CAP);
+    }
+
+    public void addPacket(ServerLevel level, GardenId gardenId, String plantId) {
+        addPacket(gardenId, plantId, packetCap(level));
+    }
+
+    private void addPacket(GardenId gardenId, String plantId, int packetCap) {
         CompoundTag plantTag = plantTag(gardenId, plantId);
-        plantTag.putInt("Count", Math.min(GARDEN_PACKET_CAP, plantTag.getInt("Count") + 1));
+        plantTag.putInt("Count", Math.min(packetCap, plantTag.getInt("Count") + 1));
         setDirty();
     }
 
