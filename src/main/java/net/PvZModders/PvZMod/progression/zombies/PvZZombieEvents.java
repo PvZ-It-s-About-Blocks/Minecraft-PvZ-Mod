@@ -27,6 +27,8 @@ import java.util.Optional;
 
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class PvZZombieEvents {
+    private static final String PROJECTILE_KIND_TAG = "PvZProjectileKind";
+
     private PvZZombieEvents() {
     }
 
@@ -47,6 +49,23 @@ public final class PvZZombieEvents {
         if (zombie.definition().has(PvZZombieSpecial.PONCHO_SHIELD)) {
             tickPonchoShield(zombie, event);
         }
+        if (zombie.definition().has(PvZZombieSpecial.EXCAVATOR_SHIELD) && isStraightProjectileDamage(event)) {
+            Entity direct = event.getSource().getDirectEntity();
+            Entity source = event.getSource().getEntity();
+            Vec3 sourcePosition = direct != null ? direct.position() : source != null ? source.position() : null;
+            if (sourcePosition == null || isDamageFromFront(zombie, sourcePosition)) {
+                event.setAmount(event.getAmount() * 0.4F);
+                if (zombie.level() instanceof ServerLevel level) {
+                    level.sendParticles(ParticleTypes.CRIT, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 8, 0.3D, 0.3D, 0.3D, 0.02D);
+                }
+            }
+        }
+        if (zombie.definition().has(PvZZombieSpecial.PARASOL_SHIELD) && isLobbedProjectileDamage(event)) {
+            event.setAmount(event.getAmount() * 0.5F);
+            if (zombie.level() instanceof ServerLevel level) {
+                level.sendParticles(ParticleTypes.CLOUD, zombie.getX(), zombie.getY() + 1.4D, zombie.getZ(), 8, 0.35D, 0.2D, 0.35D, 0.02D);
+            }
+        }
         if (zombie.definition().has(PvZZombieSpecial.ICE_BLOCK) && isHotDamage(event)) {
             event.setAmount(event.getAmount() * 1.25F);
             if (zombie.level() instanceof ServerLevel level) {
@@ -63,6 +82,11 @@ public final class PvZZombieEvents {
                 && !zombie.getPersistentData().getBoolean(PvZZombieEntity.WEASEL_HOARDER_RELEASED_TAG)
                 && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
             releaseZombieWeasels(zombie);
+        }
+        if (zombie.definition().has(PvZZombieSpecial.PORTER_GARGANTUAR)
+                && !zombie.getPersistentData().getBoolean(PvZZombieEntity.PORTER_GARGANTUAR_THROWN_IMP_TAG)
+                && zombie.getHealth() - event.getAmount() <= zombie.getMaxHealth() * 0.5F) {
+            releaseImpPorter(zombie);
         }
 
         if (!zombie.definition().has(PvZZombieSpecial.SCREEN_DOOR_SHIELD)) {
@@ -134,6 +158,17 @@ public final class PvZZombieEvents {
                 .ifPresent(weaselType -> spawnSwarm(level, hoarder, weaselType, 4 + level.random.nextInt(3), SoundEvents.FOX_SCREECH, ParticleTypes.SNOWFLAKE));
     }
 
+    private static void releaseImpPorter(PvZZombieEntity gargantuar) {
+        if (!(gargantuar.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        gargantuar.getPersistentData().putBoolean(PvZZombieEntity.PORTER_GARGANTUAR_THROWN_IMP_TAG, true);
+        Optional.ofNullable(ModEntities.ZOMBIES.get("imp_porter"))
+                .map(registryObject -> registryObject.get())
+                .ifPresent(impType -> spawnSwarm(level, gargantuar, impType, 1, SoundEvents.ZOMBIE_INFECT, ParticleTypes.CRIT));
+    }
+
     private static void spawnSwarm(ServerLevel level, PvZZombieEntity source, EntityType<PvZZombieEntity> swarmType, int count, net.minecraft.sounds.SoundEvent sound, net.minecraft.core.particles.ParticleOptions particle) {
         for (int i = 0; i < count; i++) {
             PvZZombieEntity swarm = swarmType.create(level);
@@ -160,6 +195,61 @@ public final class PvZZombieEvents {
                 || PlantEntityManager.isHotPlantEntity(source)
                 || PlantEntityManager.isHotPlantEntity(direct)
                 || direct instanceof Projectile projectile && projectile.isOnFire();
+    }
+
+    private static boolean isStraightProjectileDamage(LivingHurtEvent event) {
+        Entity direct = event.getSource().getDirectEntity();
+        Entity source = event.getSource().getEntity();
+        if (direct instanceof Projectile projectile) {
+            return !isLobbedProjectileKind(projectile.getPersistentData().getString(PROJECTILE_KIND_TAG));
+        }
+        String behavior = plantBehavior(source);
+        return "PEASHOOTER".equals(behavior)
+                || "REPEATER".equals(behavior)
+                || "SPLIT_PEA".equals(behavior)
+                || "PEA_POD".equals(behavior)
+                || "RED_STINGER".equals(behavior)
+                || "PUFF_SHROOM".equals(behavior)
+                || "SPORE_SHROOM".equals(behavior)
+                || "ROTOBAGA".equals(behavior)
+                || "GUACODILE".equals(behavior);
+    }
+
+    private static boolean isLobbedProjectileDamage(LivingHurtEvent event) {
+        Entity direct = event.getSource().getDirectEntity();
+        Entity source = event.getSource().getEntity();
+        if (direct instanceof Projectile projectile && isLobbedProjectileKind(projectile.getPersistentData().getString(PROJECTILE_KIND_TAG))) {
+            return true;
+        }
+        String behavior = plantBehavior(source);
+        return "KERNEL_PULT".equals(behavior)
+                || "MELON_PULT".equals(behavior)
+                || "WINTER_MELON".equals(behavior)
+                || "PEPPER_PULT".equals(behavior)
+                || "AKEE".equals(behavior)
+                || "COCONUT_CANNON".equals(behavior)
+                || "BANANA_LAUNCHER".equals(behavior)
+                || "DUSK_LOBBER".equals(behavior);
+    }
+
+    private static boolean isLobbedProjectileKind(String kind) {
+        return "kernel".equals(kind)
+                || "butter".equals(kind)
+                || "melon".equals(kind)
+                || "winter_melon".equals(kind)
+                || "pepper_pult".equals(kind)
+                || "akee_seed".equals(kind)
+                || "coconut_cannon".equals(kind)
+                || "banana".equals(kind)
+                || "shadow_lob".equals(kind)
+                || "powered_shadow_lob".equals(kind);
+    }
+
+    private static String plantBehavior(Entity entity) {
+        if (entity == null || !entity.getPersistentData().contains(PlantEntityManager.PLANT_BEHAVIOR_TAG)) {
+            return "";
+        }
+        return entity.getPersistentData().getString(PlantEntityManager.PLANT_BEHAVIOR_TAG);
     }
 
     private static void copyGardenCenter(PvZZombieEntity from, PvZZombieEntity to) {

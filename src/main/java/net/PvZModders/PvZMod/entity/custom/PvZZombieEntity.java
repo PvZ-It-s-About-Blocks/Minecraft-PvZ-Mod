@@ -45,7 +45,10 @@ public class PvZZombieEntity extends Zombie {
     public static final String WEASEL_HOARDER_RELEASED_TAG = "PvZWeaselHoarderReleased";
     public static final String PONCHO_SHIELD_ACTIVE_TAG = "PvZPonchoShieldActive";
     public static final String HUNTER_FREEZE_SHOT_TAG = "PvZHunterFreezeShot";
+    public static final String RELIC_HUNTER_LEAPED_TAG = "PvZRelicHunterLeaped";
+    public static final String PORTER_GARGANTUAR_THROWN_IMP_TAG = "PvZPorterGargantuarThrownImp";
     private static final String PROSPECTOR_LEAP_TICK_TAG = "PvZProspectorLeapTick";
+    private static final String RELIC_HUNTER_LEAP_TICK_TAG = "PvZRelicHunterLeapTick";
     private static final String PIANIST_NEXT_SUPPORT_TICK_TAG = "PvZPianistNextSupportTick";
     private static final String BULL_NEXT_CHARGE_TICK_TAG = "PvZBullNextChargeTick";
     private static final String BULL_CHARGE_END_TICK_TAG = "PvZBullChargeEndTick";
@@ -53,6 +56,7 @@ public class PvZZombieEntity extends Zombie {
     private static final String TROGLOBITE_NEXT_PUSH_TICK_TAG = "PvZTroglobiteNextPushTick";
     private static final String TROGLOBITE_ICE_CREATED_TAG = "PvZTroglobiteIceCreated";
     private static final String DODO_NEXT_HOP_TICK_TAG = "PvZDodoNextHopTick";
+    private static final String TURQUOISE_NEXT_DRAIN_TICK_TAG = "PvZTurquoiseNextDrainTick";
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
@@ -70,6 +74,8 @@ public class PvZZombieEntity extends Zombie {
     private static final int HUNTER_FREEZE_INTERVAL_TICKS = 20 * 4;
     private static final int TROGLOBITE_PUSH_INTERVAL_TICKS = 20 * 8;
     private static final int DODO_HOP_INTERVAL_TICKS = 20 * 6;
+    private static final int TURQUOISE_DRAIN_AMOUNT = 15;
+    private static final int TURQUOISE_DRAIN_INTERVAL_TICKS = 20 * 4;
 
     public PvZZombieEntity(EntityType<? extends Zombie> entityType, Level level) {
         super(entityType, level);
@@ -89,11 +95,13 @@ public class PvZZombieEntity extends Zombie {
         tickRaDrain(level);
         tickTombRaiser(level);
         tickProspectorLeap(level);
+        tickRelicHunterLeap(level);
         tickPianistSupport(level);
         tickBullCharge(level);
         tickHunterFreeze(level);
         tickTroglobitePush(level);
         tickDodoHop(level);
+        tickTurquoiseSkullDrain(level);
     }
 
     @Override
@@ -155,6 +163,7 @@ public class PvZZombieEntity extends Zombie {
         tag.putDouble(PvZZombieDefinitions.ATTACK_DAMAGE_TAG, definition.attackDamage());
         tag.putDouble(WAVE_BASE_SPEED_TAG, waveBaseSpeed);
         tag.putBoolean(PvZZombieDefinitions.GARGANTUAR_LIKE_TAG, definition.has(PvZZombieSpecial.GARGANTUAR));
+        tag.putBoolean(PvZZombieDefinitions.FLYING_ZOMBIE_TAG, definition.has(PvZZombieSpecial.FLYING));
         if (definition.has(PvZZombieSpecial.POLE_VAULT) && !tag.contains(POLE_VAULT_READY_TAG)) {
             tag.putBoolean(POLE_VAULT_READY_TAG, true);
         }
@@ -332,6 +341,48 @@ public class PvZZombieEntity extends Zombie {
         level.playSound(null, blockPosition(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.HOSTILE, 0.7F, 1.4F);
     }
 
+    private void tickRelicHunterLeap(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.RELIC_HUNTER_LEAP)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (tag.getBoolean(RELIC_HUNTER_LEAPED_TAG)) {
+            return;
+        }
+        if (!tag.contains(RELIC_HUNTER_LEAP_TICK_TAG)) {
+            tag.putLong(RELIC_HUNTER_LEAP_TICK_TAG, gameTime + 20L * 2);
+            return;
+        }
+        if (gameTime < tag.getLong(RELIC_HUNTER_LEAP_TICK_TAG)) {
+            return;
+        }
+
+        Vec3 forward = vectorTowardGarden().orElse(horizontalForward());
+        Optional<SnowGolem> blocker = level.getEntitiesOfClass(SnowGolem.class, getBoundingBox().inflate(4.5D, 1.0D, 4.5D), PlantEntityManager::isPlant)
+                .stream()
+                .filter(plant -> isInFront(plant.position(), forward))
+                .min(Comparator.comparingDouble(this::distanceToSqr));
+        if (blocker.isEmpty()) {
+            tag.putBoolean(RELIC_HUNTER_LEAPED_TAG, true);
+            return;
+        }
+
+        BlockPos landing = BlockPos.containing(blocker.get().position().add(forward.scale(3.2D)));
+        landing = level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing);
+        if (!isSafeLanding(level, landing)) {
+            tag.putBoolean(RELIC_HUNTER_LEAPED_TAG, true);
+            return;
+        }
+
+        moveTo(landing.getX() + 0.5D, landing.getY(), landing.getZ() + 0.5D, getYRot(), getXRot());
+        setDeltaMovement(forward.scale(0.75D).add(0.0D, 0.45D, 0.0D));
+        tag.putBoolean(RELIC_HUNTER_LEAPED_TAG, true);
+        level.sendParticles(ParticleTypes.CRIT, getX(), getY() + 0.8D, getZ(), 18, 0.45D, 0.35D, 0.45D, 0.04D);
+        level.playSound(null, blockPosition(), SoundEvents.SLIME_JUMP, SoundSource.HOSTILE, 0.8F, 1.25F);
+    }
+
     private void tickPianistSupport(ServerLevel level) {
         if (!definition().has(PvZZombieSpecial.PIANIST_SUPPORT)) {
             return;
@@ -478,6 +529,38 @@ public class PvZZombieEntity extends Zombie {
             level.playSound(null, blockPosition(), SoundEvents.RABBIT_JUMP, SoundSource.HOSTILE, 0.8F, 0.7F);
         }
         tag.putLong(DODO_NEXT_HOP_TICK_TAG, gameTime + DODO_HOP_INTERVAL_TICKS + level.random.nextInt(20 * 2));
+    }
+
+    private void tickTurquoiseSkullDrain(ServerLevel level) {
+        if (!definition().has(PvZZombieSpecial.TURQUOISE_SKULL_DRAIN)) {
+            return;
+        }
+
+        CompoundTag tag = getPersistentData();
+        long gameTime = level.getGameTime();
+        if (gameTime < tag.getLong(TURQUOISE_NEXT_DRAIN_TICK_TAG)) {
+            return;
+        }
+
+        boolean drainedAny = false;
+        for (Player player : level.players()) {
+            if (player.distanceToSqr(this) > 24.0D * 24.0D || SunManager.getSun(player) <= 0) {
+                continue;
+            }
+            SunManager.setSun(player, Math.max(0, SunManager.getSun(player) - TURQUOISE_DRAIN_AMOUNT));
+            drainedAny = true;
+            Vec3 toPlayer = player.position().add(0.0D, 1.0D, 0.0D).subtract(position().add(0.0D, 1.4D, 0.0D));
+            for (int i = 0; i < 10; i++) {
+                Vec3 point = position().add(0.0D, 1.4D, 0.0D).add(toPlayer.scale(i / 10.0D));
+                level.sendParticles(ParticleTypes.ENCHANT, point.x, point.y, point.z, 1, 0.03D, 0.03D, 0.03D, 0.0D);
+            }
+        }
+
+        if (drainedAny) {
+            level.sendParticles(ParticleTypes.WAX_OFF, getX(), getY() + 1.3D, getZ(), 10, 0.35D, 0.45D, 0.35D, 0.02D);
+            level.playSound(null, blockPosition(), SoundEvents.BEACON_AMBIENT, SoundSource.HOSTILE, 0.45F, 1.55F);
+        }
+        tag.putLong(TURQUOISE_NEXT_DRAIN_TICK_TAG, gameTime + TURQUOISE_DRAIN_INTERVAL_TICKS);
     }
 
     private void copyGardenCenterTo(PvZZombieEntity other) {

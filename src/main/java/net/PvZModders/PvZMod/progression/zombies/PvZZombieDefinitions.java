@@ -15,6 +15,7 @@ public final class PvZZombieDefinitions {
     public static final String TYPE_TAG = "PvZZombieType";
     public static final String MODEL_KEY_TAG = "PvZZombieModelKey";
     public static final String GARGANTUAR_LIKE_TAG = "PvZGargantuarLike";
+    public static final String FLYING_ZOMBIE_TAG = "PvZFlyingZombie";
     public static final String ATTACK_DAMAGE_TAG = "PvZZombieAttackDamage";
 
     private static final Map<String, PvZZombieDefinition> DEFINITIONS = createDefinitions();
@@ -49,6 +50,17 @@ public final class PvZZombieDefinitions {
                 || "gargantuar".equals(path)
                 || (entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
                 && zombie.definition().has(PvZZombieSpecial.GARGANTUAR));
+    }
+
+    public static boolean isFlyingZombie(LivingEntity entity) {
+        return entity.getPersistentData().getBoolean(FLYING_ZOMBIE_TAG)
+                || (entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().has(PvZZombieSpecial.FLYING));
+    }
+
+    public static boolean isLostCityZombie(LivingEntity entity) {
+        return entity instanceof net.PvZModders.PvZMod.entity.custom.PvZZombieEntity zombie
+                && zombie.definition().gardenSource() == GardenId.LOST_CITY;
     }
 
     private static Map<String, PvZZombieDefinition> createDefinitions() {
@@ -141,6 +153,30 @@ public final class PvZZombieDefinitions {
                 "Standalone hopping Frostbite creature enemy.", Set.of(PvZZombieSpecial.DODO_HOP));
         register(definitions, GardenId.FROSTBITE, "sloth_gargantuar", "Sloth Gargantuar", 340.0D, 0.52D, 18.0D, 0.95D, 3.0F,
                 "Huge slow Frostbite gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR));
+        register(definitions, GardenId.LOST_CITY, "lost_city_zombie", "Lost City Zombie", 20.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Baseline Lost City zombie.", Set.of());
+        register(definitions, GardenId.LOST_CITY, "conehead_lost_city_zombie", "Conehead Lost City Zombie", 45.0D, 1.0D, 4.0D, 0.05D, 1.0F,
+                "Early armored Lost City zombie.", Set.of());
+        register(definitions, GardenId.LOST_CITY, "buckethead_lost_city_zombie", "Buckethead Lost City Zombie", 90.0D, 0.95D, 4.0D, 0.15D, 1.0F,
+                "Heavy armored Lost City zombie.", Set.of(PvZZombieSpecial.METAL));
+        register(definitions, GardenId.LOST_CITY, "flag_lost_city_zombie", "Flag Lost City Zombie", 20.0D, 1.15D, 4.0D, 0.0D, 1.0F,
+                "Marks a larger Lost City push.", Set.of(PvZZombieSpecial.FLAG));
+        register(definitions, GardenId.LOST_CITY, "excavator_zombie", "Excavator Zombie", 60.0D, 0.9D, 4.0D, 0.12D, 1.0F,
+                "Deflects straight frontal projectile pressure.", Set.of(PvZZombieSpecial.EXCAVATOR_SHIELD, PvZZombieSpecial.METAL));
+        register(definitions, GardenId.LOST_CITY, "parasol_zombie", "Parasol Zombie", 45.0D, 1.0D, 4.0D, 0.0D, 1.0F,
+                "Resists lobbed and falling projectiles.", Set.of(PvZZombieSpecial.PARASOL_SHIELD));
+        register(definitions, GardenId.LOST_CITY, "relic_hunter_zombie", "Relic Hunter Zombie", 50.0D, 1.25D, 4.0D, 0.0D, 1.0F,
+                "Aggressively leaps past one blocker.", Set.of(PvZZombieSpecial.RELIC_HUNTER_LEAP));
+        register(definitions, GardenId.LOST_CITY, "turquoise_skull_zombie", "Turquoise Skull Zombie", 55.0D, 0.85D, 3.0D, 0.0D, 1.0F,
+                "Drains Sun with a visible skull beam.", Set.of(PvZZombieSpecial.TURQUOISE_SKULL_DRAIN));
+        register(definitions, GardenId.LOST_CITY, "lost_pilot_zombie", "Lost Pilot Zombie", 30.0D, 1.25D, 4.0D, 0.0D, 1.0F,
+                "Flying-tagged aerial pressure zombie.", Set.of(PvZZombieSpecial.FLYING));
+        register(definitions, GardenId.LOST_CITY, "bug_zombie", "Bug Zombie", 40.0D, 1.2D, 4.0D, 0.0D, 1.0F,
+                "Tougher flying-tagged bug-carried zombie.", Set.of(PvZZombieSpecial.FLYING));
+        register(definitions, GardenId.LOST_CITY, "imp_porter", "Imp Porter", 10.0D, 1.45D, 3.0D, 0.0D, 0.55F,
+                "Small, fast Lost City support enemy.", Set.of(PvZZombieSpecial.IMP));
+        register(definitions, GardenId.LOST_CITY, "porter_gargantuar", "Porter Gargantuar", 340.0D, 0.6D, 18.0D, 0.95D, 3.0F,
+                "Huge Lost City gargantuar-like threat.", Set.of(PvZZombieSpecial.GARGANTUAR, PvZZombieSpecial.PORTER_GARGANTUAR));
         return Collections.unmodifiableMap(new LinkedHashMap<>(definitions));
     }
 
