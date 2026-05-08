@@ -1,8 +1,8 @@
 package net.PvZModders.PvZMod.progression.greenhouse;
 
+import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.item.ModItems;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,10 +14,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.Comparator;
 import java.util.Optional;
 
+@Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public final class GreenhouseCoinManager {
     public static final String PLAYER_COINS_TAG = "PvZCoins";
     public static final String COIN_DROP_TAG = "PvZCoinDrop";
@@ -32,6 +37,9 @@ public final class GreenhouseCoinManager {
     }
 
     public static int countCoins(Player player) {
+        if (player instanceof ServerPlayer) {
+            normalizeCoinStacks(player);
+        }
         int total = 0;
         Inventory inventory = player.getInventory();
         for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
@@ -67,6 +75,7 @@ public final class GreenhouseCoinManager {
             remaining -= removed;
         }
         inventory.setChanged();
+        normalizeCoinStacks(player);
         return remaining <= 0;
     }
 
@@ -83,18 +92,70 @@ public final class GreenhouseCoinManager {
             return;
         }
 
-        int remaining = amount;
+        int remaining = addCoinsToInventory(player, amount);
         while (remaining > 0) {
             int count = Math.min(remaining, COIN_STACK_SIZE);
-            ItemStack stack = new ItemStack(ModItems.COIN.get(), count);
+            player.drop(new ItemStack(ModItems.COIN.get(), count), false);
             remaining -= count;
-            if (!player.getInventory().add(stack) && !stack.isEmpty()) {
-                player.drop(stack, false);
-            }
         }
         if (player instanceof ServerPlayer serverPlayer) {
             serverPlayer.displayClientMessage(Component.literal("Coins: " + countCoins(player)).withStyle(ChatFormatting.GOLD), true);
         }
+    }
+
+    public static int addCoinsToInventory(Player player, int amount) {
+        if (amount <= 0) {
+            return 0;
+        }
+        Inventory inventory = player.getInventory();
+        int remaining = amount;
+        for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!isCoinItem(stack) || stack.getCount() >= COIN_STACK_SIZE) {
+                continue;
+            }
+            int moved = Math.min(remaining, COIN_STACK_SIZE - stack.getCount());
+            stack.setCount(stack.getCount() + moved);
+            remaining -= moved;
+        }
+        for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!stack.isEmpty()) {
+                continue;
+            }
+            int moved = Math.min(remaining, COIN_STACK_SIZE);
+            inventory.setItem(slot, new ItemStack(ModItems.COIN.get(), moved));
+            remaining -= moved;
+        }
+        inventory.setChanged();
+        return remaining;
+    }
+
+    public static void normalizeCoinStacks(Player player) {
+        Inventory inventory = player.getInventory();
+        int total = 0;
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!isCoinItem(stack)) {
+                continue;
+            }
+            total += stack.getCount();
+            inventory.setItem(slot, ItemStack.EMPTY);
+        }
+        int remaining = total;
+        for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
+            if (!inventory.getItem(slot).isEmpty()) {
+                continue;
+            }
+            int moved = Math.min(remaining, COIN_STACK_SIZE);
+            inventory.setItem(slot, new ItemStack(ModItems.COIN.get(), moved));
+            remaining -= moved;
+        }
+        if (remaining > 0) {
+            Vec3 pos = player.position();
+            dropCoins(player.level(), pos, remaining);
+        }
+        inventory.setChanged();
     }
 
     public static void addCoinsToNearestPlayer(ServerLevel level, Vec3 origin, int amount) {
@@ -155,6 +216,36 @@ public final class GreenhouseCoinManager {
             collected += value;
         }
         return collected;
+    }
+
+    @SubscribeEvent
+    public static void onCoinPickup(EntityItemPickupEvent event) {
+        ItemEntity item = event.getItem();
+        if (!isCoinDrop(item)) {
+            return;
+        }
+        Player player = event.getEntity();
+        int value = coinValue(item);
+        if (value <= 0) {
+            return;
+        }
+        int leftover = addCoinsToInventory(player, value);
+        if (leftover <= 0) {
+            item.discard();
+        } else {
+            item.setItem(new ItemStack(ModItems.COIN.get(), leftover));
+        }
+        event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END
+                || event.player.level().isClientSide
+                || event.player.tickCount % 20 != 0) {
+            return;
+        }
+        normalizeCoinStacks(event.player);
     }
 
     private static Optional<ServerPlayer> nearestPlayer(ServerLevel level, Vec3 origin, double range) {

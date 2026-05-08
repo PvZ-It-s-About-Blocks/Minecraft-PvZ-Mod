@@ -66,6 +66,11 @@ public final class PlantHotbarHudOverlay {
         }
 
         int textWidth = font.width(label);
+        int maxWidth = Math.max(80, screenWidth - 20);
+        if (textWidth > maxWidth) {
+            label = font.plainSubstrByWidth(label, maxWidth - font.width("...")) + "...";
+            textWidth = font.width(label);
+        }
         int x = screenWidth / 2 - textWidth / 2;
         guiGraphics.fill(x - 4, y - 2, x + textWidth + 4, y + 10, 0x99000000);
         guiGraphics.drawString(font, label, x, y, 0xFFE9FFE9, false);

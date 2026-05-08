@@ -524,6 +524,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
             return;
         }
         DaveShopPurchaseManager.purchaseShopEntry(player, stock.get(entryIndex));
+        player.containerMenu.broadcastChanges();
         setChanged();
     }
 

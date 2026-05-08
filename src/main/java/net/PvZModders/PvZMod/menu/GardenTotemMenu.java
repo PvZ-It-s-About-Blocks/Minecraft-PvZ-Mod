@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.menu;
 
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
+import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
 import net.minecraft.server.level.ServerPlayer;
@@ -29,6 +30,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public static final int TRASH_SLOT_INDEX = GARDEN_SOURCE_SLOT_START + GARDEN_SOURCE_SLOT_COUNT;
 
     private final GardenTotemBlockEntity gardenTotem;
+    private final Player player;
     private int currentWave;
     private int waveActive;
     private int portalDiscoveryMask;
@@ -42,6 +44,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private int gardenPacketCap = net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData.GARDEN_PACKET_CAP;
     private int shopPlantUnlockMask;
     private int shopEntryAvailableMask;
+    private int coinCount;
 
     public GardenTotemMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, 1, false);
@@ -50,6 +53,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public GardenTotemMenu(int containerId, Inventory playerInventory, int currentWave, boolean waveActive) {
         super(ModMenuTypes.GARDEN_TOTEM.get(), containerId);
         this.gardenTotem = null;
+        this.player = playerInventory.player;
         this.currentWave = currentWave;
         this.waveActive = waveActive ? 1 : 0;
         this.portalDiscoveryMask = 1;
@@ -57,6 +61,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.gardenPortalIndex = 0;
         this.shopPlantUnlockMask = 0;
         this.shopEntryAvailableMask = 0;
+        this.coinCount = 0;
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -64,6 +69,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public GardenTotemMenu(int containerId, Inventory playerInventory, GardenTotemBlockEntity gardenTotem) {
         super(ModMenuTypes.GARDEN_TOTEM.get(), containerId);
         this.gardenTotem = gardenTotem;
+        this.player = playerInventory.player;
         this.currentWave = gardenTotem.getCurrentWave();
         this.waveActive = gardenTotem.isWaveActive() ? 1 : 0;
         this.portalDiscoveryMask = gardenTotem.getPortalDiscoveryMask();
@@ -71,6 +77,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.gardenPortalIndex = gardenTotem.getGardenPortalIndex();
         this.shopPlantUnlockMask = gardenTotem.getShopPlantUnlockMask();
         this.shopEntryAvailableMask = gardenTotem.getShopEntryAvailableMask();
+        this.coinCount = GreenhouseCoinManager.countCoins(playerInventory.player);
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -226,6 +233,17 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                 GardenTotemMenu.this.shopEntryAvailableMask = value;
             }
         });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.coinCount : GreenhouseCoinManager.countCoins(player);
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.coinCount = value;
+            }
+        });
     }
 
     public int currentWave() {
@@ -272,6 +290,10 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
     public boolean isShopEntryAvailable(int entryIndex) {
         return entryIndex >= 0 && entryIndex < 31 && (shopEntryAvailableMask & (1 << entryIndex)) != 0;
+    }
+
+    public int coinCount() {
+        return Math.max(0, coinCount);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
-import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
@@ -66,7 +65,8 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        guiGraphics.drawString(font, title, 14, 10, gardenColor(), false);
+        String label = font.plainSubstrByWidth(title.getString(), imageWidth - 28);
+        guiGraphics.drawString(font, label, 14, 10, gardenColor(), false);
     }
 
     @Override
@@ -680,7 +680,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private void renderShopTab(GuiGraphics guiGraphics, int x, int y) {
         guiGraphics.drawString(font, Component.literal("Crazy Dave's Shop").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        int coins = Minecraft.getInstance().player == null ? 0 : GreenhouseCoinManager.countCoins(Minecraft.getInstance().player);
+        int coins = menu.coinCount();
         guiGraphics.drawString(font, Component.literal("Coins: " + coins).withStyle(ChatFormatting.GOLD), x + 250, y + 48, 0x9E7E00, false);
 
         List<DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(menu.gardenId());
