@@ -142,7 +142,7 @@ public final class PlantEntityManager {
     private static final int REPEATER_SECOND_SHOT_DELAY_TICKS = 6;
     private static final int PHAT_BEET_INTERVAL_TICKS = 40;
     private static final int CELERY_STALKER_INTERVAL_TICKS = 12;
-    private static final int SUNFLOWER_INTERVAL_TICKS = 60;
+    private static final int SUNFLOWER_INTERVAL_TICKS = 20 * 8;
     private static final int SUN_SHROOM_INTERVAL_TICKS = 80;
     private static final int SUN_SHROOM_STAGE_TWO_TICKS = 20 * 60;
     private static final int SUN_SHROOM_STAGE_THREE_TICKS = 20 * 120;
@@ -472,7 +472,7 @@ public final class PlantEntityManager {
                     && zombie.definition().has(PvZZombieSpecial.SURFER)
                     && zombie.getPersistentData().getBoolean("PvZSurferBoardActive")) {
                 zombie.getPersistentData().putBoolean("PvZSurferBoardActive", false);
-                zombie.configureForWave(0.13D);
+                zombie.configureForWave(0.23D);
                 level.sendParticles(ParticleTypes.SPLASH, zombie.getX(), zombie.getY() + 0.5D, zombie.getZ(), 16, 0.35D, 0.25D, 0.35D, 0.04D);
                 level.playSound(null, zombie.blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.75F, 1.1F);
             }
@@ -882,10 +882,9 @@ public final class PlantEntityManager {
 
         Snowball firePea = createProjectileVisual(level, plant, "fire_pea");
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
-        Vec3 targetPos = target.get().position().add(0.0D, target.get().getBbHeight() * 0.55D, 0.0D);
-        Vec3 direction = targetPos.subtract(start).normalize();
+        Vec3 direction = horizontalDirectionTo(plant, target.get());
         firePea.setPos(start.x, start.y, start.z);
-        firePea.shoot(direction.x, direction.y + 0.08D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
+        firePea.shoot(direction.x, 0.0D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
         firePea.setSecondsOnFire(2);
         firePea.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         firePea.getPersistentData().putString(PROJECTILE_KIND_TAG, "fire_pea");
@@ -3183,11 +3182,10 @@ public final class PlantEntityManager {
         boolean buffed = hasTorchwoodBetween(level, plant.position(), target.position());
         Snowball snowball = createProjectileVisual(level, plant, "pea");
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
-        Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
-        Vec3 direction = targetPos.subtract(start).normalize();
+        Vec3 direction = horizontalDirectionTo(plant, target);
         Vec3 side = new Vec3(-direction.z, 0.0D, direction.x).normalize().scale(sideOffset);
         snowball.setPos(start.x + side.x, start.y, start.z + side.z);
-        snowball.shoot(direction.x, direction.y + 0.08D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
+        snowball.shoot(direction.x, 0.0D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
         if (buffed) {
             snowball.getPersistentData().putBoolean(TORCHWOOD_BUFFED_TAG, true);
             snowball.setSecondsOnFire(2);
@@ -3208,10 +3206,9 @@ public final class PlantEntityManager {
     private static void shootSnowballVisual(ServerLevel level, SnowGolem plant, LivingEntity target, boolean buffed, String projectileKind) {
         Snowball snowball = createProjectileVisual(level, plant, projectileKind);
         Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
-        Vec3 targetPos = target.position().add(0.0D, target.getBbHeight() * 0.55D, 0.0D);
-        Vec3 direction = targetPos.subtract(start).normalize();
+        Vec3 direction = horizontalDirectionTo(plant, target);
         snowball.setPos(start.x, start.y, start.z);
-        snowball.shoot(direction.x, direction.y + 0.22D, direction.z, BASIC_PROJECTILE_SPEED, 0.0F);
+        snowball.shoot(direction.x, 0.0D, direction.z, BASIC_PROJECTILE_SPEED, 0.0F);
         snowball.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         if (buffed) {
@@ -3354,6 +3351,11 @@ public final class PlantEntityManager {
     private static Vec3 facingVector(SnowGolem plant) {
         float yaw = plant.getYRot() * Mth.DEG_TO_RAD;
         return new Vec3(-Mth.sin(yaw), 0.0D, Mth.cos(yaw)).normalize();
+    }
+
+    private static Vec3 horizontalDirectionTo(SnowGolem plant, LivingEntity target) {
+        Vec3 direction = target.position().subtract(plant.position()).multiply(1.0D, 0.0D, 1.0D);
+        return direction.lengthSqr() < 1.0E-4D ? facingVector(plant) : direction.normalize();
     }
 
     private static float maxHealthFor(PlantSeedDefinition.PlantBehavior behavior) {

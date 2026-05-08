@@ -3,6 +3,7 @@ package net.PvZModders.PvZMod.progression.sun;
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZSunEntity;
+import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.atmosphere.DarkAgesBiomeEffects;
@@ -17,7 +18,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ExperienceOrb;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
@@ -25,6 +28,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingExperienceDropEvent;
+import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerXpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -85,11 +89,11 @@ public final class SunManager {
         ServerLevel overworld = event.getServer().overworld();
         boolean sunUnlocked = SunSavedData.get(overworld).sunUnlocked();
         boolean waveActive = isAnyGardenWaveActive(overworld);
-        Set<UUID> updatedSunOrbs = new HashSet<>();
+        Set<UUID> updatedSunDrops = new HashSet<>();
 
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             syncSunBar(player);
-            tickNearbySunOrbs(player.serverLevel(), player, updatedSunOrbs);
+            tickNearbySunDrops(player.serverLevel(), player, updatedSunDrops);
             if (sunUnlocked || waveActive) {
                 tickSunDrops(player);
             }
@@ -133,6 +137,22 @@ public final class SunManager {
         player.take(orb, 1);
         player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.25F, 1.4F);
         orb.discard();
+    }
+
+    @SubscribeEvent
+    public static void onSunItemPickup(EntityItemPickupEvent event) {
+        ItemEntity item = event.getItem();
+        ItemStack stack = item.getItem();
+        if (!isSunItem(stack)) {
+            return;
+        }
+
+        event.setCanceled(true);
+        Player player = event.getEntity();
+        addSun(player, getSunValue(stack) * stack.getCount());
+        player.take(item, stack.getCount());
+        player.level().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.25F, 1.4F);
+        item.discard();
     }
 
     @SubscribeEvent
@@ -222,7 +242,7 @@ public final class SunManager {
     }
 
     private static boolean canSpawnNaturalSun(ServerLevel level) {
-        return level.dimension() == Level.OVERWORLD && level.isDay();
+        return level.isDay() || isAnyGardenWaveActive(level.getServer().overworld());
     }
 
     private static void tickDarkAgesBiomeMessage(ServerPlayer player) {
@@ -261,9 +281,12 @@ public final class SunManager {
     }
 
     private static void spawnSun(ServerLevel level, BlockPos pos, int value, boolean showPillar) {
-        ExperienceOrb sun = new PvZSunEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, value);
+        ItemStack stack = new ItemStack(ModItems.SUNDROP.get());
+        initializeSunItem(stack, level, value);
+        ItemEntity sun = new ItemEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, stack);
         sun.getPersistentData().putBoolean(SUN_PILLAR_VISIBLE_TAG, showPillar);
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
+        sun.setNoPickUpDelay();
         level.addFreshEntity(sun);
     }
 
@@ -287,10 +310,23 @@ public final class SunManager {
         }
     }
 
-    private static void tickNearbySunOrbs(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunOrbs) {
+    private static void initializeSunItem(ItemStack stack, ServerLevel level, int value) {
+        stack.setHoverName(Component.literal("Sun").withStyle(ChatFormatting.YELLOW));
+        CompoundTag tag = stack.getOrCreateTag();
+        tag.putBoolean(SUN_ORB_TAG, true);
+        tag.putInt(SUN_VALUE_TAG, value);
+        tag.putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
+    }
+
+    private static void tickNearbySunDrops(ServerLevel level, ServerPlayer player, Set<UUID> updatedSunDrops) {
         AABB searchArea = player.getBoundingBox().inflate(SUN_DROP_RADIUS + SUN_DROP_HEIGHT + 16);
+        for (Entity entity : level.getEntities(player, searchArea, entity -> entity instanceof ItemEntity item && isSunItem(item.getItem()))) {
+            if (updatedSunDrops.add(entity.getUUID()) && entity instanceof ItemEntity item) {
+                tickSunItem(level, item);
+            }
+        }
         for (Entity entity : level.getEntities(player, searchArea, entity -> entity instanceof ExperienceOrb orb && isSunOrb(orb))) {
-            if (updatedSunOrbs.add(entity.getUUID()) && entity instanceof ExperienceOrb orb) {
+            if (updatedSunDrops.add(entity.getUUID()) && entity instanceof ExperienceOrb orb) {
                 tickSunOrb(level, orb);
             }
         }
@@ -298,6 +334,25 @@ public final class SunManager {
 
     private static void tickSunOrb(ServerLevel level, ExperienceOrb sun) {
         long spawnTick = sun.getPersistentData().getLong(SUN_SPAWN_TICK_TAG);
+        int age = (int) (level.getGameTime() - spawnTick);
+        if (age >= SUN_LIFETIME_TICKS) {
+            sun.discard();
+            return;
+        }
+
+        if (age >= SUN_BLINK_START_TICKS) {
+            sun.setInvisible((age / 5) % 2 == 0);
+        }
+
+        keepSunAnchoredUntilClose(level, sun);
+    }
+
+    private static void tickSunItem(ServerLevel level, ItemEntity sun) {
+        CompoundTag stackTag = sun.getItem().getOrCreateTag();
+        if (!stackTag.contains(SUN_SPAWN_TICK_TAG)) {
+            stackTag.putLong(SUN_SPAWN_TICK_TAG, level.getGameTime());
+        }
+        long spawnTick = stackTag.getLong(SUN_SPAWN_TICK_TAG);
         int age = (int) (level.getGameTime() - spawnTick);
         if (age >= SUN_LIFETIME_TICKS) {
             sun.discard();
@@ -330,6 +385,25 @@ public final class SunManager {
         sun.setDeltaMovement(0.0D, Math.min(movement.y, 0.0D), 0.0D);
     }
 
+    private static void keepSunAnchoredUntilClose(ServerLevel level, ItemEntity sun) {
+        Player nearestPlayer = level.getNearestPlayer(sun, SUN_PICKUP_RADIUS);
+        if (nearestPlayer != null) {
+            return;
+        }
+
+        CompoundTag tag = sun.getPersistentData();
+        if (!tag.contains(SUN_ANCHOR_X_TAG) || !tag.contains(SUN_ANCHOR_Z_TAG)) {
+            tag.putDouble(SUN_ANCHOR_X_TAG, sun.getX());
+            tag.putDouble(SUN_ANCHOR_Z_TAG, sun.getZ());
+        }
+
+        double anchorX = tag.getDouble(SUN_ANCHOR_X_TAG);
+        double anchorZ = tag.getDouble(SUN_ANCHOR_Z_TAG);
+        Vec3 movement = sun.getDeltaMovement();
+        sun.setPos(anchorX, sun.getY(), anchorZ);
+        sun.setDeltaMovement(0.0D, Math.min(movement.y, 0.0D), 0.0D);
+    }
+
     public static boolean isSunOrb(ExperienceOrb orb) {
         return orb instanceof PvZSunEntity || orb.getPersistentData().getBoolean(SUN_ORB_TAG);
     }
@@ -337,6 +411,18 @@ public final class SunManager {
     private static int getSunValue(ExperienceOrb orb) {
         if (orb.getPersistentData().contains(SUN_VALUE_TAG)) {
             return orb.getPersistentData().getInt(SUN_VALUE_TAG);
+        }
+        return DEFAULT_SUN_VALUE;
+    }
+
+    private static boolean isSunItem(ItemStack stack) {
+        return !stack.isEmpty() && stack.is(ModItems.SUNDROP.get())
+                && (!stack.hasTag() || stack.getOrCreateTag().getBoolean(SUN_ORB_TAG) || "Sun".equals(stack.getHoverName().getString()));
+    }
+
+    private static int getSunValue(ItemStack stack) {
+        if (stack.hasTag() && stack.getOrCreateTag().contains(SUN_VALUE_TAG)) {
+            return stack.getOrCreateTag().getInt(SUN_VALUE_TAG);
         }
         return DEFAULT_SUN_VALUE;
     }

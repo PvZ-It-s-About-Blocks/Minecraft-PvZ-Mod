@@ -22,7 +22,7 @@ public final class GreenhouseCoinManager {
     public static final String PLAYER_COINS_TAG = "PvZCoins";
     public static final String COIN_DROP_TAG = "PvZCoinDrop";
     public static final String COIN_VALUE_TAG = "PvZCoinValue";
-    private static final int COIN_STACK_SIZE = 64;
+    private static final int COIN_STACK_SIZE = 9999;
 
     private GreenhouseCoinManager() {
     }

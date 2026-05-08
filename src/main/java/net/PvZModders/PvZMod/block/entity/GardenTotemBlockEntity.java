@@ -126,7 +126,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
-    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.13D;
+    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.23D;
     private static final double WAVE_ZOMBIE_NAVIGATION_SPEED = 0.55D;
     private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
     public static final String WAVE_ZOMBIE_TAG = "PvZWaveZombie";
@@ -449,6 +449,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
+        ensureMinimumSunForWaveParticipant(player.serverLevel(), player, true);
         ensureMinimumSunForWaveParticipants(player.serverLevel(), true);
         showWaveDirectionTitle(player, directions);
         player.displayClientMessage(Component.literal("Wave " + waveProgress.currentWave() + " started").withStyle(ChatFormatting.GRAY), true);
@@ -1406,24 +1407,32 @@ public class GardenTotemBlockEntity extends BlockEntity {
             if (!isPlayerInsideGarden(player)) {
                 continue;
             }
-            UUID playerId = player.getUUID();
-            if (playersStartingSunCheckedThisWave.contains(playerId)) {
-                continue;
-            }
+            ensureMinimumSunForWaveParticipant(level, player, announce);
+        }
+    }
 
-            playersStartingSunCheckedThisWave.add(playerId);
-            int targetSun = getMinimumWaveStartSun(player);
-            int currentSun = SunManager.getSun(player);
-            if (currentSun >= targetSun) {
-                continue;
-            }
+    private void ensureMinimumSunForWaveParticipant(ServerLevel level, ServerPlayer player, boolean announce) {
+        if (!getWaveProgress(level).waveActive()) {
+            return;
+        }
+        UUID playerId = player.getUUID();
+        if (playersStartingSunCheckedThisWave.contains(playerId)) {
+            return;
+        }
 
-            SunManager.setSun(player, targetSun);
+        playersStartingSunCheckedThisWave.add(playerId);
+        int targetSun = getMinimumWaveStartSun(player);
+        int currentSun = SunManager.getSun(player);
+        if (currentSun >= targetSun) {
             SunManager.syncSunBar(player);
-            animateStartingSunBoost(level, player, targetSun - currentSun);
-            if (announce) {
-                player.displayClientMessage(Component.literal("The Totem steadies your starting Sun at " + targetSun + ".").withStyle(ChatFormatting.GOLD), true);
-            }
+            return;
+        }
+
+        SunManager.setSun(player, targetSun);
+        SunManager.syncSunBar(player);
+        animateStartingSunBoost(level, player, targetSun - currentSun);
+        if (announce) {
+            player.displayClientMessage(Component.literal("The Totem steadies your starting Sun at " + targetSun + ".").withStyle(ChatFormatting.GOLD), true);
         }
     }
 

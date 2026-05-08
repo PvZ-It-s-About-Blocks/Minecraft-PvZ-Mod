@@ -44,6 +44,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private boolean draggingWaveCanvas;
     private boolean waveCanvasFocused;
     private int lastFocusedWave = -1;
+    private double planterScroll;
     private Component hoveredRewardTooltip;
     private List<Component> hoveredPlantTooltip;
 
@@ -117,9 +118,27 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                     }
                     return true;
                 }
+            } else if (selectedTab == TAB_PLANTER) {
+                int hoveredPlant = getHoveredPlant(mouseX, mouseY);
+                if (hoveredPlant >= 0) {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if (minecraft.gameMode != null) {
+                        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.PLANT_BUTTON_OFFSET + hoveredPlant);
+                    }
+                    return true;
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (selectedTab == TAB_PLANTER && isMouseOverPlanterList(mouseX, mouseY)) {
+            planterScroll = clampPlanterScroll(planterScroll - delta * 25.0D);
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     @Override
@@ -439,9 +458,20 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         guiGraphics.drawString(font, Component.literal("Planter").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
         guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 116, y + 48, 0x2F6F2F, false);
         List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
+        planterScroll = clampPlanterScroll(planterScroll);
+        int listX = getPlanterListX(x);
+        int listY = getPlanterListY(y);
+        int listW = getPlanterListWidth();
+        int listH = getPlanterListHeight();
+        guiGraphics.enableScissor(listX, listY, listX + listW, listY + listH);
         for (int i = 0; i < plants.size(); i++) {
-            renderPlantCard(guiGraphics, plants.get(i), i, x, y, mouseX, mouseY);
+            int cardY = getPlantCardY(y - (int) planterScroll, i);
+            if (cardY + 23 >= listY && cardY <= listY + listH) {
+                renderPlantCard(guiGraphics, plants.get(i), i, x, y - (int) planterScroll, mouseX, mouseY);
+            }
         }
+        guiGraphics.disableScissor();
+        renderPlanterScrollBar(guiGraphics, x, y, plants.size());
         renderSeedStorageArea(guiGraphics, x, y);
         renderTrashArea(guiGraphics, x, y);
         if (hoveredPlantTooltip != null) {
@@ -513,7 +543,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                 Component.literal(plant.description()).withStyle(ChatFormatting.GRAY),
                 Component.literal("Totem packets: " + count + "/" + packetCap).withStyle(ChatFormatting.DARK_GREEN),
                 Component.literal(timer).withStyle(ChatFormatting.YELLOW),
-                Component.literal("Drag packets into Seed Storage or inventory.").withStyle(ChatFormatting.AQUA)
+                Component.literal("Click to load one seed packet.").withStyle(ChatFormatting.AQUA)
         );
     }
 
@@ -535,10 +565,13 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getHoveredPlant(double mouseX, double mouseY) {
+        if (!isMouseOverPlanterList(mouseX, mouseY)) {
+            return -1;
+        }
         List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
         for (int i = 0; i < plants.size(); i++) {
             int cardX = getPlantCardX(leftPos, i);
-            int cardY = getPlantCardY(topPos, i);
+            int cardY = getPlantCardY(topPos - (int) planterScroll, i);
             if (mouseX >= cardX && mouseX < cardX + 238 && mouseY >= cardY && mouseY < cardY + 23) {
                 return i;
             }
@@ -552,6 +585,51 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private int getPlantCardY(int y, int index) {
         return y + 60 + index * 25;
+    }
+
+    private int getPlanterListX(int x) {
+        return x + 20;
+    }
+
+    private int getPlanterListY(int y) {
+        return y + 60;
+    }
+
+    private int getPlanterListWidth() {
+        return 246;
+    }
+
+    private int getPlanterListHeight() {
+        return 146;
+    }
+
+    private boolean isMouseOverPlanterList(double mouseX, double mouseY) {
+        int listX = getPlanterListX(leftPos);
+        int listY = getPlanterListY(topPos);
+        return mouseX >= listX && mouseX < listX + getPlanterListWidth()
+                && mouseY >= listY && mouseY < listY + getPlanterListHeight();
+    }
+
+    private double clampPlanterScroll(double value) {
+        int contentHeight = GardenPlantDefinition.forGarden(menu.gardenId()).size() * 25;
+        int maxScroll = Math.max(0, contentHeight - getPlanterListHeight());
+        return Math.max(0.0D, Math.min(maxScroll, value));
+    }
+
+    private void renderPlanterScrollBar(GuiGraphics guiGraphics, int x, int y, int plantCount) {
+        int contentHeight = plantCount * 25;
+        int listH = getPlanterListHeight();
+        if (contentHeight <= listH) {
+            return;
+        }
+        int barX = getPlanterListX(x) + getPlanterListWidth() - 5;
+        int barY = getPlanterListY(y);
+        int trackH = listH;
+        int thumbH = Math.max(16, trackH * listH / contentHeight);
+        int maxScroll = contentHeight - listH;
+        int thumbY = barY + (int) ((trackH - thumbH) * (planterScroll / Math.max(1.0D, maxScroll)));
+        guiGraphics.fill(barX, barY, barX + 4, barY + trackH, 0x66000000);
+        guiGraphics.fill(barX, thumbY, barX + 4, thumbY + thumbH, 0xFF6B5100);
     }
 
     private void renderShopTab(GuiGraphics guiGraphics, int x, int y) {

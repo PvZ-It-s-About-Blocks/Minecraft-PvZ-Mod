@@ -201,7 +201,7 @@ public class ModItems {
     public static final RegistryObject<Item> SUNDROP = ITEMS.register("sundrop",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> COIN = ITEMS.register("coin",
-            () -> new Item(new Item.Properties()));
+            () -> new Item(new Item.Properties().stacksTo(9999)));
     public static final RegistryObject<Item> PLANT_VITAMINS = ITEMS.register("plant_vitamins",
             () -> new PlantVitaminsItem(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",

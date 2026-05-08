@@ -120,7 +120,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
-    private static final double DEFAULT_WAVE_BASE_SPEED = 0.13D;
+    private static final double DEFAULT_WAVE_BASE_SPEED = 0.23D;
     private static final float NEWSPAPER_RAGE_HEALTH_THRESHOLD = 15.0F;
     private static final double NEWSPAPER_RAGE_SPEED_MULTIPLIER = 1.5D;
     private static final double POLE_VAULT_AFTER_SPEED_MULTIPLIER = 0.9D;
@@ -707,7 +707,7 @@ public class PvZZombieEntity extends Zombie {
                     copyGardenCenterTo(iceBlock);
                     iceBlock.finalizeSpawn(level, level.getCurrentDifficultyAt(iceBlock.blockPosition()), MobSpawnType.EVENT, null, null);
                     level.addFreshEntity(iceBlock);
-                    iceBlock.configureForWave(0.13D);
+                    iceBlock.configureForWave(DEFAULT_WAVE_BASE_SPEED);
                 });
     }
 
@@ -1250,7 +1250,7 @@ public class PvZZombieEntity extends Zombie {
                     copyGardenCenterTo(imp);
                     imp.finalizeSpawn(level, level.getCurrentDifficultyAt(landing), MobSpawnType.EVENT, null, null);
                     level.addFreshEntity(imp);
-                    imp.configureForWave(0.13D);
+                    imp.configureForWave(DEFAULT_WAVE_BASE_SPEED);
                 });
         level.sendParticles(particle, landing.getX() + 0.5D, landing.getY() + 0.5D, landing.getZ() + 0.5D, 18, 0.4D, 0.3D, 0.4D, 0.04D);
         level.playSound(null, landing, sound, SoundSource.HOSTILE, 0.75F, 1.0F);
@@ -1673,7 +1673,7 @@ public class PvZZombieEntity extends Zombie {
                         copyGardenCenterTo(summoned);
                         summoned.finalizeSpawn(level, level.getCurrentDifficultyAt(summoned.blockPosition()), MobSpawnType.EVENT, null, null);
                         level.addFreshEntity(summoned);
-                        summoned.configureForWave(0.13D);
+                        summoned.configureForWave(DEFAULT_WAVE_BASE_SPEED);
                     }
                 });
         level.sendParticles(particle, getX(), getY() + 1.0D, getZ(), 18, 0.5D, 0.4D, 0.5D, 0.02D);

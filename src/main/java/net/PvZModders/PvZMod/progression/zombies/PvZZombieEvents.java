@@ -330,7 +330,7 @@ public final class PvZZombieEvents {
 
     private static void breakSurferBoard(PvZZombieEntity surfer) {
         surfer.getPersistentData().putBoolean("PvZSurferBoardActive", false);
-        surfer.configureForWave(0.13D);
+        surfer.configureForWave(0.23D);
         if (surfer.level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.SPLASH, surfer.getX(), surfer.getY() + 0.5D, surfer.getZ(), 16, 0.35D, 0.25D, 0.35D, 0.04D);
             level.playSound(null, surfer.blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.75F, 1.1F);
@@ -350,7 +350,7 @@ public final class PvZZombieEvents {
             copyGardenCenter(source, swarm);
             swarm.finalizeSpawn(level, level.getCurrentDifficultyAt(swarm.blockPosition()), MobSpawnType.EVENT, null, null);
             level.addFreshEntity(swarm);
-            swarm.configureForWave(0.13D);
+            swarm.configureForWave(0.23D);
         }
         level.sendParticles(particle, source.getX(), source.getY() + 0.8D, source.getZ(), 30, 0.6D, 0.3D, 0.6D, 0.05D);
         level.playSound(null, source.blockPosition(), sound, SoundSource.HOSTILE, 0.9F, 0.65F);

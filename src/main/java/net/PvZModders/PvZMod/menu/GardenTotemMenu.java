@@ -426,7 +426,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
         @Override
         public boolean isActive() {
-            return planterSlotsVisible && plant != null;
+            return false;
         }
     }
 
