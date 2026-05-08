@@ -1530,16 +1530,16 @@ public class GardenTotemBlockEntity extends BlockEntity {
         playersStartingSunCheckedThisWave.add(playerId);
         int targetSun = getMinimumWaveStartSun(player);
         int currentSun = SunManager.getSun(player);
-        if (currentSun >= targetSun) {
-            SunManager.syncSunBar(player);
-            return;
-        }
-
         SunManager.setSun(player, targetSun);
         SunManager.syncSunBar(player);
-        animateStartingSunBoost(level, player, targetSun - currentSun);
-        if (announce) {
-            player.displayClientMessage(Component.literal("The Totem steadies your starting Sun at " + targetSun + ".").withStyle(ChatFormatting.GOLD), true);
+        if (targetSun > currentSun) {
+            animateStartingSunBoost(level, player, targetSun - currentSun);
+        }
+        if (announce && currentSun != targetSun) {
+            Component message = targetSun > 0
+                    ? Component.literal("The Totem absorbs your stored Sun and leaves " + targetSun + " starting Sun.").withStyle(ChatFormatting.GOLD)
+                    : Component.literal("The Totem absorbs your stored Sun.").withStyle(ChatFormatting.GOLD);
+            player.displayClientMessage(message, true);
         }
     }
 

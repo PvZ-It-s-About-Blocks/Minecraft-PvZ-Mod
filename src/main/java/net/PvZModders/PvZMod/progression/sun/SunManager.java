@@ -9,6 +9,8 @@ import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.atmosphere.DarkAgesBiomeEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetExperiencePacket;
@@ -33,6 +35,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerXpEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.joml.Vector3f;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -60,6 +63,8 @@ public final class SunManager {
     private static final int MIN_DROP_DELAY_TICKS = 4 * 20;
     private static final int RANDOM_DROP_DELAY_TICKS = 3 * 20;
     private static final double SUN_PICKUP_RADIUS = 1.25D;
+    private static final DustParticleOptions SUN_PILLAR_PARTICLE = new DustParticleOptions(new Vector3f(1.0F, 0.86F, 0.0F), 1.15F);
+    private static final int SUN_PILLAR_PARTICLE_INTERVAL_TICKS = 5;
 
     private SunManager() {
     }
@@ -301,6 +306,7 @@ public final class SunManager {
     private static void spawnSun(ServerLevel level, BlockPos pos, int value, boolean showPillar) {
         ItemStack stack = new ItemStack(ModItems.SUNDROP.get());
         initializeSunItem(stack, level, value);
+        stack.getOrCreateTag().putBoolean(SUN_PILLAR_VISIBLE_TAG, showPillar);
         ItemEntity sun = new ItemEntity(level, pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D, stack);
         sun.getPersistentData().putBoolean(SUN_PILLAR_VISIBLE_TAG, showPillar);
         sun.setDeltaMovement(0.0D, -0.03D, 0.0D);
@@ -365,6 +371,20 @@ public final class SunManager {
         keepSunAnchoredUntilClose(level, sun);
     }
 
+    private static void renderSunPillarParticles(ServerLevel level, ItemEntity sun) {
+        if (level.getGameTime() % SUN_PILLAR_PARTICLE_INTERVAL_TICKS != 0L) {
+            return;
+        }
+
+        BlockPos ground = level.getHeightmapPos(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, sun.blockPosition());
+        double bottomY = Math.min(sun.getY(), ground.getY() + 0.2D);
+        double topY = Math.max(sun.getY() + 0.35D, ground.getY() + 3.0D);
+        for (double y = bottomY; y <= topY; y += 0.85D) {
+            level.sendParticles(SUN_PILLAR_PARTICLE, sun.getX(), y, sun.getZ(), 1, 0.04D, 0.0D, 0.04D, 0.0D);
+        }
+        level.sendParticles(ParticleTypes.END_ROD, sun.getX(), sun.getY() + 0.3D, sun.getZ(), 1, 0.03D, 0.08D, 0.03D, 0.0D);
+    }
+
     private static void tickSunItem(ServerLevel level, ItemEntity sun) {
         CompoundTag stackTag = sun.getItem().getOrCreateTag();
         if (!stackTag.contains(SUN_SPAWN_TICK_TAG)) {
@@ -381,6 +401,9 @@ public final class SunManager {
             sun.setInvisible((age / 5) % 2 == 0);
         }
 
+        if (shouldRenderSunPillar(sun)) {
+            renderSunPillarParticles(level, sun);
+        }
         keepSunAnchoredUntilClose(level, sun);
     }
 
@@ -448,5 +471,14 @@ public final class SunManager {
     public static boolean shouldRenderSunPillar(ExperienceOrb orb) {
         CompoundTag tag = orb.getPersistentData();
         return !tag.contains(SUN_PILLAR_VISIBLE_TAG) || tag.getBoolean(SUN_PILLAR_VISIBLE_TAG);
+    }
+
+    public static boolean shouldRenderSunPillar(ItemEntity item) {
+        CompoundTag entityTag = item.getPersistentData();
+        if (entityTag.contains(SUN_PILLAR_VISIBLE_TAG)) {
+            return entityTag.getBoolean(SUN_PILLAR_VISIBLE_TAG);
+        }
+        CompoundTag stackTag = item.getItem().getOrCreateTag();
+        return stackTag.getBoolean(SUN_PILLAR_VISIBLE_TAG);
     }
 }

@@ -11,7 +11,7 @@ public final class PvZUpgradeValues {
     public static final int MIN_SEED_REFILL_TIME_TICKS = 20 * 100;
     public static final int MIN_UPGRADED_SEED_REFILL_TIME_TICKS = 20 * 60;
     public static final int BASE_GARDEN_PACKET_CAP = 40;
-    public static final int BASE_MINIMUM_WAVE_START_SUN = 50;
+    public static final int BASE_MINIMUM_WAVE_START_SUN = 0;
 
     private PvZUpgradeValues() {
     }
