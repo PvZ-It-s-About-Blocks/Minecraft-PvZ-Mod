@@ -14,6 +14,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
+import net.PvZModders.PvZMod.progression.coins.PlantAbsorptionManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.modernday.ModernDayDragonFightData;
 import net.PvZModders.PvZMod.progression.pirate.PirateSeasPlankManager;
@@ -23,6 +24,9 @@ import net.PvZModders.PvZMod.progression.portal.GardenEyeType;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
+import net.PvZModders.PvZMod.progression.shop.DaveShopPurchaseManager;
+import net.PvZModders.PvZMod.progression.shop.DaveShopRegistry;
+import net.PvZModders.PvZMod.progression.shop.DaveShopSavedData;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
@@ -158,6 +162,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private int activeWaveModernDayPortalBurstCursor;
     private boolean activeWaveSandstormActive;
     private boolean wildWestWaveObjectsArranged;
+    private int lastPlantAbsorptionWave = -1;
     private boolean totemShieldUnlocked;
     private boolean totemShieldActive;
     private int totemShieldHealth;
@@ -309,11 +314,32 @@ public class GardenTotemBlockEntity extends BlockEntity {
         if (plantIndex < 0 || plantIndex >= plants.size()) {
             return false;
         }
-        return plants.get(plantIndex).isUnlockedAtWave(getWaveProgress().currentWave());
+        GardenPlantDefinition plant = plants.get(plantIndex);
+        return plant.isUnlockedAtWave(getWaveProgress().currentWave()) || isShopPlantUnlocked(plant);
+    }
+
+    public int getShopPlantUnlockMask() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return 0;
+        }
+        DaveShopSavedData shopData = DaveShopSavedData.get(serverLevel);
+        List<GardenPlantDefinition> plants = gardenPlants();
+        int mask = 0;
+        for (int i = 0; i < Math.min(31, plants.size()); i++) {
+            if (shopData.isPlantUnlocked(gardenId, plants.get(i).plantId())) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
     }
 
     public List<GardenPlantDefinition> getGardenPlants() {
         return gardenPlants();
+    }
+
+    private boolean isShopPlantUnlocked(GardenPlantDefinition plant) {
+        return level instanceof ServerLevel serverLevel
+                && DaveShopSavedData.get(serverLevel).isPlantUnlocked(gardenId, plant.plantId());
     }
 
     public ItemStack removeGardenPlantPackets(int plantIndex, int amount) {
@@ -327,7 +353,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         GardenPlantDefinition plant = plants.get(plantIndex);
-        if (!plant.isUnlockedAtWave(getWaveProgress(serverLevel).currentWave())) {
+        if (!plant.isUnlockedAtWave(getWaveProgress(serverLevel).currentWave())
+                && !DaveShopSavedData.get(serverLevel).isPlantUnlocked(gardenId, plant.plantId())) {
             return ItemStack.EMPTY;
         }
 
@@ -408,7 +435,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
 
         GardenPlantDefinition plant = plants.get(plantIndex);
-        if (!plant.isUnlockedAtWave(getWaveProgress(player.serverLevel()).currentWave())) {
+        if (!plant.isUnlockedAtWave(getWaveProgress(player.serverLevel()).currentWave())
+                && !DaveShopSavedData.get(player.serverLevel()).isPlantUnlocked(gardenId, plant.plantId())) {
             player.displayClientMessage(Component.literal(plant.unlockHint()).withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -448,6 +476,25 @@ public class GardenTotemBlockEntity extends BlockEntity {
         clearWaveRuntimeState();
         totemHealth = TOTEM_MAX_HEALTH;
         grantMilestoneRewards(level, completedWave);
+        processWavePlantAbsorption(level, completedWave);
+        setChanged();
+    }
+
+    private void processWavePlantAbsorption(ServerLevel level, int completedWave) {
+        if (lastPlantAbsorptionWave == completedWave) {
+            return;
+        }
+        lastPlantAbsorptionWave = completedWave;
+        PlantAbsorptionManager.absorbPlantsAfterWaveWin(level, this);
+    }
+
+    public void purchaseDaveShopEntry(ServerPlayer player, int entryIndex) {
+        List<net.PvZModders.PvZMod.progression.shop.DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(gardenId);
+        if (entryIndex < 0 || entryIndex >= stock.size()) {
+            player.displayClientMessage(Component.literal("Crazy Dave is out of stock there.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        DaveShopPurchaseManager.purchaseShopEntry(player, stock.get(entryIndex));
         setChanged();
     }
 
@@ -1107,8 +1154,10 @@ public class GardenTotemBlockEntity extends BlockEntity {
             int completedWave = waveProgress.currentWave();
             waveProgress.completeCurrentWave();
             markWaveProgressDirty(level);
+            clearWaveRuntimeState();
             totemHealth = TOTEM_MAX_HEALTH;
             grantMilestoneRewards(level, completedWave);
+            processWavePlantAbsorption(level, completedWave);
             setChanged();
         }
     }

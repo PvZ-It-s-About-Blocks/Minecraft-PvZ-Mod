@@ -4,8 +4,8 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.progression.coins.ZombieCoinDropManager;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
-import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.waves.AncientEgyptSandstormManager;
 import net.minecraft.core.particles.ParticleTypes;
@@ -189,14 +189,16 @@ public final class PvZZombieEvents {
     @SubscribeEvent
     public static void onLivingDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof PvZZombieEntity zombie)
-                || !"yeti_zombie".equals(zombie.definition().id())
+                || !zombie.getPersistentData().getBoolean(GardenTotemBlockEntity.WAVE_ZOMBIE_TAG)
                 || !(zombie.level() instanceof ServerLevel level)) {
             return;
         }
 
-        GreenhouseCoinManager.addCoinsToNearestPlayer(level, zombie.position(), 25);
-        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 24, 0.5D, 0.45D, 0.5D, 0.04D);
-        level.playSound(null, zombie.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7F, 1.2F);
+        ZombieCoinDropManager.dropZombieCoins(zombie);
+        if ("yeti_zombie".equals(zombie.definition().id()) || zombie.definition().has(PvZZombieSpecial.YETI_FLEE)) {
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 24, 0.5D, 0.45D, 0.5D, 0.04D);
+            level.playSound(null, zombie.blockPosition(), SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.7F, 1.2F);
+        }
     }
 
     private static void tickPonchoShield(PvZZombieEntity zombie, LivingHurtEvent event) {

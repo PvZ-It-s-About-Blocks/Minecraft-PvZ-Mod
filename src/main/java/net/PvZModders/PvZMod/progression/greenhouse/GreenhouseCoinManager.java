@@ -6,9 +6,12 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -19,56 +22,122 @@ public final class GreenhouseCoinManager {
     public static final String PLAYER_COINS_TAG = "PvZCoins";
     public static final String COIN_DROP_TAG = "PvZCoinDrop";
     public static final String COIN_VALUE_TAG = "PvZCoinValue";
+    private static final int COIN_STACK_SIZE = 64;
 
     private GreenhouseCoinManager() {
     }
 
     public static int getCoins(Player player) {
-        return player.getPersistentData().getInt(PLAYER_COINS_TAG);
+        return countCoins(player);
+    }
+
+    public static int countCoins(Player player) {
+        int total = 0;
+        Inventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (isCoinItem(stack)) {
+                total += stack.getCount();
+            }
+        }
+        return total;
+    }
+
+    public static boolean hasCoins(Player player, int amount) {
+        return amount <= 0 || countCoins(player) >= amount;
+    }
+
+    public static boolean removeCoins(Player player, int amount) {
+        if (amount <= 0) {
+            return true;
+        }
+        if (!hasCoins(player, amount)) {
+            return false;
+        }
+
+        int remaining = amount;
+        Inventory inventory = player.getInventory();
+        for (int slot = 0; slot < inventory.getContainerSize() && remaining > 0; slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (!isCoinItem(stack)) {
+                continue;
+            }
+            int removed = Math.min(remaining, stack.getCount());
+            stack.shrink(removed);
+            remaining -= removed;
+        }
+        inventory.setChanged();
+        return remaining <= 0;
+    }
+
+    public static boolean isCoinItem(ItemStack stack) {
+        return !stack.isEmpty() && stack.is(ModItems.COIN.get());
     }
 
     public static void addCoins(Player player, int amount) {
+        giveCoins(player, amount);
+    }
+
+    public static void giveCoins(Player player, int amount) {
         if (amount <= 0) {
             return;
         }
-        CompoundTag tag = player.getPersistentData();
-        tag.putInt(PLAYER_COINS_TAG, Math.max(0, tag.getInt(PLAYER_COINS_TAG) + amount));
+
+        int remaining = amount;
+        while (remaining > 0) {
+            int count = Math.min(remaining, COIN_STACK_SIZE);
+            ItemStack stack = new ItemStack(ModItems.COIN.get(), count);
+            remaining -= count;
+            if (!player.getInventory().add(stack) && !stack.isEmpty()) {
+                player.drop(stack, false);
+            }
+        }
         if (player instanceof ServerPlayer serverPlayer) {
-            serverPlayer.displayClientMessage(Component.literal("Coins: " + tag.getInt(PLAYER_COINS_TAG)).withStyle(ChatFormatting.GOLD), true);
+            serverPlayer.displayClientMessage(Component.literal("Coins: " + countCoins(player)).withStyle(ChatFormatting.GOLD), true);
         }
     }
 
     public static void addCoinsToNearestPlayer(ServerLevel level, Vec3 origin, int amount) {
         nearestPlayer(level, origin, 64.0D).ifPresentOrElse(
-                player -> addCoins(player, amount),
-                () -> dropCoin(level, origin, amount)
+                player -> giveCoins(player, amount),
+                () -> dropCoins(level, origin, amount)
         );
     }
 
     public static void dropCoin(ServerLevel level, Vec3 origin, int amount) {
+        dropCoins(level, origin, amount);
+    }
+
+    public static void dropCoins(Level level, BlockPos pos, int amount) {
+        dropCoins(level, Vec3.atCenterOf(pos), amount);
+    }
+
+    public static void dropCoins(Level level, Vec3 origin, int amount) {
         if (amount <= 0) {
             return;
         }
-        ItemStack stack = new ItemStack(ModItems.COIN.get(), 1);
-        stack.getOrCreateTag().putBoolean(COIN_DROP_TAG, true);
-        stack.getOrCreateTag().putInt(COIN_VALUE_TAG, amount);
-        ItemEntity item = new ItemEntity(level, origin.x, origin.y, origin.z, stack);
-        item.getPersistentData().putBoolean(COIN_DROP_TAG, true);
-        item.getPersistentData().putInt(COIN_VALUE_TAG, amount);
-        item.setDefaultPickUpDelay();
-        level.addFreshEntity(item);
+        int remaining = amount;
+        while (remaining > 0) {
+            int count = Math.min(remaining, COIN_STACK_SIZE);
+            ItemStack stack = new ItemStack(ModItems.COIN.get(), count);
+            ItemEntity item = new ItemEntity(level, origin.x, origin.y, origin.z, stack);
+            item.setDefaultPickUpDelay();
+            level.addFreshEntity(item);
+            remaining -= count;
+        }
     }
 
     public static boolean isCoinDrop(ItemEntity item) {
-        return item.getItem().is(ModItems.COIN.get())
+        return isCoinItem(item.getItem())
                 || item.getPersistentData().getBoolean(COIN_DROP_TAG)
-                || item.getItem().getOrCreateTag().getBoolean(COIN_DROP_TAG);
+                || (item.getItem().hasTag() && item.getItem().getOrCreateTag().getBoolean(COIN_DROP_TAG));
     }
 
     public static int coinValue(ItemEntity item) {
         int entityValue = item.getPersistentData().getInt(COIN_VALUE_TAG);
-        int stackValue = item.getItem().getOrCreateTag().getInt(COIN_VALUE_TAG);
-        return Math.max(1, Math.max(entityValue, stackValue));
+        int stackValue = item.getItem().hasTag() ? item.getItem().getOrCreateTag().getInt(COIN_VALUE_TAG) : 0;
+        int legacyValue = Math.max(entityValue, stackValue);
+        return legacyValue > 0 ? legacyValue : item.getItem().getCount();
     }
 
     public static int collectCoinsNearby(ServerLevel level, Vec3 origin, double range) {
@@ -82,7 +151,7 @@ public final class GreenhouseCoinManager {
         for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, area, GreenhouseCoinManager::isCoinDrop)) {
             int value = coinValue(item);
             item.discard();
-            addCoins(collector.get(), value);
+            giveCoins(collector.get(), value);
             collected += value;
         }
         return collected;

@@ -18,6 +18,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public static final int START_WAVE_BUTTON = 0;
     public static final int PORTAL_BUTTON_OFFSET = 100;
     public static final int PLANT_BUTTON_OFFSET = 200;
+    public static final int SHOP_BUTTON_OFFSET = 300;
     public static final int PLANT_COUNT = GardenPlantDefinition.maxKnownGardenPlantCount();
     public static final int SEED_STORAGE_SLOT_START = 0;
     public static final int SEED_STORAGE_SLOT_COUNT = 6;
@@ -37,6 +38,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private final ItemStack[] seedStorageStacks = new ItemStack[SEED_STORAGE_SLOT_COUNT];
     private boolean planterSlotsVisible;
     private int gardenPacketCap = net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData.GARDEN_PACKET_CAP;
+    private int shopPlantUnlockMask;
 
     public GardenTotemMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, 1, false);
@@ -50,6 +52,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.portalDiscoveryMask = 1;
         this.currentPortalIndex = 0;
         this.gardenPortalIndex = 0;
+        this.shopPlantUnlockMask = 0;
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -62,6 +65,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.portalDiscoveryMask = gardenTotem.getPortalDiscoveryMask();
         this.currentPortalIndex = gardenTotem.getCurrentPortalIndex();
         this.gardenPortalIndex = gardenTotem.getGardenPortalIndex();
+        this.shopPlantUnlockMask = gardenTotem.getShopPlantUnlockMask();
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -195,6 +199,17 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                 GardenTotemMenu.this.gardenPacketCap = value;
             }
         });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.shopPlantUnlockMask : gardenTotem.getShopPlantUnlockMask();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.shopPlantUnlockMask = value;
+            }
+        });
     }
 
     public int currentWave() {
@@ -235,6 +250,10 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         return Math.max(1, gardenPacketCap);
     }
 
+    public boolean isPlantUnlockedFromShop(int plantIndex) {
+        return plantIndex >= 0 && plantIndex < 31 && (shopPlantUnlockMask & (1 << plantIndex)) != 0;
+    }
+
     @Override
     public boolean stillValid(Player player) {
         return true;
@@ -252,7 +271,12 @@ public class GardenTotemMenu extends AbstractContainerMenu {
             return true;
         }
 
-        if (id >= PLANT_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+        if (id >= SHOP_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.purchaseDaveShopEntry(serverPlayer, id - SHOP_BUTTON_OFFSET);
+            return true;
+        }
+
+        if (id >= PLANT_BUTTON_OFFSET && id < SHOP_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
             gardenTotem.withdrawGardenPlantPacket(serverPlayer, id - PLANT_BUTTON_OFFSET);
             return true;
         }

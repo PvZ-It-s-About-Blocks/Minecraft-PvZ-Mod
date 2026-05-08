@@ -1,9 +1,12 @@
 package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
+import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
+import net.PvZModders.PvZMod.progression.shop.DaveShopEntry;
+import net.PvZModders.PvZMod.progression.shop.DaveShopRegistry;
 import net.PvZModders.PvZMod.progression.waves.GardenWaveDefinition;
 import net.PvZModders.PvZMod.progression.waves.GardenWaves;
 import net.PvZModders.PvZMod.progression.waves.OriginalGardenWaves;
@@ -102,6 +105,15 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                     Minecraft minecraft = Minecraft.getInstance();
                     if (minecraft.gameMode != null) {
                         minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.PORTAL_BUTTON_OFFSET + hoveredPortal);
+                    }
+                    return true;
+                }
+            } else if (selectedTab == TAB_SHOP) {
+                int hoveredEntry = getHoveredShopEntry(mouseX, mouseY);
+                if (hoveredEntry >= 0) {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if (minecraft.gameMode != null) {
+                        minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.SHOP_BUTTON_OFFSET + hoveredEntry);
                     }
                     return true;
                 }
@@ -442,7 +454,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int cardY = getPlantCardY(y, index);
         int cardW = 238;
         int cardH = 23;
-        boolean unlocked = plant.isUnlockedAtWave(menu.currentWave());
+        boolean unlocked = plant.isUnlockedAtWave(menu.currentWave()) || menu.isPlantUnlockedFromShop(index);
         int count = menu.plantCount(index);
         int remaining = menu.plantRemainingSeconds(index);
         int refillSeconds = menu.plantRefillSeconds(index);
@@ -544,8 +556,52 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     private void renderShopTab(GuiGraphics guiGraphics, int x, int y) {
         guiGraphics.drawString(font, Component.literal("Crazy Dave's Shop").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
-        guiGraphics.drawString(font, Component.literal("Shop inventory placeholder").withStyle(ChatFormatting.DARK_GREEN), x + 70, y + 96, 0x2F6F2F, false);
-        drawNode(guiGraphics, x + 34, y + 84, new ItemStack(Items.VILLAGER_SPAWN_EGG), true);
+        int coins = Minecraft.getInstance().player == null ? 0 : GreenhouseCoinManager.countCoins(Minecraft.getInstance().player);
+        guiGraphics.drawString(font, Component.literal("Coins: " + coins).withStyle(ChatFormatting.GOLD), x + 250, y + 48, 0x9E7E00, false);
+
+        List<DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(menu.gardenId());
+        if (stock.isEmpty()) {
+            guiGraphics.drawString(font, Component.literal("Dave has not stocked this garden yet.").withStyle(ChatFormatting.DARK_GREEN), x + 64, y + 96, 0x2F6F2F, false);
+            return;
+        }
+
+        for (int index = 0; index < stock.size(); index++) {
+            renderShopEntry(guiGraphics, stock.get(index), index, coins, x, y);
+        }
+    }
+
+    private void renderShopEntry(GuiGraphics guiGraphics, DaveShopEntry entry, int index, int coins, int x, int y) {
+        int rowX = x + 24;
+        int rowY = y + 66 + index * 34;
+        int rowW = imageWidth - 48;
+        int rowH = 28;
+        boolean affordable = coins >= entry.coinPrice();
+        int border = affordable ? 0xFF6B5100 : 0xFF3F3F3F;
+        int fill = affordable ? 0x66FFE699 : 0x66404040;
+
+        guiGraphics.fill(rowX, rowY, rowX + rowW, rowY + rowH, border);
+        guiGraphics.fill(rowX + 2, rowY + 2, rowX + rowW - 2, rowY + rowH - 2, fill);
+        guiGraphics.renderItem(itemFromId(entry.iconItemId().toString()), rowX + 7, rowY + 6);
+        guiGraphics.drawString(font, font.plainSubstrByWidth(entry.displayName(), 120), rowX + 30, rowY + 5, affordable ? 0x3F3F3F : 0x5F5F5F, false);
+        guiGraphics.drawString(font, font.plainSubstrByWidth(entry.description(), 180), rowX + 30, rowY + 16, 0x5F5F5F, false);
+
+        int buttonX = rowX + rowW - 58;
+        int buttonY = rowY + 5;
+        guiGraphics.fill(buttonX, buttonY, buttonX + 50, buttonY + 18, 0xFF1F1F1F);
+        guiGraphics.fill(buttonX + 2, buttonY + 2, buttonX + 48, buttonY + 16, affordable ? 0xFFC99A00 : 0xFF777777);
+        guiGraphics.drawString(font, entry.coinPrice() + " c", buttonX + 10, buttonY + 6, 0xFFFFFF, false);
+    }
+
+    private int getHoveredShopEntry(double mouseX, double mouseY) {
+        List<DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(menu.gardenId());
+        for (int index = 0; index < stock.size(); index++) {
+            int rowX = leftPos + 24;
+            int rowY = topPos + 66 + index * 34;
+            if (mouseX >= rowX && mouseX < rowX + imageWidth - 48 && mouseY >= rowY && mouseY < rowY + 28) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private void drawNode(GuiGraphics guiGraphics, int x, int y, ItemStack icon, boolean unlocked) {

@@ -484,6 +484,10 @@ public final class PlantEntityManager {
         return entity != null && entity.getPersistentData().getBoolean(PLANT_TAG);
     }
 
+    public static String plantId(Entity entity) {
+        return isPlant(entity) ? entity.getPersistentData().getString(PLANT_ID_TAG) : "";
+    }
+
     @SubscribeEvent
     public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {

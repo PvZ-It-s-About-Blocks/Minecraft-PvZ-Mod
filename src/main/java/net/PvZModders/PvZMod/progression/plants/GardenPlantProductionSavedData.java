@@ -2,6 +2,7 @@ package net.PvZModders.PvZMod.progression.plants;
 
 import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.progression.GardenId;
+import net.PvZModders.PvZMod.progression.shop.DaveShopSavedData;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeValues;
 import net.minecraft.nbt.CompoundTag;
@@ -33,9 +34,10 @@ public class GardenPlantProductionSavedData extends SavedData {
     public void tick(ServerLevel level, GardenId gardenId, int currentWave, List<GardenPlantDefinition> definitions) {
         long gameTime = level.getGameTime();
         PvZUpgradeSavedData upgrades = PvZUpgradeSavedData.get(level);
+        DaveShopSavedData shopData = DaveShopSavedData.get(level);
         int packetCap = PvZUpgradeValues.gardenPacketCap(upgrades);
         for (GardenPlantDefinition definition : definitions) {
-            if (!definition.isUnlockedAtWave(currentWave)) {
+            if (!definition.isUnlockedAtWave(currentWave) && !shopData.isPlantUnlocked(gardenId, definition.plantId())) {
                 continue;
             }
 

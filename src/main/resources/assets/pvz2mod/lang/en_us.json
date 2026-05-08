@@ -116,6 +116,7 @@
   "item.pvz2mod.sundrop": "Sun",
   "item.pvz2mod.sun_pillar": "Sun Pillar",
   "item.pvz2mod.pea": "Pea",
+  "item.pvz2mod.coin": "Coin",
   "item.pvz2mod.garden_plotter": "Garden Plotter",
   "item.pvz2mod.biome_detector": "Biome Detector",
   "item.pvz2mod.seed_holder": "Seed Holder",
@@ -125,6 +126,15 @@
   "entity.pvz2mod.jurassic_dinosaur": "Jurassic Dinosaur",
   "entity.pvz2mod.pea_projectile": "Pea",
   "creativetab.pvz_tab": "PvZ: It's About Blocks",
+  "gui.pvz2mod.crazy_dave_shop": "Crazy Dave Shop",
+  "gui.pvz2mod.coins": "Coins: %s",
+  "gui.pvz2mod.buy": "Buy",
+  "gui.pvz2mod.purchased": "Purchased",
+  "gui.pvz2mod.already_purchased": "Already purchased",
+  "gui.pvz2mod.not_enough_coins": "Not enough coins",
+  "gui.pvz2mod.plant_unlocked": "Plant unlocked",
+  "gui.pvz2mod.item_purchased": "Item purchased",
+  "gui.pvz2mod.plants_absorbed": "Plants absorbed: +%s coins",
   "tooltip.pvz2mod.garden_plotter.line1": "Place in a flat 15x15 area to validate a garden plot.",
   "tooltip.pvz2mod.garden_plotter.line2": "Ground must be dirt or sand. Green = valid, Red = invalid."
 }
