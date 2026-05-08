@@ -19,6 +19,8 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     public static final int PORTAL_BUTTON_OFFSET = 100;
     public static final int PLANT_BUTTON_OFFSET = 200;
     public static final int SHOP_BUTTON_OFFSET = 300;
+    public static final int WATERING_CAN_BUTTON_OFFSET = 400;
+    public static final int SEED_POLISH_BUTTON_OFFSET = 500;
     public static final int PLANT_COUNT = GardenPlantDefinition.maxKnownGardenPlantCount();
     public static final int SEED_STORAGE_SLOT_START = 0;
     public static final int SEED_STORAGE_SLOT_COUNT = 6;
@@ -289,13 +291,23 @@ public class GardenTotemMenu extends AbstractContainerMenu {
             return true;
         }
 
-        if (id >= SHOP_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
-            gardenTotem.purchaseDaveShopEntry(serverPlayer, id - SHOP_BUTTON_OFFSET);
+        if (id >= SEED_POLISH_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.useSeedPolishOnPlant(serverPlayer, id - SEED_POLISH_BUTTON_OFFSET);
+            return true;
+        }
+
+        if (id >= WATERING_CAN_BUTTON_OFFSET && id < SEED_POLISH_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.useWateringCanOnPlant(serverPlayer, id - WATERING_CAN_BUTTON_OFFSET);
             return true;
         }
 
         if (id >= PLANT_BUTTON_OFFSET && id < SHOP_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
             gardenTotem.withdrawGardenPlantPacket(serverPlayer, id - PLANT_BUTTON_OFFSET);
+            return true;
+        }
+
+        if (id >= SHOP_BUTTON_OFFSET && id < WATERING_CAN_BUTTON_OFFSET && gardenTotem != null && player instanceof ServerPlayer serverPlayer) {
+            gardenTotem.purchaseDaveShopEntry(serverPlayer, id - SHOP_BUTTON_OFFSET);
             return true;
         }
 

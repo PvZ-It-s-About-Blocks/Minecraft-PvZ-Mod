@@ -52,7 +52,12 @@ public enum GardenUpgradeCategory {
             GardenUpgrade.MINIMUM_STARTING_SUN_III
     )),
     PLANT_SHOVEL("plant_shovel", "Plant Shovel", List.of(
-            GardenUpgrade.PLANT_SHOVEL_II
+            GardenUpgrade.PLANT_SHOVEL_I,
+            GardenUpgrade.PLANT_SHOVEL_II,
+            GardenUpgrade.PLANT_SHOVEL_III
+    )),
+    RANGE_GOGGLES("range_goggles", "Range Goggles", List.of(
+            GardenUpgrade.RANGE_GOGGLES
     ));
 
     private final String id;

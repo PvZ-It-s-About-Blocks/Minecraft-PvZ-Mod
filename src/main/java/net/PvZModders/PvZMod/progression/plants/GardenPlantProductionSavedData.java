@@ -89,6 +89,58 @@ public class GardenPlantProductionSavedData extends SavedData {
         return Math.max(1, (int) Math.ceil(PvZUpgradeValues.getSeedRefillTimeTicks(definition, PvZUpgradeSavedData.get(level)) / 20.0D));
     }
 
+    public boolean isRefilling(ServerLevel level, GardenId gardenId, GardenPlantDefinition definition) {
+        CompoundTag plantTag = plantTag(gardenId, definition.plantId());
+        if (plantTag.getInt("Count") >= packetCap(level)) {
+            return false;
+        }
+        return plantTag.getLong("NextReadyTick") > level.getGameTime();
+    }
+
+    public boolean reduceRefillTime(ServerLevel level, GardenId gardenId, GardenPlantDefinition definition, int reductionTicks) {
+        if (reductionTicks <= 0) {
+            return false;
+        }
+        CompoundTag plantTag = plantTag(gardenId, definition.plantId());
+        if (plantTag.getInt("Count") >= packetCap(level)) {
+            return false;
+        }
+
+        long gameTime = level.getGameTime();
+        long nextReadyTick = plantTag.getLong("NextReadyTick");
+        if (nextReadyTick <= gameTime) {
+            return false;
+        }
+
+        long adjustedTick = Math.max(gameTime, nextReadyTick - reductionTicks);
+        if (adjustedTick <= gameTime) {
+            return completeOneRefill(level, gardenId, definition);
+        }
+        plantTag.putLong("NextReadyTick", adjustedTick);
+        setDirty();
+        return true;
+    }
+
+    public boolean completeOneRefill(ServerLevel level, GardenId gardenId, GardenPlantDefinition definition) {
+        CompoundTag plantTag = plantTag(gardenId, definition.plantId());
+        int packetCap = packetCap(level);
+        int count = plantTag.getInt("Count");
+        if (count >= packetCap) {
+            return false;
+        }
+
+        count++;
+        plantTag.putInt("Count", count);
+        if (count >= packetCap) {
+            plantTag.putLong("NextReadyTick", 0L);
+        } else {
+            long interval = PvZUpgradeValues.getSeedRefillTimeTicks(definition, PvZUpgradeSavedData.get(level));
+            plantTag.putLong("NextReadyTick", level.getGameTime() + interval);
+        }
+        setDirty();
+        return true;
+    }
+
     public int packetCap(ServerLevel level) {
         return PvZUpgradeValues.gardenPacketCap(PvZUpgradeSavedData.get(level));
     }

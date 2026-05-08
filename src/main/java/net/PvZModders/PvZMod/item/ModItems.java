@@ -4,7 +4,9 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.ModBlocks;
 import net.PvZModders.PvZMod.item.custom.BiomeDetectorItem;
 import net.PvZModders.PvZMod.item.custom.CommandersBucketItem;
+import net.PvZModders.PvZMod.item.custom.CompostItem;
 import net.PvZModders.PvZMod.item.custom.DinoWhistleItem;
+import net.PvZModders.PvZMod.item.custom.FertilizerItem;
 import net.PvZModders.PvZMod.item.custom.FlyingPlaneItem;
 import net.PvZModders.PvZMod.item.custom.FreezeRayItem;
 import net.PvZModders.PvZMod.item.custom.GardenEyeItem;
@@ -18,10 +20,13 @@ import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
 import net.PvZModders.PvZMod.item.custom.TargetingPriorityChangerItem;
 import net.PvZModders.PvZMod.item.custom.TideShellItem;
+import net.PvZModders.PvZMod.item.custom.TotemRepairKitItem;
 import net.PvZModders.PvZMod.item.custom.TotemShieldItem;
+import net.PvZModders.PvZMod.item.custom.ZombieSwordItem;
 import net.PvZModders.PvZMod.progression.portal.GardenEyeType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Tiers;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -204,6 +209,20 @@ public class ModItems {
             () -> new Item(new Item.Properties().stacksTo(9999)));
     public static final RegistryObject<Item> PLANT_VITAMINS = ITEMS.register("plant_vitamins",
             () -> new PlantVitaminsItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> WATERING_CAN = ITEMS.register("watering_can",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> RANGE_GOGGLES = ITEMS.register("range_goggles",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> SEED_POLISH = ITEMS.register("seed_polish",
+            () -> new Item(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> ZOMBIE_SWORD = ITEMS.register("zombie_sword",
+            () -> new ZombieSwordItem(Tiers.IRON, 3, -2.4F, new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> COMPOST = ITEMS.register("compost",
+            () -> new CompostItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> FERTILIZER = ITEMS.register("fertilizer",
+            () -> new FertilizerItem(new Item.Properties().stacksTo(16)));
+    public static final RegistryObject<Item> TOTEM_REPAIR_KIT = ITEMS.register("totem_repair_kit",
+            () -> new TotemRepairKitItem(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PEA = ITEMS.register("pea",

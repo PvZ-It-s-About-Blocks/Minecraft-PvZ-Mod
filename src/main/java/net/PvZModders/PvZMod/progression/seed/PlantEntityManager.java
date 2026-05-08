@@ -8,6 +8,7 @@ import net.PvZModders.PvZMod.entity.custom.PeaProjectileEntity;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
 import net.PvZModders.PvZMod.entity.custom.WildWestMinecartEntity;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
+import net.PvZModders.PvZMod.progression.coins.CoinEconomyValues;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
 import net.PvZModders.PvZMod.progression.gold.GoldTileManager;
@@ -16,6 +17,7 @@ import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriority;
 import net.PvZModders.PvZMod.progression.targeting.TargetingPriorityManager;
 import net.PvZModders.PvZMod.progression.upgrades.GardenUpgrade;
+import net.PvZModders.PvZMod.progression.upgrades.GardenUpgradeCategory;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieSpecial;
@@ -188,7 +190,6 @@ public final class PlantEntityManager {
     private static final double ALOE_HEAL_RANGE = 4.0D;
     public static final int PLANT_VITAMINS_DURATION_TICKS = 200;
     public static final double PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER = 1.25D;
-    private static final double PLANT_SHOVEL_TWO_REFUND_MULTIPLIER = 0.20D;
     private static final int JALAPENO_FUSE_TICKS = 12;
     private static final int SOLAR_TOMATO_FUSE_TICKS = 12;
     private static final double SOLAR_TOMATO_RADIUS = 3.0D;
@@ -447,11 +448,17 @@ public final class PlantEntityManager {
     }
 
     private static int calculateShovelCoinRefund(ServerLevel level, SnowGolem plant) {
-        if (!PvZUpgradeSavedData.get(level).isUnlocked(GardenUpgrade.PLANT_SHOVEL_II)) {
+        int tier = PvZUpgradeSavedData.get(level).getUpgradeTier(GardenUpgradeCategory.PLANT_SHOVEL);
+        if (tier <= 0) {
             return 0;
         }
+        double multiplier = switch (Math.min(tier, 3)) {
+            case 1 -> CoinEconomyValues.PLANT_SHOVEL_TIER_ONE_REFUND_MULTIPLIER;
+            case 2 -> CoinEconomyValues.PLANT_SHOVEL_TIER_TWO_REFUND_MULTIPLIER;
+            default -> CoinEconomyValues.PLANT_SHOVEL_TIER_THREE_REFUND_MULTIPLIER;
+        };
         return PlantSeedDefinition.getByPlantId(plantId(plant))
-                .map(definition -> Math.max(1, Mth.floor(definition.sunCost() * PLANT_SHOVEL_TWO_REFUND_MULTIPLIER)))
+                .map(definition -> Math.max(1, Mth.floor(definition.sunCost() * multiplier)))
                 .orElse(0);
     }
 
@@ -575,6 +582,42 @@ public final class PlantEntityManager {
         return true;
     }
 
+    public static boolean applyCompost(Player player, LivingEntity plant) {
+        if (!canApplyPlantVitamins(plant) || !(plant.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        CompoundTag tag = plant.getPersistentData();
+        tag.putLong(PLANT_VITAMINS_BUFF_END_TICK_TAG, level.getGameTime() + CoinEconomyValues.COMPOST_DURATION_TICKS);
+        double currentMultiplier = tag.getDouble(PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER_TAG);
+        tag.putDouble(PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER_TAG,
+                Math.max(currentMultiplier, CoinEconomyValues.COMPOST_ATTACK_SPEED_MULTIPLIER));
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.35D, 0.25D, 0.02D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.COMPOSTER_READY, SoundSource.PLAYERS, 0.65F, 1.1F);
+        player.displayClientMessage(Component.literal("Compost applied.").withStyle(ChatFormatting.GREEN), true);
+        return true;
+    }
+
+    public static boolean applyFertilizer(Player player, LivingEntity plant) {
+        if (!isPlant(plant) || !(plant.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        float maxHealth = plant.getMaxHealth();
+        if (plant.getHealth() < maxHealth) {
+            float healAmount = Math.max(1.0F, (float) (maxHealth * CoinEconomyValues.FERTILIZER_HEAL_MULTIPLIER));
+            plant.heal(healAmount);
+            level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.35D, 0.25D, 0.02D);
+            level.playSound(null, plant.blockPosition(), SoundEvents.BONE_MEAL_USE, SoundSource.PLAYERS, 0.75F, 1.15F);
+            player.displayClientMessage(Component.literal("Fertilizer healed the plant.").withStyle(ChatFormatting.GREEN), true);
+            return true;
+        }
+
+        plant.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, CoinEconomyValues.FERTILIZER_ABSORPTION_TICKS, 0, true, true));
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.35D, 0.25D, 0.02D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BONE_MEAL_USE, SoundSource.PLAYERS, 0.75F, 1.15F);
+        player.displayClientMessage(Component.literal("Fertilizer gave the plant bonus health.").withStyle(ChatFormatting.GREEN), true);
+        return true;
+    }
+
     public static boolean isPlantVitaminsBuffed(Entity plant) {
         return isPlant(plant)
                 && plant.level() instanceof ServerLevel level
@@ -604,6 +647,62 @@ public final class PlantEntityManager {
                     tickPlant(level, plant);
                 }
             }
+            renderRangeGoggles(level, player, plants);
+        }
+    }
+
+    private static void renderRangeGoggles(ServerLevel level, ServerPlayer player, List<SnowGolem> nearbyPlants) {
+        if (level.getGameTime() % 20L != 0L || !PvZUpgradeSavedData.get(level).isUnlocked(GardenUpgrade.RANGE_GOGGLES)) {
+            return;
+        }
+
+        for (SnowGolem plant : nearbyPlants) {
+            if (plant.distanceToSqr(player) > 32.0D * 32.0D) {
+                continue;
+            }
+            double range = displayRangeForPlant(plant);
+            if (range > 0.0D) {
+                drawRangeCircle(level, plant.position(), range, ParticleTypes.END_ROD);
+            }
+        }
+
+        AABB zombieArea = player.getBoundingBox().inflate(32.0D);
+        for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, zombieArea,
+                zombie -> zombie.isAlive() && zombie.getPersistentData().getBoolean("PvZWaveZombie"))) {
+            drawRangeCircle(level, zombie.position(), 1.75D, ParticleTypes.CRIT);
+            if (zombie.definition().has(PvZZombieSpecial.WIZARD_DISABLE)
+                    || zombie.definition().has(PvZZombieSpecial.OCTO_DISABLE)
+                    || zombie.definition().has(PvZZombieSpecial.KING_SUPPORT)
+                    || zombie.definition().has(PvZZombieSpecial.GLITTER_AURA)) {
+                drawRangeCircle(level, zombie.position(), 6.0D, ParticleTypes.NOTE);
+            }
+        }
+    }
+
+    private static double displayRangeForPlant(Entity plant) {
+        return switch (behaviorFor(plant)) {
+            case PEASHOOTER, REPEATER, FIRE_PEASHOOTER, PEA_NUT, BLOOMERANG, SPLIT_PEA, PEA_POD,
+                    PRIMAL_PEASHOOTER, RED_STINGER, LASER_BEAN, ROTOBAGA, THREEPEATER, CACTUS -> SHOOTER_RANGE;
+            case PUFF_SHROOM -> PUFF_SHROOM_RANGE;
+            case FUME_SHROOM -> FUME_SHROOM_RANGE;
+            case MAGNET_SHROOM -> MAGNET_SHROOM_RANGE;
+            case PERFUME_SHROOM -> PERFUME_SHROOM_RANGE;
+            case PHAT_BEET -> PHAT_BEET_RADIUS;
+            case SPORE_SHROOM -> SPORE_SHROOM_RANGE;
+            case ALOE -> ALOE_HEAL_RANGE;
+            case BONK_CHOY, CELERY_STALKER, PARSNIP, WASABI_WHIP -> 2.0D;
+            case CHERRY_BOMB, HOT_DATE, JALAPENO, SOLAR_TOMATO, STALLIA -> 3.0D;
+            default -> 0.0D;
+        };
+    }
+
+    private static void drawRangeCircle(ServerLevel level, Vec3 center, double radius, ParticleOptions particle) {
+        int points = radius >= 8.0D ? 24 : 16;
+        for (int i = 0; i < points; i++) {
+            double angle = (Math.PI * 2.0D * i) / points;
+            double x = center.x + Math.cos(angle) * radius;
+            double z = center.z + Math.sin(angle) * radius;
+            level.sendParticles(particle, x, center.y + 0.08D, z, 1, 0.0D, 0.0D, 0.0D, 0.0D);
         }
     }
 

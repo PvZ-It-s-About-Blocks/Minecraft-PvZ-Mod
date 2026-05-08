@@ -172,6 +172,13 @@ public class PvZ2Mod {
             event.accept(ModItems.CAPTAINS_BOOTS);
             event.accept(ModItems.PIRATE_SHIP);
             event.accept(ModItems.MYSTICAL_EYE);
+            event.accept(ModItems.WATERING_CAN);
+            event.accept(ModItems.RANGE_GOGGLES);
+            event.accept(ModItems.SEED_POLISH);
+            event.accept(ModItems.ZOMBIE_SWORD);
+            event.accept(ModItems.COMPOST);
+            event.accept(ModItems.FERTILIZER);
+            event.accept(ModItems.TOTEM_REPAIR_KIT);
             ModItems.GARDEN_EYES.values().forEach(event::accept);
             ModItems.PORTAL_FRAME_ITEMS.values().forEach(event::accept);
             event.accept(ModItems.PEA);

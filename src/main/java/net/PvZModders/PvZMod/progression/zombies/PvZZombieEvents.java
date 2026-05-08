@@ -4,6 +4,8 @@ import net.PvZModders.PvZMod.PvZ2Mod;
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.entity.ModEntities;
 import net.PvZModders.PvZMod.entity.custom.PvZZombieEntity;
+import net.PvZModders.PvZMod.item.ModItems;
+import net.PvZModders.PvZMod.progression.coins.CoinEconomyValues;
 import net.PvZModders.PvZMod.progression.coins.ZombieCoinDropManager;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
@@ -16,6 +18,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.animal.SnowGolem;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.Snowball;
 import net.minecraft.world.phys.Vec3;
@@ -48,6 +51,8 @@ public final class PvZZombieEvents {
                 || !zombie.isAlive()) {
             return;
         }
+
+        applyZombieSwordBonus(zombie, event);
 
         if (zombie.definition().has(PvZZombieSpecial.PONCHO_SHIELD)) {
             tickPonchoShield(zombie, event);
@@ -169,6 +174,18 @@ public final class PvZZombieEvents {
         if (zombie.level() instanceof ServerLevel level) {
             level.sendParticles(ParticleTypes.CRIT, zombie.getX(), zombie.getY() + 1.0D, zombie.getZ(), 5, 0.25D, 0.25D, 0.25D, 0.02D);
         }
+    }
+
+    private static void applyZombieSwordBonus(PvZZombieEntity zombie, LivingHurtEvent event) {
+        if (!(event.getSource().getEntity() instanceof Player player)
+                || !player.getMainHandItem().is(ModItems.ZOMBIE_SWORD.get())
+                || !zombie.getPersistentData().getBoolean("PvZWaveZombie")) {
+            return;
+        }
+        float multiplier = PvZZombieDefinitions.isGargantuarLike(zombie)
+                ? CoinEconomyValues.ZOMBIE_SWORD_GARGANTUAR_DAMAGE_MULTIPLIER
+                : CoinEconomyValues.ZOMBIE_SWORD_WAVE_ZOMBIE_DAMAGE_MULTIPLIER;
+        event.setAmount(event.getAmount() * multiplier);
     }
 
     @SubscribeEvent

@@ -14,6 +14,7 @@ import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
 import net.PvZModders.PvZMod.progression.GardenProgressSavedData;
 import net.PvZModders.PvZMod.progression.beach.BigWaveBeachTideManager;
+import net.PvZModders.PvZMod.progression.coins.CoinEconomyValues;
 import net.PvZModders.PvZMod.progression.coins.PlantAbsorptionManager;
 import net.PvZModders.PvZMod.progression.farfuture.FarFuturePowerTileManager;
 import net.PvZModders.PvZMod.progression.modernday.ModernDayDragonFightData;
@@ -524,6 +525,100 @@ public class GardenTotemBlockEntity extends BlockEntity {
         }
         DaveShopPurchaseManager.purchaseShopEntry(player, stock.get(entryIndex));
         setChanged();
+    }
+
+    public void useWateringCanOnPlant(ServerPlayer player, int plantIndex) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size() || !isGardenPlantUnlocked(plantIndex)) {
+            player.displayClientMessage(Component.literal("No valid seed packet selected.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (!hasInventoryItem(player, ModItems.WATERING_CAN.get())) {
+            player.displayClientMessage(Component.literal("You need a Watering Can.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        GardenPlantDefinition plant = plants.get(plantIndex);
+        GardenPlantProductionSavedData production = GardenPlantProductionSavedData.get(serverLevel);
+        if (!production.reduceRefillTime(serverLevel, gardenId, plant, CoinEconomyValues.WATERING_CAN_REFILL_REDUCTION_TICKS)) {
+            player.displayClientMessage(Component.literal("That seed packet is not currently refilling.").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+        player.displayClientMessage(Component.literal("Watering Can reduced the refill timer.").withStyle(ChatFormatting.GREEN), true);
+        serverLevel.sendParticles(ParticleTypes.SPLASH, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.2D, worldPosition.getZ() + 0.5D,
+                12, 0.35D, 0.25D, 0.35D, 0.02D);
+        setChanged();
+    }
+
+    public void useSeedPolishOnPlant(ServerPlayer player, int plantIndex) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+        List<GardenPlantDefinition> plants = gardenPlants();
+        if (plantIndex < 0 || plantIndex >= plants.size() || !isGardenPlantUnlocked(plantIndex)) {
+            player.displayClientMessage(Component.literal("No valid seed packet selected.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        GardenPlantDefinition plant = plants.get(plantIndex);
+        GardenPlantProductionSavedData production = GardenPlantProductionSavedData.get(serverLevel);
+        if (!production.isRefilling(serverLevel, gardenId, plant)) {
+            player.displayClientMessage(Component.literal("That seed packet is already ready.").withStyle(ChatFormatting.YELLOW), true);
+            return;
+        }
+        if (!removeInventoryItem(player, ModItems.SEED_POLISH.get())) {
+            player.displayClientMessage(Component.literal("You need Seed Polish.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        if (!production.completeOneRefill(serverLevel, gardenId, plant)) {
+            player.displayClientMessage(Component.literal("Seed Polish could not be applied.").withStyle(ChatFormatting.RED), true);
+            return;
+        }
+        player.displayClientMessage(Component.literal("Seed Polish finished one refill.").withStyle(ChatFormatting.GREEN), true);
+        serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.2D, worldPosition.getZ() + 0.5D,
+                12, 0.35D, 0.25D, 0.35D, 0.02D);
+        setChanged();
+    }
+
+    public boolean repairTotem(ServerPlayer player, int amount) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+        if (totemHealth >= TOTEM_MAX_HEALTH) {
+            player.displayClientMessage(Component.literal("The garden totem is already fully repaired.").withStyle(ChatFormatting.YELLOW), true);
+            return false;
+        }
+        totemHealth = Math.min(TOTEM_MAX_HEALTH, totemHealth + Math.max(1, amount));
+        syncHealthBar(serverLevel, worldPosition);
+        serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER, worldPosition.getX() + 0.5D, worldPosition.getY() + 1.2D, worldPosition.getZ() + 0.5D,
+                12, 0.35D, 0.3D, 0.35D, 0.02D);
+        player.displayClientMessage(Component.literal("Garden totem repaired to " + totemHealth + "/" + TOTEM_MAX_HEALTH + ".").withStyle(ChatFormatting.GREEN), true);
+        setChanged();
+        return true;
+    }
+
+    private boolean hasInventoryItem(ServerPlayer player, net.minecraft.world.item.Item item) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            if (player.getInventory().getItem(slot).is(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean removeInventoryItem(ServerPlayer player, net.minecraft.world.item.Item item) {
+        for (int slot = 0; slot < player.getInventory().getContainerSize(); slot++) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            if (stack.is(item)) {
+                if (!player.getAbilities().instabuild) {
+                    stack.shrink(1);
+                    player.getInventory().setChanged();
+                }
+                return true;
+            }
+        }
+        return player.getAbilities().instabuild;
     }
 
     public void devClearCurrentWave(ServerPlayer player) {
