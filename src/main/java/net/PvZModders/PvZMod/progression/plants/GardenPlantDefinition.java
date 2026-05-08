@@ -22,6 +22,9 @@ public record GardenPlantDefinition(
     }
 
     public String unlockHint() {
+        if (unlockWave >= 900) {
+            return "Buy from Crazy Dave's shop.";
+        }
         return unlockWave <= 0 ? "Starter plant." : "Clear wave " + unlockWave + " to unlock.";
     }
 
@@ -235,7 +238,10 @@ public record GardenPlantDefinition(
                 ancient("grave_buster", "Grave Buster", "Consumes grave obstacles over time.", 0, 9),
                 ancient("bonk_choy", "Bonk Choy", "Rapidly punches zombies in front and behind.", 150, 13),
                 ancient("torchwood", "Torchwood", "Doubles compatible pea projectile damage.", 175, 19),
-                ancient("twin_sunflower", "Twin Sunflower", "Produces 50 sun every few seconds.", 125, 24)
+                ancient("twin_sunflower", "Twin Sunflower", "Produces 50 sun every few seconds.", 125, 24),
+                ancient("fire_peashooter", "Fire Peashooter", "Shoots flaming peas and resists freezing.", 175, 999),
+                ancient("solar_tomato", "Solar Tomato", "Stuns zombies in an area and causes them to produce Sun.", 100, 999),
+                ancient("pea_nut", "Pea-nut", "Hybrid wall and shooter. Blocks zombies while firing peas.", 150, 999)
         );
     }
 

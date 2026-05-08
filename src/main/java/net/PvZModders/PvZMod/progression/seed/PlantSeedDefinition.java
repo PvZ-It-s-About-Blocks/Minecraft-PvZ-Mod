@@ -32,6 +32,9 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.DESERT, ModItems.BONK_CHOY_SEED_PACKET.getId(), "bonk_choy", "Bonk Choy", 150, PlantBehavior.BONK_CHOY);
         register(GardenId.DESERT, ModItems.TORCHWOOD_SEED_PACKET.getId(), "torchwood", "Torchwood", 175, PlantBehavior.TORCHWOOD);
         register(GardenId.DESERT, ModItems.TWIN_SUNFLOWER_SEED_PACKET.getId(), "twin_sunflower", "Twin Sunflower", 125, PlantBehavior.TWIN_SUNFLOWER);
+        register(GardenId.DESERT, ModItems.FIRE_PEASHOOTER_SEED_PACKET.getId(), "fire_peashooter", "Fire Peashooter", 175, PlantBehavior.FIRE_PEASHOOTER);
+        register(GardenId.DESERT, ModItems.SOLAR_TOMATO_SEED_PACKET.getId(), "solar_tomato", "Solar Tomato", 100, PlantBehavior.SOLAR_TOMATO);
+        register(GardenId.DESERT, ModItems.PEA_NUT_SEED_PACKET.getId(), "pea_nut", "Pea-nut", 150, PlantBehavior.PEA_NUT);
         register(GardenId.PIRATE_SEAS, ModItems.KERNEL_PULT_SEED_PACKET.getId(), "kernel_pult", "Kernel-pult", 100, PlantBehavior.KERNEL_PULT);
         register(GardenId.PIRATE_SEAS, ModItems.SNAPDRAGON_SEED_PACKET.getId(), "snapdragon", "Snapdragon", 150, PlantBehavior.SNAPDRAGON);
         register(GardenId.PIRATE_SEAS, ModItems.SPIKEWEED_SEED_PACKET.getId(), "spikeweed", "Spikeweed", 100, PlantBehavior.SPIKEWEED);
@@ -162,6 +165,9 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         BONK_CHOY,
         TORCHWOOD,
         TWIN_SUNFLOWER,
+        FIRE_PEASHOOTER,
+        SOLAR_TOMATO,
+        PEA_NUT,
         SPLIT_PEA,
         CHILI_BEAN,
         PEA_POD,

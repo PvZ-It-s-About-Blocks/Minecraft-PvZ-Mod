@@ -12,6 +12,7 @@ import net.PvZModders.PvZMod.item.custom.GardenPlotterItem;
 import net.PvZModders.PvZMod.item.custom.JetpackItem;
 import net.PvZModders.PvZMod.item.custom.MysticalEyeItem;
 import net.PvZModders.PvZMod.item.custom.PirateShipItem;
+import net.PvZModders.PvZMod.item.custom.PlantVitaminsItem;
 import net.PvZModders.PvZMod.item.custom.SeedPacketItem;
 import net.PvZModders.PvZMod.item.custom.SeedHolderItem;
 import net.PvZModders.PvZMod.item.custom.SpeedyMinecartItem;
@@ -57,6 +58,12 @@ public class ModItems {
             () -> new SeedPacketItem("torchwood", new Item.Properties()));
     public static final RegistryObject<Item> TWIN_SUNFLOWER_SEED_PACKET = ITEMS.register("twin_sunflower_seed_packet",
             () -> new SeedPacketItem("twin_sunflower", new Item.Properties()));
+    public static final RegistryObject<Item> FIRE_PEASHOOTER_SEED_PACKET = ITEMS.register("fire_peashooter_seed_packet",
+            () -> new SeedPacketItem("fire_peashooter", new Item.Properties()));
+    public static final RegistryObject<Item> SOLAR_TOMATO_SEED_PACKET = ITEMS.register("solar_tomato_seed_packet",
+            () -> new SeedPacketItem("solar_tomato", new Item.Properties()));
+    public static final RegistryObject<Item> PEA_NUT_SEED_PACKET = ITEMS.register("pea_nut_seed_packet",
+            () -> new SeedPacketItem("pea_nut", new Item.Properties()));
     public static final RegistryObject<Item> KERNEL_PULT_SEED_PACKET = ITEMS.register("kernel_pult_seed_packet",
             () -> new SeedPacketItem("kernel_pult", new Item.Properties()));
     public static final RegistryObject<Item> SNAPDRAGON_SEED_PACKET = ITEMS.register("snapdragon_seed_packet",
@@ -189,6 +196,8 @@ public class ModItems {
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> COIN = ITEMS.register("coin",
             () -> new Item(new Item.Properties()));
+    public static final RegistryObject<Item> PLANT_VITAMINS = ITEMS.register("plant_vitamins",
+            () -> new PlantVitaminsItem(new Item.Properties().stacksTo(16)));
     public static final RegistryObject<Item> SUN_PILLAR = ITEMS.register("sun_pillar",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> PEA = ITEMS.register("pea",

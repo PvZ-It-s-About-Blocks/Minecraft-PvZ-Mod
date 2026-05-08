@@ -105,6 +105,8 @@ public final class PlantEntityManager {
     public static final String WIZARD_DISABLED_END_TICK_TAG = "PvZWizardDisabledEndTick";
     public static final String OCTO_DISABLED_TAG = "PvZOctoDisabled";
     public static final String OCTO_DISABLED_END_TICK_TAG = "PvZOctoDisabledEndTick";
+    public static final String PLANT_VITAMINS_BUFF_END_TICK_TAG = "PvZPlantVitaminsBuffEndTick";
+    public static final String PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER_TAG = "PvZPlantVitaminsAttackSpeedMultiplier";
     private static final String CHARD_GUARD_CHARGES_TAG = "PvZChardGuardCharges";
     private static final String INFI_NUT_LAST_HURT_TICK_TAG = "PvZInfiNutLastHurtTick";
     private static final String MECHANICAL_ZOMBIE_TAG = "PvZMechanicalZombie";
@@ -179,7 +181,12 @@ public final class PlantEntityManager {
     private static final double GOLD_MAGNET_RANGE = 8.0D;
     private static final int ALOE_HEAL_INTERVAL_TICKS = 20 * 5;
     private static final double ALOE_HEAL_RANGE = 4.0D;
+    public static final int PLANT_VITAMINS_DURATION_TICKS = 200;
+    public static final double PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER = 1.25D;
     private static final int JALAPENO_FUSE_TICKS = 12;
+    private static final int SOLAR_TOMATO_FUSE_TICKS = 12;
+    private static final double SOLAR_TOMATO_RADIUS = 3.0D;
+    private static final int SOLAR_TOMATO_SUN_PER_ZOMBIE = 50;
     private static final double JALAPENO_RANGE = 16.0D;
     private static final double CACTUS_RANGE = 15.0D;
     private static final int CACTUS_PIERCE_LIMIT = 3;
@@ -236,6 +243,7 @@ public final class PlantEntityManager {
     private static final float CACTUS_DAMAGE = 6.0F;
     private static final float POWERED_DUSK_LOBBER_SPLASH_DAMAGE = 6.0F;
     private static final float GRIMROSE_DAMAGE = 60.0F;
+    private static final float FIRE_PEA_DAMAGE = 6.0F;
     private static final int SUN_BEAN_SUN_VALUE = 5;
     private static final float DEFAULT_PLANT_HEALTH = 20.0F;
     private static final float WALL_NUT_HEALTH = 80.0F;
@@ -395,6 +403,9 @@ public final class PlantEntityManager {
         if (definition.behavior() == PlantSeedDefinition.PlantBehavior.JALAPENO) {
             tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + JALAPENO_FUSE_TICKS);
         }
+        if (definition.behavior() == PlantSeedDefinition.PlantBehavior.SOLAR_TOMATO) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SOLAR_TOMATO_FUSE_TICKS);
+        }
     }
 
     public static boolean attackNearbyPlant(ServerLevel level, Mob mob, float damage) {
@@ -458,6 +469,7 @@ public final class PlantEntityManager {
     public static boolean isDefensivePlant(Entity plant) {
         PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
         return behavior == PlantSeedDefinition.PlantBehavior.WALL_NUT
+                || behavior == PlantSeedDefinition.PlantBehavior.PEA_NUT
                 || behavior == PlantSeedDefinition.PlantBehavior.TALL_NUT
                 || behavior == PlantSeedDefinition.PlantBehavior.PRIMAL_WALL_NUT
                 || behavior == PlantSeedDefinition.PlantBehavior.CHARD_GUARD
@@ -486,6 +498,47 @@ public final class PlantEntityManager {
 
     public static String plantId(Entity entity) {
         return isPlant(entity) ? entity.getPersistentData().getString(PLANT_ID_TAG) : "";
+    }
+
+    public static boolean canApplyPlantVitamins(Entity plant) {
+        if (!isPlant(plant)) {
+            return false;
+        }
+        return switch (behaviorFor(plant)) {
+            case PEASHOOTER, REPEATER, FIRE_PEASHOOTER, PEA_NUT, BLOOMERANG, BONK_CHOY, SPLIT_PEA, PEA_POD,
+                    LIGHTNING_REED, MELON_PULT, WINTER_MELON, RED_STINGER, AKEE, PUFF_SHROOM, FUME_SHROOM,
+                    PRIMAL_PEASHOOTER, PHAT_BEET, CELERY_STALKER, SPORE_SHROOM, LASER_BEAN, CITRON,
+                    MAGNIFYING_GRASS, PEPPER_PULT, ROTOBAGA, KERNEL_PULT, SNAPDRAGON, SPIKEWEED,
+                    COCONUT_CANNON, THREEPEATER, SPIKEROCK, BOWLING_BULB, GUACODILE, BANANA_LAUNCHER,
+                    NIGHTSHADE, SHADOW_SHROOM, DUSK_LOBBER, CACTUS -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean applyPlantVitamins(Player player, LivingEntity plant) {
+        if (!canApplyPlantVitamins(plant) || !(plant.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        CompoundTag tag = plant.getPersistentData();
+        tag.putLong(PLANT_VITAMINS_BUFF_END_TICK_TAG, level.getGameTime() + PLANT_VITAMINS_DURATION_TICKS);
+        tag.putDouble(PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER_TAG, PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER);
+        level.sendParticles(ParticleTypes.HEART, plant.getX(), plant.getY() + 1.0D, plant.getZ(), 8, 0.25D, 0.35D, 0.25D, 0.02D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BREWING_STAND_BREW, SoundSource.PLAYERS, 0.65F, 1.35F);
+        player.displayClientMessage(Component.literal("Plant Vitamins applied.").withStyle(ChatFormatting.GREEN), true);
+        return true;
+    }
+
+    public static boolean isPlantVitaminsBuffed(Entity plant) {
+        return isPlant(plant)
+                && plant.level() instanceof ServerLevel level
+                && plant.getPersistentData().getLong(PLANT_VITAMINS_BUFF_END_TICK_TAG) > level.getGameTime();
+    }
+
+    public static double getPlantAttackSpeedMultiplier(Entity plant) {
+        if (!isPlantVitaminsBuffed(plant)) {
+            return 1.0D;
+        }
+        return Math.max(1.0D, plant.getPersistentData().getDouble(PLANT_VITAMINS_ATTACK_SPEED_MULTIPLIER_TAG));
     }
 
     @SubscribeEvent
@@ -623,6 +676,9 @@ public final class PlantEntityManager {
         PlantSeedDefinition.PlantBehavior behavior = behaviorFor(plant);
         switch (behavior) {
             case PEASHOOTER -> tickShooter(level, plant, 1);
+            case FIRE_PEASHOOTER -> tickFirePeashooter(level, plant);
+            case SOLAR_TOMATO -> tickSolarTomato(level, plant);
+            case PEA_NUT -> tickPeaNut(level, plant);
             case REPEATER -> tickRepeater(level, plant);
             case SUNFLOWER -> tickSunflower(level, plant);
             case TWIN_SUNFLOWER -> tickTwinSunflower(level, plant);
@@ -714,7 +770,7 @@ public final class PlantEntityManager {
             shootSnowball(level, plant, target.get(), shot * 0.18D);
         }
         level.sendParticles(ParticleTypes.CRIT, plant.getX(), plant.getY() + 1.15D, plant.getZ(), 4, 0.15D, 0.08D, 0.15D, 0.01D);
-        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + adjustedCooldown(plant, SHOOTER_INTERVAL_TICKS));
     }
 
     private static void tickRepeater(ServerLevel level, SnowGolem plant) {
@@ -741,7 +797,7 @@ public final class PlantEntityManager {
             }
             tag.putBoolean(REPEATER_PENDING_SECOND_SHOT_TAG, false);
             tag.remove(REPEATER_TARGET_UUID_TAG);
-            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SHOOTER_INTERVAL_TICKS);
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + adjustedCooldown(plant, SHOOTER_INTERVAL_TICKS));
             return;
         }
 
@@ -755,6 +811,63 @@ public final class PlantEntityManager {
         tag.putBoolean(REPEATER_PENDING_SECOND_SHOT_TAG, true);
         tag.putUUID(REPEATER_TARGET_UUID_TAG, target.get().getUUID());
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + REPEATER_SECOND_SHOT_DELAY_TICKS);
+    }
+
+    private static void tickFirePeashooter(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        Optional<LivingEntity> target = selectHostile(level, plant, SHOOTER_RANGE);
+        if (target.isEmpty()) {
+            tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + 10L);
+            return;
+        }
+
+        Snowball firePea = createProjectileVisual(level, plant, "fire_pea");
+        Vec3 start = plant.position().add(0.0D, 1.25D, 0.0D);
+        Vec3 targetPos = target.get().position().add(0.0D, target.get().getBbHeight() * 0.55D, 0.0D);
+        Vec3 direction = targetPos.subtract(start).normalize();
+        firePea.setPos(start.x, start.y, start.z);
+        firePea.shoot(direction.x, direction.y + 0.08D, direction.z, PEA_PROJECTILE_SPEED, 0.0F);
+        firePea.setSecondsOnFire(2);
+        firePea.getPersistentData().putBoolean(PLANT_PROJECTILE_TAG, true);
+        firePea.getPersistentData().putString(PROJECTILE_KIND_TAG, "fire_pea");
+        level.addFreshEntity(firePea);
+        plant.swing(InteractionHand.MAIN_HAND, true);
+        hurtWithoutKnockback(target.get(), level.damageSources().mobProjectile(firePea, plant), scaledPlantDamage(level, plant, FIRE_PEA_DAMAGE));
+        level.sendParticles(ParticleTypes.FLAME, plant.getX(), plant.getY() + 1.15D, plant.getZ(), 6, 0.15D, 0.08D, 0.15D, 0.01D);
+        tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + adjustedCooldown(plant, SHOOTER_INTERVAL_TICKS));
+    }
+
+    private static void tickPeaNut(ServerLevel level, SnowGolem plant) {
+        tickShooter(level, plant, 1);
+    }
+
+    private static void tickSolarTomato(ServerLevel level, SnowGolem plant) {
+        long gameTime = level.getGameTime();
+        CompoundTag tag = plant.getPersistentData();
+        if (gameTime < tag.getLong(NEXT_ACTION_TICK_TAG)) {
+            return;
+        }
+
+        AABB area = plant.getBoundingBox().inflate(SOLAR_TOMATO_RADIUS, 1.5D, SOLAR_TOMATO_RADIUS);
+        List<PvZZombieEntity> targets = level.getEntitiesOfClass(PvZZombieEntity.class, area,
+                zombie -> zombie.isAlive() && zombie.getPersistentData().getBoolean("PvZWaveZombie"))
+                .stream()
+                .limit(12)
+                .toList();
+        for (PvZZombieEntity zombie : targets) {
+            int duration = PvZZombieDefinitions.isGargantuarLike(zombie) ? 30 : 60;
+            zombie.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, duration, 9));
+            zombie.getNavigation().stop();
+            SunManager.spawnSunAt(level, zombie.blockPosition().above(2), SOLAR_TOMATO_SUN_PER_ZOMBIE);
+        }
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, plant.getX(), plant.getY() + 0.8D, plant.getZ(), 30, 1.3D, 0.5D, 1.3D, 0.04D);
+        level.playSound(null, plant.blockPosition(), SoundEvents.BEEHIVE_DRIP, SoundSource.BLOCKS, 0.8F, 1.2F);
+        plant.discard();
     }
 
     private static void tickSquash(ServerLevel level, SnowGolem plant) {
@@ -2312,6 +2425,7 @@ public final class PlantEntityManager {
 
     private static boolean isHotPlant(PlantSeedDefinition.PlantBehavior behavior) {
         return behavior == PlantSeedDefinition.PlantBehavior.HOT_POTATO
+                || behavior == PlantSeedDefinition.PlantBehavior.FIRE_PEASHOOTER
                 || behavior == PlantSeedDefinition.PlantBehavior.PEPPER_PULT
                 || behavior == PlantSeedDefinition.PlantBehavior.TORCHWOOD;
     }
@@ -2892,6 +3006,10 @@ public final class PlantEntityManager {
         return amount * FarFuturePowerTileManager.getDamageMultiplier(level, plant);
     }
 
+    private static long adjustedCooldown(SnowGolem plant, long baseCooldownTicks) {
+        return Math.max(1L, Math.round(baseCooldownTicks / getPlantAttackSpeedMultiplier(plant)));
+    }
+
     private static CompoundTag createIceOverlayTag() {
         CompoundTag tag = new CompoundTag();
         tag.put("block_state", NbtUtils.writeBlockState(Blocks.ICE.defaultBlockState()));
@@ -2988,7 +3106,7 @@ public final class PlantEntityManager {
     }
 
     private static boolean usesPeaProjectileVisual(String projectileKind) {
-        return "pea".equals(projectileKind) || "primal_pea".equals(projectileKind);
+        return "pea".equals(projectileKind) || "primal_pea".equals(projectileKind) || "fire_pea".equals(projectileKind);
     }
 
     private static void renderGuardianStyleLaser(ServerLevel level, Vec3 start, Vec3 end) {
@@ -3097,6 +3215,7 @@ public final class PlantEntityManager {
     private static float maxHealthFor(PlantSeedDefinition.PlantBehavior behavior) {
         return switch (behavior) {
             case WALL_NUT -> WALL_NUT_HEALTH;
+            case PEA_NUT -> 65.0F;
             case PRIMAL_WALL_NUT -> PRIMAL_WALL_NUT_HEALTH;
             case TALL_NUT -> TALL_NUT_HEALTH;
             case ENDURIAN -> ENDURIAN_HEALTH;

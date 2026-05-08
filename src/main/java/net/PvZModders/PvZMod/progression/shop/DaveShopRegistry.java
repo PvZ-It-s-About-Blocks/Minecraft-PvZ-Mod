@@ -13,6 +13,10 @@ import java.util.Optional;
 public final class DaveShopRegistry {
     private static final ResourceLocation SUNDROP = new ResourceLocation(PvZ2Mod.MOD_ID, "sundrop");
     private static final ResourceLocation JALAPENO_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "jalapeno_seed_packet");
+    private static final ResourceLocation FIRE_PEASHOOTER_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "fire_peashooter_seed_packet");
+    private static final ResourceLocation SOLAR_TOMATO_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "solar_tomato_seed_packet");
+    private static final ResourceLocation PEA_NUT_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "pea_nut_seed_packet");
+    private static final ResourceLocation PLANT_VITAMINS = new ResourceLocation(PvZ2Mod.MOD_ID, "plant_vitamins");
     private static final Map<GardenId, List<DaveShopEntry>> STOCK = createStock();
 
     private DaveShopRegistry() {
@@ -37,6 +41,21 @@ public final class DaveShopRegistry {
                     5, SUNDROP, 3, true));
             stock.put(gardenId, entries);
         }
+
+        List<DaveShopEntry> ancientEgypt = new ArrayList<>();
+        ancientEgypt.add(DaveShopEntry.plantUnlock(GardenId.DESERT, "fire_peashooter_unlock",
+                "Fire Peashooter", "Shoots flaming peas and resists freezing.",
+                650, FIRE_PEASHOOTER_PACKET, "fire_peashooter", 0));
+        ancientEgypt.add(DaveShopEntry.plantUnlock(GardenId.DESERT, "solar_tomato_unlock",
+                "Solar Tomato", "Stuns zombies in an area and causes them to produce Sun.",
+                500, SOLAR_TOMATO_PACKET, "solar_tomato", 0));
+        ancientEgypt.add(DaveShopEntry.plantUnlock(GardenId.DESERT, "pea_nut_unlock",
+                "Pea-nut", "Hybrid wall and shooter. Blocks zombies while firing peas.",
+                600, PEA_NUT_PACKET, "pea_nut", 0));
+        ancientEgypt.add(DaveShopEntry.item(GardenId.DESERT, "plant_vitamins",
+                "Plant Vitamins", "Consumable. Increases one plant's attack speed for 10 seconds.",
+                40, PLANT_VITAMINS, 1, true));
+        stock.put(GardenId.DESERT, ancientEgypt);
 
         stock.get(GardenId.GREENHOUSE).add(DaveShopEntry.plantUnlock(GardenId.GREENHOUSE, "unlock_jalapeno",
                 "Jalapeno Permit", "Unlocks Jalapeno in this world's Greenhouse planter stock.",
