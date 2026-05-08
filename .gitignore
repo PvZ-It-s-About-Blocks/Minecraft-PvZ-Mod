@@ -24,6 +24,14 @@ eula.txt
 
 # Logs and crash dumps
 *.log
+debug.log
+debug.log.*
+latest.log
+latest.log.*
+server-debug.log
+server-debug.log.*
+run/logs/
+run/debug.log*
 hs_err_pid*
 replay_pid*
 
