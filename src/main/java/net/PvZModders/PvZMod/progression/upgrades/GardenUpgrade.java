@@ -41,6 +41,7 @@ public enum GardenUpgrade {
     GOLD_TILE_REPLENISHMENT_SYNERGY("gold_tile_replenishment_synergy"),
     POWER_TILE_UPGRADE_FOUNDATION("power_tile_upgrade_foundation"),
     WATER_GARDEN_CAPACITY("water_garden_capacity"),
+    PLANT_SHOVEL_II("plant_shovel_2"),
     NIGHT_ECONOMY_STORAGE("night_economy_storage"),
     SUN_MAGNET_SYNERGY_FOUNDATION("sun_magnet_synergy_foundation"),
     TOTEM_SHIELD_PREP("totem_shield_prep"),

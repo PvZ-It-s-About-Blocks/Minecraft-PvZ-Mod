@@ -110,7 +110,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                 }
             } else if (selectedTab == TAB_SHOP) {
                 int hoveredEntry = getHoveredShopEntry(mouseX, mouseY);
-                if (hoveredEntry >= 0) {
+                if (hoveredEntry >= 0 && menu.isShopEntryAvailable(hoveredEntry)) {
                     Minecraft minecraft = Minecraft.getInstance();
                     if (minecraft.gameMode != null) {
                         minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.SHOP_BUTTON_OFFSET + hoveredEntry);
@@ -575,21 +575,24 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         int rowY = y + 66 + index * 34;
         int rowW = imageWidth - 48;
         int rowH = 28;
+        boolean available = menu.isShopEntryAvailable(index);
         boolean affordable = coins >= entry.coinPrice();
-        int border = affordable ? 0xFF6B5100 : 0xFF3F3F3F;
-        int fill = affordable ? 0x66FFE699 : 0x66404040;
+        boolean active = available && affordable;
+        int border = active ? 0xFF6B5100 : 0xFF3F3F3F;
+        int fill = active ? 0x66FFE699 : 0x66404040;
 
         guiGraphics.fill(rowX, rowY, rowX + rowW, rowY + rowH, border);
         guiGraphics.fill(rowX + 2, rowY + 2, rowX + rowW - 2, rowY + rowH - 2, fill);
         guiGraphics.renderItem(itemFromId(entry.iconItemId().toString()), rowX + 7, rowY + 6);
-        guiGraphics.drawString(font, font.plainSubstrByWidth(entry.displayName(), 120), rowX + 30, rowY + 5, affordable ? 0x3F3F3F : 0x5F5F5F, false);
+        guiGraphics.drawString(font, font.plainSubstrByWidth(entry.displayName(), 120), rowX + 30, rowY + 5, active ? 0x3F3F3F : 0x5F5F5F, false);
         guiGraphics.drawString(font, font.plainSubstrByWidth(entry.description(), 180), rowX + 30, rowY + 16, 0x5F5F5F, false);
 
         int buttonX = rowX + rowW - 58;
         int buttonY = rowY + 5;
+        String buttonText = available ? entry.coinPrice() + " c" : "Done";
         guiGraphics.fill(buttonX, buttonY, buttonX + 50, buttonY + 18, 0xFF1F1F1F);
-        guiGraphics.fill(buttonX + 2, buttonY + 2, buttonX + 48, buttonY + 16, affordable ? 0xFFC99A00 : 0xFF777777);
-        guiGraphics.drawString(font, entry.coinPrice() + " c", buttonX + 10, buttonY + 6, 0xFFFFFF, false);
+        guiGraphics.fill(buttonX + 2, buttonY + 2, buttonX + 48, buttonY + 16, active ? 0xFFC99A00 : 0xFF777777);
+        guiGraphics.drawString(font, buttonText, buttonX + 10, buttonY + 6, 0xFFFFFF, false);
     }
 
     private int getHoveredShopEntry(double mouseX, double mouseY) {

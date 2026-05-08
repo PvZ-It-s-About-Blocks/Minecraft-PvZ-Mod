@@ -2,6 +2,8 @@ package net.PvZModders.PvZMod.progression.shop;
 
 import net.PvZModders.PvZMod.progression.GardenId;
 import net.PvZModders.PvZMod.progression.greenhouse.GreenhouseCoinManager;
+import net.PvZModders.PvZMod.progression.upgrades.GardenUpgradeCategory;
+import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -34,6 +36,13 @@ public final class DaveShopPurchaseManager {
             player.displayClientMessage(Component.literal("Plant already unlocked.").withStyle(ChatFormatting.YELLOW), true);
             return false;
         }
+        if (entry.purchaseType() == DaveShopPurchaseType.UPGRADE
+                && GardenUpgradeCategory.byId(entry.upgradeCategoryId())
+                .map(category -> !PvZUpgradeSavedData.get(player.serverLevel()).canUpgradeCategory(category))
+                .orElse(true)) {
+            player.displayClientMessage(Component.literal("That upgrade is already at max tier.").withStyle(ChatFormatting.YELLOW), true);
+            return false;
+        }
         if (!GreenhouseCoinManager.hasCoins(player, entry.coinPrice())) {
             player.displayClientMessage(Component.literal("Not enough coins. Need " + entry.coinPrice() + ".").withStyle(ChatFormatting.RED), true);
             return false;
@@ -46,7 +55,7 @@ public final class DaveShopPurchaseManager {
         boolean granted = switch (entry.purchaseType()) {
             case ITEM, ARMOR, RECIPE, SPECIAL -> grantItem(player, entry);
             case PLANT_UNLOCK -> unlockShopPlantForWorld(player, entry);
-            case UPGRADE -> false;
+            case UPGRADE -> upgradeNextTier(player, entry);
         };
 
         if (!granted) {
@@ -82,6 +91,20 @@ public final class DaveShopPurchaseManager {
         DaveShopSavedData.get(player.serverLevel()).unlockPlant(entry.gardenId(), entry.plantId());
         player.displayClientMessage(Component.literal("Plant unlocked: " + entry.displayName()).withStyle(ChatFormatting.GREEN), true);
         return true;
+    }
+
+    private static boolean upgradeNextTier(ServerPlayer player, DaveShopEntry entry) {
+        return GardenUpgradeCategory.byId(entry.upgradeCategoryId())
+                .map(category -> {
+                    PvZUpgradeSavedData upgrades = PvZUpgradeSavedData.get(player.serverLevel());
+                    if (!upgrades.upgradeNextTier(category)) {
+                        return false;
+                    }
+                    upgrades.applyToAllPlayers(player.serverLevel());
+                    player.displayClientMessage(Component.literal(category.displayName() + " upgraded to Tier " + upgrades.getUpgradeTier(category) + ".").withStyle(ChatFormatting.GREEN), true);
+                    return true;
+                })
+                .orElse(false);
     }
 
 }

@@ -94,6 +94,12 @@ public class ModItems {
             () -> new SeedPacketItem("tall_nut", new Item.Properties()));
     public static final RegistryObject<Item> WINTER_MELON_SEED_PACKET = ITEMS.register("winter_melon_seed_packet",
             () -> new SeedPacketItem("winter_melon", new Item.Properties()));
+    public static final RegistryObject<Item> PARSNIP_SEED_PACKET = ITEMS.register("parsnip_seed_packet",
+            () -> new SeedPacketItem("parsnip", new Item.Properties()));
+    public static final RegistryObject<Item> HOT_DATE_SEED_PACKET = ITEMS.register("hot_date_seed_packet",
+            () -> new SeedPacketItem("hot_date", new Item.Properties()));
+    public static final RegistryObject<Item> WASABI_WHIP_SEED_PACKET = ITEMS.register("wasabi_whip_seed_packet",
+            () -> new SeedPacketItem("wasabi_whip", new Item.Properties()));
     public static final RegistryObject<Item> HOT_POTATO_SEED_PACKET = ITEMS.register("hot_potato_seed_packet",
             () -> new SeedPacketItem("hot_potato", new Item.Properties()));
     public static final RegistryObject<Item> PEPPER_PULT_SEED_PACKET = ITEMS.register("pepper_pult_seed_packet",

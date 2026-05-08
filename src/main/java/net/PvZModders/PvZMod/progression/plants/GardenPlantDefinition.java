@@ -266,7 +266,10 @@ public record GardenPlantDefinition(
                 wildWest("lightning_reed", "Lightning Reed", "Chains electric damage through nearby zombies.", 125, 9),
                 wildWest("melon_pult", "Melon-pult", "Lobs heavy splash-damage melons.", 325, 11),
                 wildWest("tall_nut", "Tall-nut", "Very sturdy blocker for tough waves.", 125, 18),
-                wildWest("winter_melon", "Winter Melon", "Lobs chilling splash-damage melons.", 500, 24)
+                wildWest("winter_melon", "Winter Melon", "Lobs chilling splash-damage melons.", 500, 24),
+                wildWest("parsnip", "Parsnip", "Melee plant that attacks nearby zombies and can charge forward.", 150, 999),
+                wildWest("hot_date", "Hot Date", "Lures zombies toward it, then releases fire when eaten.", 175, 999),
+                wildWest("wasabi_whip", "Wasabi Whip", "Melee fire plant that attacks in front and behind.", 150, 999)
         );
     }
 

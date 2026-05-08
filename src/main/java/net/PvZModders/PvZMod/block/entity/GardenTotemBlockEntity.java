@@ -24,10 +24,13 @@ import net.PvZModders.PvZMod.progression.portal.GardenEyeType;
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
 import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
 import net.PvZModders.PvZMod.progression.seed.SeedStorage;
+import net.PvZModders.PvZMod.progression.shop.DaveShopEntry;
+import net.PvZModders.PvZMod.progression.shop.DaveShopPurchaseType;
 import net.PvZModders.PvZMod.progression.shop.DaveShopPurchaseManager;
 import net.PvZModders.PvZMod.progression.shop.DaveShopRegistry;
 import net.PvZModders.PvZMod.progression.shop.DaveShopSavedData;
 import net.PvZModders.PvZMod.progression.sun.SunManager;
+import net.PvZModders.PvZMod.progression.upgrades.GardenUpgradeCategory;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieDefinitions;
 import net.PvZModders.PvZMod.progression.zombies.PvZZombieSpecial;
@@ -327,6 +330,30 @@ public class GardenTotemBlockEntity extends BlockEntity {
         int mask = 0;
         for (int i = 0; i < Math.min(31, plants.size()); i++) {
             if (shopData.isPlantUnlocked(gardenId, plants.get(i).plantId())) {
+                mask |= 1 << i;
+            }
+        }
+        return mask;
+    }
+
+    public int getShopEntryAvailableMask() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return 0;
+        }
+        DaveShopSavedData shopData = DaveShopSavedData.get(serverLevel);
+        PvZUpgradeSavedData upgradeData = PvZUpgradeSavedData.get(serverLevel);
+        List<DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(gardenId);
+        int mask = 0;
+        for (int i = 0; i < Math.min(31, stock.size()); i++) {
+            DaveShopEntry entry = stock.get(i);
+            boolean available = switch (entry.purchaseType()) {
+                case PLANT_UNLOCK -> !shopData.isPlantUnlocked(gardenId, entry.plantId());
+                case UPGRADE -> GardenUpgradeCategory.byId(entry.upgradeCategoryId())
+                        .map(upgradeData::canUpgradeCategory)
+                        .orElse(false);
+                case ITEM, ARMOR, RECIPE, SPECIAL -> entry.repeatable() || !shopData.isPurchased(gardenId, entry.id());
+            };
+            if (available) {
                 mask |= 1 << i;
             }
         }

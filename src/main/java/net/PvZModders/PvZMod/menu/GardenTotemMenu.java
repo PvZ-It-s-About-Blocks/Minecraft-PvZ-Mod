@@ -39,6 +39,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
     private boolean planterSlotsVisible;
     private int gardenPacketCap = net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData.GARDEN_PACKET_CAP;
     private int shopPlantUnlockMask;
+    private int shopEntryAvailableMask;
 
     public GardenTotemMenu(int containerId, Inventory playerInventory) {
         this(containerId, playerInventory, 1, false);
@@ -53,6 +54,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.currentPortalIndex = 0;
         this.gardenPortalIndex = 0;
         this.shopPlantUnlockMask = 0;
+        this.shopEntryAvailableMask = 0;
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -66,6 +68,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.currentPortalIndex = gardenTotem.getCurrentPortalIndex();
         this.gardenPortalIndex = gardenTotem.getGardenPortalIndex();
         this.shopPlantUnlockMask = gardenTotem.getShopPlantUnlockMask();
+        this.shopEntryAvailableMask = gardenTotem.getShopEntryAvailableMask();
         addContainerSlots(playerInventory);
         addDataSlots();
     }
@@ -210,6 +213,17 @@ public class GardenTotemMenu extends AbstractContainerMenu {
                 GardenTotemMenu.this.shopPlantUnlockMask = value;
             }
         });
+        addDataSlot(new DataSlot() {
+            @Override
+            public int get() {
+                return gardenTotem == null ? GardenTotemMenu.this.shopEntryAvailableMask : gardenTotem.getShopEntryAvailableMask();
+            }
+
+            @Override
+            public void set(int value) {
+                GardenTotemMenu.this.shopEntryAvailableMask = value;
+            }
+        });
     }
 
     public int currentWave() {
@@ -252,6 +266,10 @@ public class GardenTotemMenu extends AbstractContainerMenu {
 
     public boolean isPlantUnlockedFromShop(int plantIndex) {
         return plantIndex >= 0 && plantIndex < 31 && (shopPlantUnlockMask & (1 << plantIndex)) != 0;
+    }
+
+    public boolean isShopEntryAvailable(int entryIndex) {
+        return entryIndex >= 0 && entryIndex < 31 && (shopEntryAvailableMask & (1 << entryIndex)) != 0;
     }
 
     @Override

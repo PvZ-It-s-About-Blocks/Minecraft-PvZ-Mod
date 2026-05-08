@@ -22,11 +22,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.EnumSet;
+import java.util.EnumMap;
+import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = PvZ2Mod.MOD_ID)
 public class PvZUpgradeSavedData extends SavedData {
     private static final String DATA_NAME = PvZ2Mod.MOD_ID + "_garden_upgrades";
     private final EnumSet<GardenUpgrade> unlocked = EnumSet.noneOf(GardenUpgrade.class);
+    private final EnumMap<GardenUpgradeCategory, Integer> categoryTiers = new EnumMap<>(GardenUpgradeCategory.class);
 
     public static PvZUpgradeSavedData get(ServerLevel level) {
         return level.getServer().overworld().getDataStorage().computeIfAbsent(
@@ -42,6 +45,13 @@ public class PvZUpgradeSavedData extends SavedData {
         for (int i = 0; i < list.size(); i++) {
             GardenUpgrade.byId(list.getString(i)).ifPresent(data.unlocked::add);
         }
+        CompoundTag categoryTag = tag.getCompound("CategoryTiers");
+        for (GardenUpgradeCategory category : GardenUpgradeCategory.values()) {
+            if (categoryTag.contains(category.id())) {
+                data.categoryTiers.put(category, Math.max(0, Math.min(category.maxTier(), categoryTag.getInt(category.id()))));
+            }
+        }
+        data.migrateFlagsToCategoryTiers();
         return data;
     }
 
@@ -130,7 +140,17 @@ public class PvZUpgradeSavedData extends SavedData {
     }
 
     public boolean unlock(GardenUpgrade upgrade) {
+        int previousCategoryTier = GardenUpgradeCategory.forUpgrade(upgrade)
+                .map(this::getUpgradeTier)
+                .orElse(0);
         boolean added = unlocked.add(upgrade);
+        GardenUpgradeCategory.forUpgrade(upgrade).ifPresent(category -> {
+            int migratedTier = Math.max(previousCategoryTier, category.tierOf(upgrade));
+            if (migratedTier != previousCategoryTier) {
+                categoryTiers.put(category, migratedTier);
+                setDirty();
+            }
+        });
         if (added) {
             setDirty();
         }
@@ -138,7 +158,30 @@ public class PvZUpgradeSavedData extends SavedData {
     }
 
     public boolean isUnlocked(GardenUpgrade upgrade) {
-        return unlocked.contains(upgrade);
+        return unlocked.contains(upgrade)
+                || GardenUpgradeCategory.forUpgrade(upgrade)
+                .map(category -> getUpgradeTier(category) >= category.tierOf(upgrade))
+                .orElse(false);
+    }
+
+    public int getUpgradeTier(GardenUpgradeCategory category) {
+        return Math.max(categoryTierFromUnlockedFlags(category), categoryTiers.getOrDefault(category, 0));
+    }
+
+    public boolean canUpgradeCategory(GardenUpgradeCategory category) {
+        return getUpgradeTier(category) < category.maxTier();
+    }
+
+    public boolean upgradeNextTier(GardenUpgradeCategory category) {
+        int current = getUpgradeTier(category);
+        if (current >= category.maxTier()) {
+            return false;
+        }
+        int nextTier = current + 1;
+        categoryTiers.put(category, nextTier);
+        category.upgradeForTier(nextTier).ifPresent(unlocked::add);
+        setDirty();
+        return true;
     }
 
     public void applyToPlayer(ServerPlayer player) {
@@ -175,8 +218,26 @@ public class PvZUpgradeSavedData extends SavedData {
             }
         }
         if (changed) {
+            migrateFlagsToCategoryTiers();
             setDirty();
         }
+    }
+
+    private void migrateFlagsToCategoryTiers() {
+        for (GardenUpgradeCategory category : GardenUpgradeCategory.values()) {
+            int flagTier = categoryTierFromUnlockedFlags(category);
+            if (flagTier > categoryTiers.getOrDefault(category, 0)) {
+                categoryTiers.put(category, flagTier);
+            }
+        }
+    }
+
+    private int categoryTierFromUnlockedFlags(GardenUpgradeCategory category) {
+        int tier = 0;
+        for (GardenUpgrade upgrade : unlocked) {
+            tier = Math.max(tier, category.tierOf(upgrade));
+        }
+        return tier;
     }
 
     @Override
@@ -186,6 +247,11 @@ public class PvZUpgradeSavedData extends SavedData {
             list.add(StringTag.valueOf(upgrade.id()));
         }
         tag.put("Unlocked", list);
+        CompoundTag categoryTag = new CompoundTag();
+        for (Map.Entry<GardenUpgradeCategory, Integer> entry : categoryTiers.entrySet()) {
+            categoryTag.putInt(entry.getKey().id(), entry.getValue());
+        }
+        tag.put("CategoryTiers", categoryTag);
         return tag;
     }
 }

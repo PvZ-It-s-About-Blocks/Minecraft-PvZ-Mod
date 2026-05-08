@@ -50,6 +50,9 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.WILD_WEST, ModItems.MELON_PULT_SEED_PACKET.getId(), "melon_pult", "Melon-pult", 325, PlantBehavior.MELON_PULT);
         register(GardenId.WILD_WEST, ModItems.TALL_NUT_SEED_PACKET.getId(), "tall_nut", "Tall-nut", 125, PlantBehavior.TALL_NUT);
         register(GardenId.WILD_WEST, ModItems.WINTER_MELON_SEED_PACKET.getId(), "winter_melon", "Winter Melon", 500, PlantBehavior.WINTER_MELON);
+        register(GardenId.WILD_WEST, ModItems.PARSNIP_SEED_PACKET.getId(), "parsnip", "Parsnip", 150, PlantBehavior.PARSNIP);
+        register(GardenId.WILD_WEST, ModItems.HOT_DATE_SEED_PACKET.getId(), "hot_date", "Hot Date", 175, PlantBehavior.HOT_DATE);
+        register(GardenId.WILD_WEST, ModItems.WASABI_WHIP_SEED_PACKET.getId(), "wasabi_whip", "Wasabi Whip", 150, PlantBehavior.WASABI_WHIP);
         register(GardenId.FROSTBITE, ModItems.HOT_POTATO_SEED_PACKET.getId(), "hot_potato", "Hot Potato", 0, PlantBehavior.HOT_POTATO);
         register(GardenId.FROSTBITE, ModItems.PEPPER_PULT_SEED_PACKET.getId(), "pepper_pult", "Pepper-pult", 200, PlantBehavior.PEPPER_PULT);
         register(GardenId.FROSTBITE, ModItems.CHARD_GUARD_SEED_PACKET.getId(), "chard_guard", "Chard Guard", 75, PlantBehavior.CHARD_GUARD);
@@ -175,6 +178,9 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         MELON_PULT,
         TALL_NUT,
         WINTER_MELON,
+        PARSNIP,
+        HOT_DATE,
+        WASABI_WHIP,
         RED_STINGER,
         AKEE,
         ENDURIAN,

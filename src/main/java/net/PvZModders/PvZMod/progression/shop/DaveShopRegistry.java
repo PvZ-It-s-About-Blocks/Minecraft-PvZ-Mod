@@ -17,6 +17,10 @@ public final class DaveShopRegistry {
     private static final ResourceLocation SOLAR_TOMATO_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "solar_tomato_seed_packet");
     private static final ResourceLocation PEA_NUT_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "pea_nut_seed_packet");
     private static final ResourceLocation PLANT_VITAMINS = new ResourceLocation(PvZ2Mod.MOD_ID, "plant_vitamins");
+    private static final ResourceLocation GOLDEN_SHOVEL = new ResourceLocation("minecraft", "golden_shovel");
+    private static final ResourceLocation PARSNIP_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "parsnip_seed_packet");
+    private static final ResourceLocation HOT_DATE_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "hot_date_seed_packet");
+    private static final ResourceLocation WASABI_WHIP_PACKET = new ResourceLocation(PvZ2Mod.MOD_ID, "wasabi_whip_seed_packet");
     private static final Map<GardenId, List<DaveShopEntry>> STOCK = createStock();
 
     private DaveShopRegistry() {
@@ -56,6 +60,21 @@ public final class DaveShopRegistry {
                 "Plant Vitamins", "Consumable. Increases one plant's attack speed for 10 seconds.",
                 40, PLANT_VITAMINS, 1, true));
         stock.put(GardenId.DESERT, ancientEgypt);
+
+        List<DaveShopEntry> wildWest = new ArrayList<>();
+        wildWest.add(DaveShopEntry.upgrade(GardenId.WILD_WEST, "plant_shovel_2",
+                "Plant Shovel II", "Plant removal upgrade. Shoveled plants refund 20% of their Sun cost as coins.",
+                350, GOLDEN_SHOVEL, "plant_shovel"));
+        wildWest.add(DaveShopEntry.plantUnlock(GardenId.WILD_WEST, "parsnip_unlock",
+                "Parsnip", "Melee plant that attacks nearby zombies and can charge forward.",
+                550, PARSNIP_PACKET, "parsnip", 0));
+        wildWest.add(DaveShopEntry.plantUnlock(GardenId.WILD_WEST, "hot_date_unlock",
+                "Hot Date", "Lures zombies toward it, then releases fire when eaten.",
+                600, HOT_DATE_PACKET, "hot_date", 0));
+        wildWest.add(DaveShopEntry.plantUnlock(GardenId.WILD_WEST, "wasabi_whip_unlock",
+                "Wasabi Whip", "Melee fire plant that attacks in front and behind.",
+                650, WASABI_WHIP_PACKET, "wasabi_whip", 0));
+        stock.put(GardenId.WILD_WEST, wildWest);
 
         stock.get(GardenId.GREENHOUSE).add(DaveShopEntry.plantUnlock(GardenId.GREENHOUSE, "unlock_jalapeno",
                 "Jalapeno Permit", "Unlocks Jalapeno in this world's Greenhouse planter stock.",
