@@ -1,6 +1,7 @@
 package net.PvZModders.PvZMod.client.screen;
 
 import net.PvZModders.PvZMod.menu.GardenTotemMenu;
+import net.PvZModders.PvZMod.item.ModItems;
 import net.PvZModders.PvZMod.progression.GardenPortalOption;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantDefinition;
 import net.PvZModders.PvZMod.progression.plants.GardenPlantProductionSavedData;
@@ -20,6 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import java.util.List;
@@ -47,6 +49,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private double shopScroll;
     private Component hoveredRewardTooltip;
     private List<Component> hoveredPlantTooltip;
+    private int selectedPlanterPlant = -1;
 
     public GardenTotemScreen(GardenTotemMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
@@ -132,6 +135,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
                 }
                 int hoveredPlant = getHoveredPlant(mouseX, mouseY);
                 if (hoveredPlant >= 0) {
+                    selectedPlanterPlant = hoveredPlant;
                     Minecraft minecraft = Minecraft.getInstance();
                     if (minecraft.gameMode != null) {
                         minecraft.gameMode.handleInventoryButtonClick(menu.containerId, GardenTotemMenu.PLANT_BUTTON_OFFSET + hoveredPlant);
@@ -473,6 +477,9 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         guiGraphics.drawString(font, Component.literal("Planter").withStyle(ChatFormatting.DARK_GRAY), x + 24, y + 48, 0x3F3F3F, false);
         guiGraphics.drawString(font, Component.literal("Garden Packets").withStyle(ChatFormatting.DARK_GREEN), x + 116, y + 48, 0x2F6F2F, false);
         List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
+        if (selectedPlanterPlant >= plants.size()) {
+            selectedPlanterPlant = -1;
+        }
         planterScroll = clampPlanterScroll(planterScroll);
         int listX = getPlanterListX(x);
         int listY = getPlanterListY(y);
@@ -489,6 +496,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         renderPlanterScrollBar(guiGraphics, x, y, plants.size());
         renderSeedStorageArea(guiGraphics, x, y);
         renderTrashArea(guiGraphics, x, y);
+        renderPlanterToolArea(guiGraphics, x, y);
         if (hoveredPlantTooltip != null) {
             guiGraphics.renderTooltip(font, hoveredPlantTooltip.stream().map(Component::getVisualOrderText).toList(), mouseX, mouseY);
         }
@@ -510,6 +518,12 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
         guiGraphics.fill(cardX, cardY, cardX + cardW, cardY + cardH, border);
         guiGraphics.fill(cardX + 2, cardY + 2, cardX + cardW - 2, cardY + cardH - 2, fill);
+        if (index == selectedPlanterPlant) {
+            guiGraphics.fill(cardX, cardY, cardX + cardW, cardY + 2, 0xFFFFD73A);
+            guiGraphics.fill(cardX, cardY + cardH - 2, cardX + cardW, cardY + cardH, 0xFFFFD73A);
+            guiGraphics.fill(cardX, cardY, cardX + 2, cardY + cardH, 0xFFFFD73A);
+            guiGraphics.fill(cardX + cardW - 2, cardY, cardX + cardW, cardY + cardH, 0xFFFFD73A);
+        }
         guiGraphics.fill(cardX + 6, cardY + 5, cardX + 24, cardY + 23, unlocked ? 0xFFB6D7A8 : 0xFF000000);
         if (unlocked && count <= 0) {
             guiGraphics.renderItem(itemFromId(plant.seedPacketId().toString()), cardX + 7, cardY + 6);
@@ -534,10 +548,6 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             String timerText = count >= packetCap ? "Ready" : "Next " + remaining + "s";
             guiGraphics.drawString(font, timerText, cardX + 150, cardY + 4, count >= packetCap ? gardenColor : 0x6F6F6F, false);
             guiGraphics.drawString(font, count + "/" + packetCap, cardX + 190, cardY + 4, count > 0 ? gardenColor : 0x5F5F5F, false);
-            if (count < packetCap && remaining > 0) {
-                renderPlanterToolButton(guiGraphics, cardX + 204, cardY + 3, "Can", 0xFF3F7FBF);
-                renderPlanterToolButton(guiGraphics, cardX + 204, cardY + 13, "Pol", 0xFFBFA23F);
-            }
         }
 
         if (mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY < cardY + cardH) {
@@ -566,12 +576,6 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
         );
     }
 
-    private void renderPlanterToolButton(GuiGraphics guiGraphics, int x, int y, String label, int color) {
-        guiGraphics.fill(x, y, x + 29, y + 8, 0xFF1F1F1F);
-        guiGraphics.fill(x + 1, y + 1, x + 28, y + 7, color);
-        guiGraphics.drawString(font, label, x + 5, y + 1, 0xFFFFFF, false);
-    }
-
     private void renderSeedStorageArea(GuiGraphics guiGraphics, int x, int y) {
         guiGraphics.drawString(font, Component.literal("Seed Storage").withStyle(ChatFormatting.DARK_GRAY), x + 276, y + 58, 0x3F3F3F, false);
         for (int index = 0; index < GardenTotemMenu.SEED_STORAGE_SLOT_COUNT; index++) {
@@ -582,6 +586,17 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     private void renderTrashArea(GuiGraphics guiGraphics, int x, int y) {
         drawSlotBackground(guiGraphics, x + 334, y + 206, 0xFF7F1F1F);
         guiGraphics.renderItem(new ItemStack(Items.BARRIER), x + 335, y + 207);
+    }
+
+    private void renderPlanterToolArea(GuiGraphics guiGraphics, int x, int y) {
+        if (hasPlayerItem(ModItems.WATERING_CAN.get())) {
+            drawSlotBackground(guiGraphics, getWateringCanButtonX(x), getPlanterToolButtonY(y), 0xFF3F7FBF);
+            guiGraphics.renderItem(new ItemStack(ModItems.WATERING_CAN.get()), getWateringCanButtonX(x) + 1, getPlanterToolButtonY(y) + 1);
+        }
+        if (hasPlayerItem(ModItems.SEED_POLISH.get())) {
+            drawSlotBackground(guiGraphics, getSeedPolishButtonX(x), getPlanterToolButtonY(y), 0xFFBFA23F);
+            guiGraphics.renderItem(new ItemStack(ModItems.SEED_POLISH.get()), getSeedPolishButtonX(x) + 1, getPlanterToolButtonY(y) + 1);
+        }
     }
 
     private void drawSlotBackground(GuiGraphics guiGraphics, int x, int y, int border) {
@@ -605,26 +620,59 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
     }
 
     private int getHoveredPlanterTool(double mouseX, double mouseY) {
-        if (!isMouseOverPlanterList(mouseX, mouseY)) {
+        if (!canUseToolOnSelectedPlanterPlant()) {
             return -1;
         }
-        List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
-        for (int i = 0; i < plants.size(); i++) {
-            GardenPlantDefinition plant = plants.get(i);
-            boolean unlocked = plant.isUnlockedAtWave(menu.currentWave()) || menu.isPlantUnlockedFromShop(i);
-            if (!unlocked || menu.plantCount(i) >= menu.gardenPacketCap() || menu.plantRemainingSeconds(i) <= 0) {
-                continue;
-            }
-            int cardX = getPlantCardX(leftPos, i);
-            int cardY = getPlantCardY(topPos - (int) planterScroll, i);
-            if (mouseX >= cardX + 204 && mouseX < cardX + 233 && mouseY >= cardY + 3 && mouseY < cardY + 11) {
-                return GardenTotemMenu.WATERING_CAN_BUTTON_OFFSET + i;
-            }
-            if (mouseX >= cardX + 204 && mouseX < cardX + 233 && mouseY >= cardY + 13 && mouseY < cardY + 21) {
-                return GardenTotemMenu.SEED_POLISH_BUTTON_OFFSET + i;
-            }
+        int buttonY = getPlanterToolButtonY(topPos);
+        if (hasPlayerItem(ModItems.WATERING_CAN.get())
+                && mouseX >= getWateringCanButtonX(leftPos) && mouseX < getWateringCanButtonX(leftPos) + 18
+                && mouseY >= buttonY && mouseY < buttonY + 18) {
+            return GardenTotemMenu.WATERING_CAN_BUTTON_OFFSET + selectedPlanterPlant;
+        }
+        if (hasPlayerItem(ModItems.SEED_POLISH.get())
+                && mouseX >= getSeedPolishButtonX(leftPos) && mouseX < getSeedPolishButtonX(leftPos) + 18
+                && mouseY >= buttonY && mouseY < buttonY + 18) {
+            return GardenTotemMenu.SEED_POLISH_BUTTON_OFFSET + selectedPlanterPlant;
         }
         return -1;
+    }
+
+    private boolean canUseToolOnSelectedPlanterPlant() {
+        if (selectedPlanterPlant < 0) {
+            return false;
+        }
+        List<GardenPlantDefinition> plants = GardenPlantDefinition.forGarden(menu.gardenId());
+        if (selectedPlanterPlant >= plants.size()) {
+            return false;
+        }
+        GardenPlantDefinition plant = plants.get(selectedPlanterPlant);
+        boolean unlocked = plant.isUnlockedAtWave(menu.currentWave()) || menu.isPlantUnlockedFromShop(selectedPlanterPlant);
+        return unlocked && menu.plantCount(selectedPlanterPlant) < menu.gardenPacketCap() && menu.plantRemainingSeconds(selectedPlanterPlant) > 0;
+    }
+
+    private boolean hasPlayerItem(Item item) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null) {
+            return false;
+        }
+        for (ItemStack stack : minecraft.player.getInventory().items) {
+            if (stack.is(item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int getWateringCanButtonX(int x) {
+        return x + 296;
+    }
+
+    private int getSeedPolishButtonX(int x) {
+        return x + 315;
+    }
+
+    private int getPlanterToolButtonY(int y) {
+        return y + 206;
     }
 
     private int getPlantCardX(int x, int index) {

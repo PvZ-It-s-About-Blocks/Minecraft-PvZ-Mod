@@ -60,8 +60,8 @@ public final class SunManager {
     private static final int SUN_BLINK_START_TICKS = 20 * 20;
     private static final int SUN_DROP_RADIUS = 32;
     private static final int SUN_DROP_HEIGHT = 15;
-    private static final int MIN_DROP_DELAY_TICKS = 4 * 20;
-    private static final int RANDOM_DROP_DELAY_TICKS = 3 * 20;
+    private static final int MIN_DROP_DELAY_TICKS = 3 * 20;
+    private static final int RANDOM_DROP_DELAY_TICKS = 2 * 20;
     private static final double SUN_PICKUP_RADIUS = 1.25D;
     private static final DustParticleOptions SUN_PILLAR_PARTICLE = new DustParticleOptions(new Vector3f(1.0F, 0.86F, 0.0F), 1.15F);
     private static final int SUN_PILLAR_PARTICLE_INTERVAL_TICKS = 5;

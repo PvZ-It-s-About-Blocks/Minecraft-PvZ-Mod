@@ -479,7 +479,7 @@ public final class PlantEntityManager {
                     && zombie.definition().has(PvZZombieSpecial.SURFER)
                     && zombie.getPersistentData().getBoolean("PvZSurferBoardActive")) {
                 zombie.getPersistentData().putBoolean("PvZSurferBoardActive", false);
-                zombie.configureForWave(0.27D);
+                zombie.configureForWave(0.22D);
                 level.sendParticles(ParticleTypes.SPLASH, zombie.getX(), zombie.getY() + 0.5D, zombie.getZ(), 16, 0.35D, 0.25D, 0.35D, 0.04D);
                 level.playSound(null, zombie.blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.75F, 1.1F);
             }

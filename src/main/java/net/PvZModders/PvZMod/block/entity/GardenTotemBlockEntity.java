@@ -127,8 +127,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
-    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.27D;
-    private static final double WAVE_ZOMBIE_NAVIGATION_SPEED = 0.55D;
+    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.22D;
+    private static final double WAVE_ZOMBIE_NAVIGATION_SPEED = 1.0D;
     private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
     public static final String WAVE_ZOMBIE_TAG = "PvZWaveZombie";
     private static final ResourceLocation SEED_HOLDER_RECIPE = new ResourceLocation(PvZ2Mod.MOD_ID, "seed_holder");
