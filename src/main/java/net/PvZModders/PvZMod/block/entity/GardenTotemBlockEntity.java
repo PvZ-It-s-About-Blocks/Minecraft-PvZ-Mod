@@ -127,7 +127,7 @@ public class GardenTotemBlockEntity extends BlockEntity {
     private static final int KILL_ACCELERATED_MIN_DELAY_TICKS = 20 * 3;
     private static final int KILL_ACCELERATED_RANDOM_DELAY_TICKS = 20 * 2;
     private static final double FINAL_PUSH_PROGRESS = 0.78D;
-    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.23D;
+    private static final double WAVE_ZOMBIE_MOVEMENT_SPEED = 0.27D;
     private static final double WAVE_ZOMBIE_NAVIGATION_SPEED = 0.55D;
     private static final String SEED_HOLDER_GRANTED_TAG = "PvZSeedHolderGranted";
     public static final String WAVE_ZOMBIE_TAG = "PvZWaveZombie";
@@ -446,10 +446,12 @@ public class GardenTotemBlockEntity extends BlockEntity {
             SunManager.unlockSunDrops(player.serverLevel(), player);
         }
 
+        PlantAbsorptionManager.absorbPlantsBeforeWaveStart(player.serverLevel(), this);
         waveProgress.startWave();
         markWaveProgressDirty(player.serverLevel());
         totemHealth = TOTEM_MAX_HEALTH;
         List<WaveSpawnDirection> directions = prepareWaveSpawnSchedule(player.serverLevel(), waveDefinition(waveProgress.currentWave()));
+        absorbSunForWaveParticipants(player.serverLevel(), player);
         ensureMinimumSunForWaveParticipant(player.serverLevel(), player, true);
         ensureMinimumSunForWaveParticipants(player.serverLevel(), true);
         showWaveDirectionTitle(player, directions);
@@ -1305,10 +1307,8 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 player.sendSystemMessage(Component.literal("Reward unlocked: " + reward.displayName()).withStyle(ChatFormatting.GOLD));
                 if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.PLANT_UNLOCK) {
                     PlantSeedDefinition.getByPlantId(reward.id()).ifPresent(plantDefinition -> {
-                        if (!SeedStorage.addPlantPacketsToLoadout(player, plantDefinition.seedPacketId(), 10)) {
-                            player.sendSystemMessage(Component.literal("Your plant hotbar is full. Visit a garden loadout station later to equip " + plantDefinition.displayName() + ".")
-                                    .withStyle(ChatFormatting.YELLOW));
-                        }
+                        player.sendSystemMessage(Component.literal(plantDefinition.displayName() + " is now available in this garden's Planter tab.")
+                                .withStyle(ChatFormatting.GREEN));
                     });
                 } else if (reward.type() == net.PvZModders.PvZMod.progression.waves.WaveRewardType.ITEM_UNLOCK
                         && GardenEyeType.byEyeId(reward.id()).isPresent()) {
@@ -1504,6 +1504,17 @@ public class GardenTotemBlockEntity extends BlockEntity {
                 continue;
             }
             ensureMinimumSunForWaveParticipant(level, player, announce);
+        }
+    }
+
+    private void absorbSunForWaveParticipants(ServerLevel level, ServerPlayer starter) {
+        Vec3 totemCenter = Vec3.atCenterOf(worldPosition);
+        SunManager.absorbSunNear(level, starter, totemCenter, 18.0D);
+        for (ServerPlayer player : level.players()) {
+            if (player == starter || !isPlayerInsideGarden(player)) {
+                continue;
+            }
+            SunManager.absorbSunNear(level, player, player.position(), 8.0D);
         }
     }
 

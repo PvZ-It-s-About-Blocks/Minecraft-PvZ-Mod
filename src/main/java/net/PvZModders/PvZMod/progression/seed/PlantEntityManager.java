@@ -479,7 +479,7 @@ public final class PlantEntityManager {
                     && zombie.definition().has(PvZZombieSpecial.SURFER)
                     && zombie.getPersistentData().getBoolean("PvZSurferBoardActive")) {
                 zombie.getPersistentData().putBoolean("PvZSurferBoardActive", false);
-                zombie.configureForWave(0.23D);
+                zombie.configureForWave(0.27D);
                 level.sendParticles(ParticleTypes.SPLASH, zombie.getX(), zombie.getY() + 0.5D, zombie.getZ(), 16, 0.35D, 0.25D, 0.35D, 0.04D);
                 level.playSound(null, zombie.blockPosition(), SoundEvents.WOOD_BREAK, SoundSource.HOSTILE, 0.75F, 1.1F);
             }
@@ -1241,7 +1241,7 @@ public final class PlantEntityManager {
             return;
         }
 
-        SunManager.spawnSunAt(level, plant.blockPosition().above(3));
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, 0.0D));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
     }
 
@@ -1252,9 +1252,22 @@ public final class PlantEntityManager {
             return;
         }
 
-        SunManager.spawnSunAt(level, plant.blockPosition().above(3));
-        SunManager.spawnSunAt(level, plant.blockPosition().above(3).east());
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, -0.35D));
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, 0.35D));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
+    }
+
+    private static BlockPos sunflowerSunDropPos(SnowGolem plant, double sideOffset) {
+        Vec3 forward = plant.getLookAngle();
+        Vec3 horizontalForward = new Vec3(forward.x, 0.0D, forward.z);
+        if (horizontalForward.lengthSqr() < 0.001D) {
+            horizontalForward = Vec3.directionFromRotation(0.0F, plant.getYRot());
+            horizontalForward = new Vec3(horizontalForward.x, 0.0D, horizontalForward.z);
+        }
+        horizontalForward = horizontalForward.normalize();
+        Vec3 side = new Vec3(-horizontalForward.z, 0.0D, horizontalForward.x).scale(sideOffset);
+        Vec3 pos = plant.position().add(horizontalForward.scale(1.25D)).add(side).add(0.0D, 3.0D, 0.0D);
+        return BlockPos.containing(pos);
     }
 
     private static void tickSunShroom(ServerLevel level, SnowGolem plant) {

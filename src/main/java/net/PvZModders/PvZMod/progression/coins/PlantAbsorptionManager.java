@@ -44,6 +44,21 @@ public final class PlantAbsorptionManager {
         return totalCoins;
     }
 
+    public static int absorbPlantsBeforeWaveStart(ServerLevel level, GardenTotemBlockEntity totem) {
+        BlockPos center = totem.getBlockPos();
+        List<SnowGolem> plants = collectAbsorbablePlantsForGarden(level, center);
+        if (plants.isEmpty()) {
+            return 0;
+        }
+
+        for (SnowGolem plant : plants) {
+            playPlantAbsorbEffects(level, plant);
+            removePlantAfterAbsorption(plant);
+        }
+        level.playSound(null, center, SoundEvents.GRASS_BREAK, SoundSource.PLAYERS, 0.7F, 1.1F);
+        return plants.size();
+    }
+
     public static List<SnowGolem> collectAbsorbablePlantsForGarden(ServerLevel level, BlockPos center) {
         double radius = CoinEconomyValues.PLANT_ABSORB_RADIUS;
         AABB area = AABB.ofSize(Vec3.atCenterOf(center), radius * 2.0D, 8.0D, radius * 2.0D);
@@ -73,7 +88,7 @@ public final class PlantAbsorptionManager {
 
     private static void messageNearbyPlayers(ServerLevel level, BlockPos center, int coins) {
         Vec3 origin = Vec3.atCenterOf(center);
-        Component message = Component.literal("Plants absorbed: +" + coins + " coins").withStyle(ChatFormatting.GOLD);
+        Component message = Component.literal("Your plants were absorbed and dropped coins!").withStyle(ChatFormatting.GOLD);
         for (ServerPlayer player : level.players()) {
             if (player.distanceToSqr(origin) <= 4096.0D) {
                 player.displayClientMessage(message, true);

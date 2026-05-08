@@ -200,6 +200,24 @@ public final class SunManager {
         return sun;
     }
 
+    public static int absorbSunNear(ServerLevel level, ServerPlayer player, Vec3 origin, double radius) {
+        int absorbed = 0;
+        AABB area = AABB.ofSize(origin, radius * 2.0D, radius * 2.0D, radius * 2.0D);
+        for (ItemEntity item : level.getEntitiesOfClass(ItemEntity.class, area, entity -> isSunItem(entity.getItem()))) {
+            absorbed += getSunValue(item.getItem()) * item.getItem().getCount();
+            item.discard();
+        }
+        for (ExperienceOrb orb : level.getEntitiesOfClass(ExperienceOrb.class, area, SunManager::isSunOrb)) {
+            absorbed += getSunValue(orb);
+            orb.discard();
+        }
+        if (absorbed > 0) {
+            addSun(player, absorbed);
+            level.playSound(null, origin.x, origin.y, origin.z, SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.35F, 1.35F);
+        }
+        return absorbed;
+    }
+
     public static void setSun(Player player, int amount) {
         int cap = getSunCap(player);
         player.getPersistentData().putInt(PLAYER_SUN_TAG, Math.max(0, Math.min(cap, amount)));

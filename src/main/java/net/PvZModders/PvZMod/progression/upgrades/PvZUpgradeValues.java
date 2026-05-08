@@ -7,9 +7,9 @@ import net.PvZModders.PvZMod.progression.sun.SunManager;
 import net.minecraft.resources.ResourceLocation;
 
 public final class PvZUpgradeValues {
-    public static final int DEFAULT_SEED_REFILL_TIME_MULTIPLIER = 2;
-    public static final int MIN_SEED_REFILL_TIME_TICKS = 100;
-    public static final int MIN_UPGRADED_SEED_REFILL_TIME_TICKS = 60;
+    public static final int DEFAULT_SEED_REFILL_SECONDS_PER_SUN = 2;
+    public static final int MIN_SEED_REFILL_TIME_TICKS = 20 * 100;
+    public static final int MIN_UPGRADED_SEED_REFILL_TIME_TICKS = 20 * 60;
     public static final int BASE_GARDEN_PACKET_CAP = 40;
     public static final int BASE_MINIMUM_WAVE_START_SUN = 50;
 
@@ -17,11 +17,11 @@ public final class PvZUpgradeValues {
     }
 
     public static int baseSeedRefillTimeTicks(PlantSeedDefinition definition) {
-        return Math.max(MIN_SEED_REFILL_TIME_TICKS, definition.sunCost() * DEFAULT_SEED_REFILL_TIME_MULTIPLIER);
+        return Math.max(MIN_SEED_REFILL_TIME_TICKS, definition.sunCost() * DEFAULT_SEED_REFILL_SECONDS_PER_SUN * 20);
     }
 
     public static int baseSeedRefillTimeTicks(GardenPlantDefinition definition) {
-        return Math.max(MIN_SEED_REFILL_TIME_TICKS, definition.sunCost() * DEFAULT_SEED_REFILL_TIME_MULTIPLIER);
+        return Math.max(MIN_SEED_REFILL_TIME_TICKS, definition.sunCost() * DEFAULT_SEED_REFILL_SECONDS_PER_SUN * 20);
     }
 
     public static int getSeedRefillTimeTicks(PlantSeedDefinition definition, PvZUpgradeSavedData upgrades) {

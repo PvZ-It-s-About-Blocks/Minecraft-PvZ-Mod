@@ -120,7 +120,7 @@ public class PvZZombieEntity extends Zombie {
     public static final String GARDEN_CENTER_X_TAG = "PvZGardenCenterX";
     public static final String GARDEN_CENTER_Y_TAG = "PvZGardenCenterY";
     public static final String GARDEN_CENTER_Z_TAG = "PvZGardenCenterZ";
-    private static final double DEFAULT_WAVE_BASE_SPEED = 0.23D;
+    private static final double DEFAULT_WAVE_BASE_SPEED = 0.27D;
     private static final float NEWSPAPER_RAGE_HEALTH_THRESHOLD = 15.0F;
     private static final double NEWSPAPER_RAGE_SPEED_MULTIPLIER = 1.5D;
     private static final double POLE_VAULT_AFTER_SPEED_MULTIPLIER = 0.9D;

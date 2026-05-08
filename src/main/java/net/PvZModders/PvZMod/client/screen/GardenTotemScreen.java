@@ -65,8 +65,10 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        String label = font.plainSubstrByWidth(title.getString(), imageWidth - 28);
-        guiGraphics.drawString(font, label, 14, 10, gardenColor(), false);
+        List<FormattedCharSequence> lines = font.split(title, 96);
+        for (int i = 0; i < Math.min(2, lines.size()); i++) {
+            guiGraphics.drawString(font, lines.get(i), 14, 6 + i * 10, gardenColor(), false);
+        }
     }
 
     @Override
