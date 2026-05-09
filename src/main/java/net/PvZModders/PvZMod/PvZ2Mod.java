@@ -9,7 +9,6 @@ import net.PvZModders.PvZMod.client.screen.BiomeDetectorScreen;
 import net.PvZModders.PvZMod.client.screen.GardenTotemScreen;
 import net.PvZModders.PvZMod.entity.client.PennyVanRenderer;
 import net.PvZModders.PvZMod.entity.client.PeaProjectileRenderer;
-import net.PvZModders.PvZMod.entity.client.PeashooterModel;
 import net.PvZModders.PvZMod.entity.client.PeashooterRenderer;
 import net.PvZModders.PvZMod.entity.client.PvZZombieRenderer;
 import net.PvZModders.PvZMod.entity.client.WildWestMinecartRenderer;
@@ -50,6 +49,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
+import software.bernie.geckolib.GeckoLib;
 
 @Mod(PvZ2Mod.MOD_ID)
 public class PvZ2Mod {
@@ -57,6 +57,8 @@ public class PvZ2Mod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public PvZ2Mod() {
+        GeckoLib.initialize();
+
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModCreativeModTabs.register(modEventBus);
@@ -237,7 +239,6 @@ public class PvZ2Mod {
         @SubscribeEvent
         public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
             event.registerLayerDefinition(pennytest.LAYER_LOCATION, pennytest::createBodyLayer);
-            event.registerLayerDefinition(PeashooterModel.LAYER_LOCATION, PeashooterModel::createBodyLayer);
         }
 
         @SubscribeEvent

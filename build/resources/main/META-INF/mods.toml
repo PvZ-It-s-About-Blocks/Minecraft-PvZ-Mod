@@ -22,3 +22,10 @@ description='''Plants vs Zombies meets Minecraft.'''
     versionRange="[1.20.1,1.21)"
     ordering="NONE"
     side="BOTH"
+
+[[dependencies.pvz2mod]]
+    modId="geckolib"
+    mandatory=true
+    versionRange="[4.4.9,)"
+    ordering="NONE"
+    side="BOTH"

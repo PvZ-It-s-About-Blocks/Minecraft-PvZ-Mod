@@ -1,7 +1,7 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"spawning in": {
+		"animation.peashooter.spawn": {
 			"loop": true,
 			"animation_length": 1,
 			"bones": {
@@ -295,7 +295,7 @@
 				}
 			}
 		},
-		"Shoot!": {
+		"animation.peashooter.shoot": {
 			"loop": true,
 			"animation_length": 1,
 			"bones": {
@@ -358,7 +358,7 @@
 							"vector": [2.25, 0, 0]
 						},
 						"0.375": {
-							"vector": ["", -0.8, 0]
+							"vector": [0, -0.8, 0]
 						},
 						"0.5": {
 							"vector": [-2.2, -2, 0]
@@ -460,7 +460,7 @@
 				}
 			}
 		},
-		"idle1": {
+		"animation.peashooter.idle": {
 			"loop": true,
 			"animation_length": 1.5,
 			"bones": {
@@ -560,7 +560,7 @@
 				}
 			}
 		},
-		"Idle 2": {
+		"animation.peashooter.idle_alt": {
 			"loop": true,
 			"animation_length": 2,
 			"bones": {
@@ -645,7 +645,7 @@
 				}
 			}
 		},
-		"death :(": {
+		"animation.peashooter.death": {
 			"loop": true,
 			"animation_length": 1.4167,
 			"bones": {

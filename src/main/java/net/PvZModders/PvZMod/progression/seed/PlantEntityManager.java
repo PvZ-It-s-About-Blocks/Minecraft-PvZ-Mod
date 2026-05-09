@@ -85,6 +85,7 @@ public final class PlantEntityManager {
     public static final String PLANT_ID_TAG = "PvZPlantId";
     public static final String PLANT_BEHAVIOR_TAG = "PvZPlantBehavior";
     public static final String NEXT_ACTION_TICK_TAG = "PvZPlantNextActionTick";
+    public static final String LAST_SHOOT_TICK_TAG = "PvZLastShootTick";
     public static final String CHOMPER_COOLDOWN_TICK_TAG = "PvZChomperCooldownTick";
     private static final String GRAVE_X_TAG = "PvZGraveX";
     private static final String GRAVE_Y_TAG = "PvZGraveY";
@@ -3306,6 +3307,7 @@ public final class PlantEntityManager {
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, "pea");
         level.addFreshEntity(snowball);
         plant.swing(InteractionHand.MAIN_HAND, true);
+        markShootAnimation(plant, level);
 
         DamageSource source = level.damageSources().mobProjectile(snowball, plant);
         hurtWithoutKnockback(target, source, scaledPlantDamage(level, plant, buffed ? PEA_DAMAGE * 2.0F : PEA_DAMAGE));
@@ -3330,6 +3332,7 @@ public final class PlantEntityManager {
         level.addFreshEntity(snowball);
         if (usesPeaProjectileVisual(projectileKind)) {
             plant.swing(InteractionHand.MAIN_HAND, true);
+            markShootAnimation(plant, level);
         }
     }
 
@@ -3349,6 +3352,11 @@ public final class PlantEntityManager {
         snowball.getPersistentData().putString(PROJECTILE_KIND_TAG, projectileKind);
         level.addFreshEntity(snowball);
         level.sendParticles(ParticleTypes.POOF, start.x, start.y, start.z, 4, 0.12D, 0.12D, 0.12D, 0.01D);
+        markShootAnimation(plant, level);
+    }
+
+    private static void markShootAnimation(SnowGolem plant, ServerLevel level) {
+        plant.getPersistentData().putLong(LAST_SHOOT_TICK_TAG, level.getGameTime());
     }
 
     private static Snowball createProjectileVisual(ServerLevel level, SnowGolem plant, String projectileKind) {
