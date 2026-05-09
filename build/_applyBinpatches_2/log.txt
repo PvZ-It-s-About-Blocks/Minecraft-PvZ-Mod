@@ -1,18 +1,18 @@
-Java Launcher: C:\Users\joshu\.jdks\ms-17.0.18\bin\java.exe
-Arguments: '--clean, C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar, --output, C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19\forge-1.20.1-47.0.19-binpatched.jar, --apply, C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19\forge-1.20.1-47.0.19-binpatches.lzma'
+Java Launcher: C:\Users\Owner\.jdks\ms-17.0.15\bin\java.exe
+Arguments: '--clean, C:\Users\Owner\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar, --output, C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.1.3\forge-1.20.1-47.1.3-binpatched.jar, --apply, C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.1.3\forge-1.20.1-47.1.3-binpatches.lzma'
 Classpath:
- - C:\Users\joshu\.gradle\caches\forge_gradle\maven_downloader\net\minecraftforge\binarypatcher\1.1.1\binarypatcher-1.1.1-fatjar.jar
-Working directory: C:\Users\joshu\IdeaProjects\Minecraft-PvZ-Mod\build\_applyBinpatches_2
+ - C:\Users\Owner\.gradle\caches\forge_gradle\maven_downloader\net\minecraftforge\binarypatcher\1.1.1\binarypatcher-1.1.1-fatjar.jar
+Working directory: C:\Users\Owner\IdeaProjects\Minecraft-PvZ-Mod\build\_applyBinpatches_2
 Main class: net.minecraftforge.binarypatcher.ConsoleTool
 ====================================
 Applying: 
-  Clean:     C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar
-  Output:    C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19\forge-1.20.1-47.0.19-binpatched.jar
+  Clean:     C:\Users\Owner\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar
+  Output:    C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.1.3\forge-1.20.1-47.1.3-binpatched.jar
   KeepData:  false
   Unpatched: false
   Pack200:   false
   Legacy:    false
-Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.0.19\forge-1.20.1-47.0.19-binpatches.lzma
+Loading patches file: C:\Users\Owner\.gradle\caches\forge_gradle\minecraft_user_repo\net\minecraftforge\forge\1.20.1-47.1.3\forge-1.20.1-47.1.3-binpatches.lzma
   Reading patch com.mojang.blaze3d.pipeline.RenderTarget.binpatch
     Checksum: 151eb55a Exists: true
   Reading patch com.mojang.blaze3d.platform.GlStateManager$BlendState.binpatch
@@ -269,6 +269,10 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: a818c7b1 Exists: true
   Reading patch net.minecraft.client.gui.screens.ChatScreen.binpatch
     Checksum: 2bf944d3 Exists: true
+  Reading patch net.minecraft.client.gui.screens.ConnectScreen$1.binpatch
+    Checksum: dfe2288e Exists: true
+  Reading patch net.minecraft.client.gui.screens.ConnectScreen.binpatch
+    Checksum: 9505c31e Exists: true
   Reading patch net.minecraft.client.gui.screens.LoadingOverlay$LogoTexture.binpatch
     Checksum: 1f24802d Exists: true
   Reading patch net.minecraft.client.gui.screens.LoadingOverlay.binpatch
@@ -587,6 +591,8 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: dbeff234 Exists: true
   Reading patch net.minecraft.client.renderer.Sheets.binpatch
     Checksum: cb0b37e Exists: true
+  Reading patch net.minecraft.client.renderer.SpriteCoordinateExpander.binpatch
+    Checksum: c35e454d Exists: true
   Reading patch net.minecraft.client.renderer.block.BlockModelShaper.binpatch
     Checksum: 88b622ce Exists: true
   Reading patch net.minecraft.client.renderer.block.BlockRenderDispatcher$1.binpatch
@@ -1037,6 +1043,8 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: f6ab2a19 Exists: true
   Reading patch net.minecraft.data.tags.CatVariantTagsProvider.binpatch
     Checksum: d9d1b842 Exists: true
+  Reading patch net.minecraft.data.tags.DamageTypeTagsProvider.binpatch
+    Checksum: 52936007 Exists: true
   Reading patch net.minecraft.data.tags.EntityTypeTagsProvider.binpatch
     Checksum: ddd996aa Exists: true
   Reading patch net.minecraft.data.tags.FlatLevelGeneratorPresetTagsProvider.binpatch
@@ -1443,6 +1451,10 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: e29fa5fd Exists: true
   Reading patch net.minecraft.tags.TagManager.binpatch
     Checksum: f1e5f470 Exists: true
+  Reading patch net.minecraft.util.SpawnUtil$Strategy.binpatch
+    Checksum: 6f8872c6 Exists: true
+  Reading patch net.minecraft.util.SpawnUtil.binpatch
+    Checksum: 160632bf Exists: true
   Reading patch net.minecraft.util.datafix.fixes.StructuresBecomeConfiguredFix$Conversion.binpatch
     Checksum: 1b57269 Exists: true
   Reading patch net.minecraft.util.datafix.fixes.StructuresBecomeConfiguredFix.binpatch
@@ -2407,6 +2419,10 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: 51c517af Exists: true
   Reading patch net.minecraft.world.level.block.NoteBlock.binpatch
     Checksum: 4b629588 Exists: true
+  Reading patch net.minecraft.world.level.block.PitcherCropBlock$PosAndState.binpatch
+    Checksum: 14e3edba Exists: true
+  Reading patch net.minecraft.world.level.block.PitcherCropBlock.binpatch
+    Checksum: 1651d816 Exists: true
   Reading patch net.minecraft.world.level.block.PowderSnowBlock.binpatch
     Checksum: f535fc3e Exists: true
   Reading patch net.minecraft.world.level.block.PoweredRailBlock$1.binpatch
@@ -2505,6 +2521,8 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: 9f659169 Exists: true
   Reading patch net.minecraft.world.level.block.entity.ChestBlockEntity.binpatch
     Checksum: cdb10e7d Exists: true
+  Reading patch net.minecraft.world.level.block.entity.ChiseledBookShelfBlockEntity.binpatch
+    Checksum: e19ac5ed Exists: true
   Reading patch net.minecraft.world.level.block.entity.ConduitBlockEntity.binpatch
     Checksum: 95d05496 Exists: true
   Reading patch net.minecraft.world.level.block.entity.HopperBlockEntity.binpatch
@@ -2781,7 +2799,7 @@ Loading patches file: C:\Users\joshu\.gradle\caches\forge_gradle\minecraft_user_
     Checksum: 5054d5d6 Exists: true
   Reading patch net.minecraft.world.level.storage.loot.providers.nbt.ContextNbtProvider.binpatch
     Checksum: 33daf11e Exists: true
-Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar
+Processing: C:\Users\Owner\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\joined\1.20.1-20230612.114412\joined-1.20.1-20230612.114412-srg.jar
   Patching com/mojang/blaze3d/pipeline/RenderTarget 1/1
   Patching com/mojang/blaze3d/platform/GlStateManager$BlendState 1/1
   Patching com/mojang/blaze3d/platform/GlStateManager$BooleanState 1/1
@@ -2908,6 +2926,8 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/client/gui/components/toasts/ToastComponent 1/1
   Patching net/minecraft/client/gui/screens/ChatScreen$1 1/1
   Patching net/minecraft/client/gui/screens/ChatScreen 1/1
+  Patching net/minecraft/client/gui/screens/ConnectScreen$1 1/1
+  Patching net/minecraft/client/gui/screens/ConnectScreen 1/1
   Patching net/minecraft/client/gui/screens/LoadingOverlay$LogoTexture 1/1
   Patching net/minecraft/client/gui/screens/LoadingOverlay 1/1
   Patching net/minecraft/client/gui/screens/MenuScreens$ScreenConstructor 1/1
@@ -3067,6 +3087,7 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/client/renderer/ShaderInstance 1/1
   Patching net/minecraft/client/renderer/Sheets$1 1/1
   Patching net/minecraft/client/renderer/Sheets 1/1
+  Patching net/minecraft/client/renderer/SpriteCoordinateExpander 1/1
   Patching net/minecraft/client/renderer/block/BlockModelShaper 1/1
   Patching net/minecraft/client/renderer/block/BlockRenderDispatcher$1 1/1
   Patching net/minecraft/client/renderer/block/BlockRenderDispatcher 1/1
@@ -3292,6 +3313,7 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/data/tags/BannerPatternTagsProvider 1/1
   Patching net/minecraft/data/tags/BiomeTagsProvider 1/1
   Patching net/minecraft/data/tags/CatVariantTagsProvider 1/1
+  Patching net/minecraft/data/tags/DamageTypeTagsProvider 1/1
   Patching net/minecraft/data/tags/EntityTypeTagsProvider 1/1
   Patching net/minecraft/data/tags/FlatLevelGeneratorPresetTagsProvider 1/1
   Patching net/minecraft/data/tags/FluidTagsProvider 1/1
@@ -3495,6 +3517,8 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/tags/TagLoader 1/1
   Patching net/minecraft/tags/TagManager$LoadResult 1/1
   Patching net/minecraft/tags/TagManager 1/1
+  Patching net/minecraft/util/SpawnUtil$Strategy 1/1
+  Patching net/minecraft/util/SpawnUtil 1/1
   Patching net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix$Conversion 1/1
   Patching net/minecraft/util/datafix/fixes/StructuresBecomeConfiguredFix 1/1
   Patching net/minecraft/util/datafix/schemas/V2832 1/1
@@ -3974,6 +3998,8 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/world/level/block/MushroomBlock 1/1
   Patching net/minecraft/world/level/block/NetherWartBlock 1/1
   Patching net/minecraft/world/level/block/NoteBlock 1/1
+  Patching net/minecraft/world/level/block/PitcherCropBlock$PosAndState 1/1
+  Patching net/minecraft/world/level/block/PitcherCropBlock 1/1
   Patching net/minecraft/world/level/block/PowderSnowBlock 1/1
   Patching net/minecraft/world/level/block/PoweredRailBlock$1 1/1
   Patching net/minecraft/world/level/block/PoweredRailBlock 1/1
@@ -4023,6 +4049,7 @@ Processing: C:\Users\joshu\.gradle\caches\forge_gradle\mcp_repo\net\minecraft\jo
   Patching net/minecraft/world/level/block/entity/BrewingStandBlockEntity 1/1
   Patching net/minecraft/world/level/block/entity/ChestBlockEntity$1 1/1
   Patching net/minecraft/world/level/block/entity/ChestBlockEntity 1/1
+  Patching net/minecraft/world/level/block/entity/ChiseledBookShelfBlockEntity 1/1
   Patching net/minecraft/world/level/block/entity/ConduitBlockEntity 1/1
   Patching net/minecraft/world/level/block/entity/HopperBlockEntity 1/1
   Patching net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity$1 1/1

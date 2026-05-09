@@ -12,7 +12,7 @@ description='''Plants vs Zombies meets Minecraft.'''
 [[dependencies.pvz2mod]]
     modId="forge"
     mandatory=true
-    versionRange="[47,)"
+    versionRange="[47.1,)"
     ordering="NONE"
     side="BOTH"
 
