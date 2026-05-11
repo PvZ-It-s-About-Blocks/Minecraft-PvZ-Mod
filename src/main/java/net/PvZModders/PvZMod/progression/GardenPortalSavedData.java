@@ -1,5 +1,6 @@
 package net.PvZModders.PvZMod.progression;
 
+import net.PvZModders.PvZMod.block.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
@@ -13,6 +14,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
@@ -65,14 +67,46 @@ public class GardenPortalSavedData extends SavedData {
         return portals.containsKey(gardenId);
     }
 
+    public boolean hasGarden(ServerLevel level, GardenId gardenId) {
+        GlobalPos portal = portals.get(gardenId);
+        if (portal == null) {
+            return false;
+        }
+        if (isPortalStillPresent(level, portal)) {
+            return true;
+        }
+        portals.remove(gardenId);
+        setDirty();
+        return false;
+    }
+
     public boolean isAnyGardenWithin(ServerLevel level, BlockPos pos, int radius) {
         double maxDistance = radius * radius;
-        for (GlobalPos portal : portals.values()) {
-            if (portal.dimension() == level.dimension() && portal.pos().distSqr(pos) <= maxDistance) {
+        boolean removedStalePortal = false;
+        Iterator<Map.Entry<GardenId, GlobalPos>> iterator = portals.entrySet().iterator();
+        while (iterator.hasNext()) {
+            GlobalPos portal = iterator.next().getValue();
+            if (!isPortalStillPresent(level, portal)) {
+                iterator.remove();
+                removedStalePortal = true;
+                continue;
+            }
+            if (portal.dimension().equals(level.dimension()) && portal.pos().distSqr(pos) <= maxDistance) {
+                if (removedStalePortal) {
+                    setDirty();
+                }
                 return true;
             }
         }
+        if (removedStalePortal) {
+            setDirty();
+        }
         return false;
+    }
+
+    private boolean isPortalStillPresent(ServerLevel currentLevel, GlobalPos portal) {
+        ServerLevel portalLevel = currentLevel.getServer().getLevel(portal.dimension());
+        return portalLevel != null && portalLevel.getBlockState(portal.pos()).is(ModBlocks.GARDEN_TOTEM.get());
     }
 
     public void setPortal(GardenId gardenId, ServerLevel level, BlockPos pos) {

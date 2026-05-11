@@ -21,6 +21,7 @@ public class ModCreativeModTabs {
                         output.accept(ModItems.PEASHOOTER_SEED_PACKET.get());
                         output.accept(ModItems.WALL_NUT_SEED_PACKET.get());
                         output.accept(ModItems.POTATO_MINE_SEED_PACKET.get());
+                        output.accept(ModItems.CABBAGE_PULT_SEED_PACKET.get());
                         output.accept(ModItems.REPEATER_SEED_PACKET.get());
                         output.accept(ModItems.CHOMPER_SEED_PACKET.get());
                         output.accept(ModItems.BLOOMERANG_SEED_PACKET.get());

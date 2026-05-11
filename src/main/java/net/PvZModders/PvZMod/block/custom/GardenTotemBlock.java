@@ -2,7 +2,10 @@ package net.PvZModders.PvZMod.block.custom;
 
 import net.PvZModders.PvZMod.block.entity.GardenTotemBlockEntity;
 import net.PvZModders.PvZMod.block.entity.ModBlockEntities;
+import net.PvZModders.PvZMod.progression.GardenPortalSavedData;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.InteractionHand;
@@ -76,6 +79,11 @@ public class GardenTotemBlock extends BaseEntityBlock {
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
             BlockPos basePos = pos.below(state.getValue(PART));
+            if (!level.isClientSide
+                    && level instanceof ServerLevel serverLevel
+                    && level.getBlockEntity(basePos) instanceof GardenTotemBlockEntity gardenTotem) {
+                GardenPortalSavedData.get(serverLevel).removePortal(gardenTotem.getGardenId(), GlobalPos.of(serverLevel.dimension(), basePos));
+            }
             for (int part = 0; part < 3; part++) {
                 BlockPos partPos = basePos.above(part);
                 if (!partPos.equals(pos) && level.getBlockState(partPos).is(this)) {

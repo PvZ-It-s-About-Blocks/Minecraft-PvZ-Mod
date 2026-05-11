@@ -22,7 +22,7 @@ public record PlantSeedDefinition(ResourceLocation seedPacketId, String plantId,
         register(GardenId.INITIAL_PLAINS, ModItems.SUNFLOWER_SEED_PACKET.getId(), "sunflower", "Sunflower", 50, PlantBehavior.SUNFLOWER);
         register(GardenId.INITIAL_PLAINS, ModItems.WALL_NUT_SEED_PACKET.getId(), "wall_nut", "Wall-nut", 50, PlantBehavior.WALL_NUT);
         register(GardenId.INITIAL_PLAINS, ModItems.POTATO_MINE_SEED_PACKET.getId(), "potato_mine", "Potato Mine", 25, PlantBehavior.POTATO_MINE);
-        register(GardenId.INITIAL_PLAINS, "cabbage_pult", "Cabbage-pult", 100);
+        register(GardenId.INITIAL_PLAINS, ModItems.CABBAGE_PULT_SEED_PACKET.getId(), "cabbage_pult", "Cabbage-pult", 100, PlantBehavior.PLACEHOLDER);
         register(GardenId.INITIAL_PLAINS, ModItems.REPEATER_SEED_PACKET.getId(), "repeater", "Repeater", 200, PlantBehavior.REPEATER);
         register(GardenId.INITIAL_PLAINS, ModItems.CHOMPER_SEED_PACKET.getId(), "chomper", "Chomper", 150, PlantBehavior.CHOMPER);
 

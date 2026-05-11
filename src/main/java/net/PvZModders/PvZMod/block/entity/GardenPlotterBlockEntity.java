@@ -256,11 +256,11 @@ public class GardenPlotterBlockEntity extends BlockEntity {
 
     private Optional<GardenId> resolveCreationGardenId(ServerLevel level, BlockPos origin, GardenId intendedGardenId, ServerPlayer player) {
         GardenPortalSavedData portalData = GardenPortalSavedData.get(level);
-        if (!portalData.hasGarden(intendedGardenId)) {
+        if (!portalData.hasGarden(level, intendedGardenId)) {
             return Optional.of(intendedGardenId);
         }
 
-        if (portalData.hasGarden(GardenId.GREENHOUSE)) {
+        if (portalData.hasGarden(level, GardenId.GREENHOUSE)) {
             player.displayClientMessage(Component.literal("Greenhouse Garden already exists.").withStyle(ChatFormatting.RED), true);
             return Optional.empty();
         }

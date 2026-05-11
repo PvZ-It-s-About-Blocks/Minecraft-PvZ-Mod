@@ -32,7 +32,8 @@ public class ModBlocks {
     public static final RegistryObject<Block> GARDEN_TOTEM = BLOCKS.register("garden_totem",
             () -> new GardenTotemBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.STONE)
-                    .strength(2.0F)
+                    .strength(50.0F, 1200.0F)
+                    .requiresCorrectToolForDrops()
                     .sound(SoundType.STONE)));
 
     public static final Map<GardenEyeType, RegistryObject<Block>> PORTAL_FRAMES = registerPortalFrames();

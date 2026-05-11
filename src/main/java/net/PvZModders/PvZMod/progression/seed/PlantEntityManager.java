@@ -657,16 +657,6 @@ public final class PlantEntityManager {
             return;
         }
 
-        for (SnowGolem plant : nearbyPlants) {
-            if (plant.distanceToSqr(player) > 32.0D * 32.0D) {
-                continue;
-            }
-            double range = displayRangeForPlant(plant);
-            if (range > 0.0D) {
-                drawRangeCircle(level, plant.position(), range, ParticleTypes.END_ROD);
-            }
-        }
-
         AABB zombieArea = player.getBoundingBox().inflate(32.0D);
         for (PvZZombieEntity zombie : level.getEntitiesOfClass(PvZZombieEntity.class, zombieArea,
                 zombie -> zombie.isAlive() && zombie.getPersistentData().getBoolean("PvZWaveZombie"))) {

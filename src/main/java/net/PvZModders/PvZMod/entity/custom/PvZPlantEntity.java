@@ -1,6 +1,9 @@
 package net.PvZModders.PvZMod.entity.custom;
 
 import net.PvZModders.PvZMod.progression.seed.PlantEntityManager;
+import net.PvZModders.PvZMod.progression.seed.PlantSeedDefinition;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.animal.SnowGolem;
 import net.minecraft.world.level.Level;
@@ -34,9 +37,14 @@ public class PvZPlantEntity extends SnowGolem implements GeoEntity {
 
     @Override
     public void aiStep() {
-        if (!PlantEntityManager.isPlant(this)) {
+        if (!PlantEntityManager.isPlant(this) && !isRegisteredPvZPlantType()) {
             super.aiStep();
         }
+    }
+
+    private boolean isRegisteredPvZPlantType() {
+        ResourceLocation entityId = BuiltInRegistries.ENTITY_TYPE.getKey(getType());
+        return entityId != null && PlantSeedDefinition.getByPlantId(entityId.getPath()).isPresent();
     }
 
     @Override

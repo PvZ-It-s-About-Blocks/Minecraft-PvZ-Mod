@@ -47,6 +47,8 @@ public class ModItems {
             () -> new SeedPacketItem("wall_nut", new Item.Properties()));
     public static final RegistryObject<Item> POTATO_MINE_SEED_PACKET = ITEMS.register("potato_mine_seed_packet",
             () -> new SeedPacketItem("potato_mine", new Item.Properties()));
+    public static final RegistryObject<Item> CABBAGE_PULT_SEED_PACKET = ITEMS.register("cabbage_pult_seed_packet",
+            () -> new SeedPacketItem("cabbage_pult", new Item.Properties()));
     public static final RegistryObject<Item> REPEATER_SEED_PACKET = ITEMS.register("repeater_seed_packet",
             () -> new SeedPacketItem("repeater", new Item.Properties()));
     public static final RegistryObject<Item> CHOMPER_SEED_PACKET = ITEMS.register("chomper_seed_packet",
