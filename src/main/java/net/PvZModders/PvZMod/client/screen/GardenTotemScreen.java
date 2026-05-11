@@ -525,7 +525,7 @@ public class GardenTotemScreen extends AbstractContainerScreen<GardenTotemMenu> 
             guiGraphics.fill(cardX + cardW - 2, cardY, cardX + cardW, cardY + cardH, 0xFFFFD73A);
         }
         guiGraphics.fill(cardX + 6, cardY + 5, cardX + 24, cardY + 23, unlocked ? 0xFFB6D7A8 : 0xFF000000);
-        if (unlocked && count <= 0) {
+        if (unlocked) {
             guiGraphics.renderItem(itemFromId(plant.seedPacketId().toString()), cardX + 7, cardY + 6);
         }
 

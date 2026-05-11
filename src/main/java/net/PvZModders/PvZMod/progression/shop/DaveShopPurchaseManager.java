@@ -6,13 +6,18 @@ import net.PvZModders.PvZMod.progression.upgrades.GardenUpgradeCategory;
 import net.PvZModders.PvZMod.progression.upgrades.PvZUpgradeSavedData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.entity.player.Player;
 
 public final class DaveShopPurchaseManager {
+    private static final String PLAYER_SHOP_PURCHASES_TAG = "PvZDaveShopPurchases";
+
     private DaveShopPurchaseManager() {
     }
 
@@ -27,7 +32,11 @@ public final class DaveShopPurchaseManager {
 
     public static boolean purchaseShopEntry(ServerPlayer player, DaveShopEntry entry) {
         DaveShopSavedData data = DaveShopSavedData.get(player.serverLevel());
-        if (!entry.repeatable() && data.isPurchased(entry.gardenId(), entry.id())) {
+        if (!entry.repeatable() && usesWorldPurchaseLock(entry) && data.isPurchased(entry.gardenId(), entry.id())) {
+            player.displayClientMessage(Component.literal("Already purchased.").withStyle(ChatFormatting.YELLOW), true);
+            return false;
+        }
+        if (!entry.repeatable() && usesPlayerPurchaseLock(entry) && hasPlayerPurchased(player, entry)) {
             player.displayClientMessage(Component.literal("Already purchased.").withStyle(ChatFormatting.YELLOW), true);
             return false;
         }
@@ -64,11 +73,55 @@ public final class DaveShopPurchaseManager {
             return false;
         }
 
-        if (!entry.repeatable()) {
+        if (!entry.repeatable() && usesWorldPurchaseLock(entry)) {
             data.markPurchased(entry.gardenId(), entry.id());
+        } else if (!entry.repeatable() && usesPlayerPurchaseLock(entry)) {
+            markPlayerPurchased(player, entry);
         }
         player.displayClientMessage(Component.literal(entry.displayName() + " purchased.").withStyle(ChatFormatting.GREEN), true);
         return true;
+    }
+
+    public static boolean isEntryAvailableForPlayer(ServerLevel level, Player player, DaveShopEntry entry) {
+        DaveShopSavedData shopData = DaveShopSavedData.get(level);
+        PvZUpgradeSavedData upgradeData = PvZUpgradeSavedData.get(level);
+        return switch (entry.purchaseType()) {
+            case PLANT_UNLOCK -> !shopData.isPlantUnlocked(entry.gardenId(), entry.plantId());
+            case UPGRADE -> GardenUpgradeCategory.byId(entry.upgradeCategoryId())
+                    .map(upgradeData::canUpgradeCategory)
+                    .orElse(false);
+            case ITEM, ARMOR, RECIPE, SPECIAL -> entry.repeatable()
+                    || player == null
+                    || !hasPlayerPurchased(player, entry);
+        };
+    }
+
+    private static boolean usesWorldPurchaseLock(DaveShopEntry entry) {
+        return entry.purchaseType() == DaveShopPurchaseType.PLANT_UNLOCK;
+    }
+
+    private static boolean usesPlayerPurchaseLock(DaveShopEntry entry) {
+        return switch (entry.purchaseType()) {
+            case ITEM, ARMOR, RECIPE, SPECIAL -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean hasPlayerPurchased(Player player, DaveShopEntry entry) {
+        return player != null
+                && player.getPersistentData()
+                .getCompound(PLAYER_SHOP_PURCHASES_TAG)
+                .getBoolean(playerPurchaseKey(entry));
+    }
+
+    private static void markPlayerPurchased(Player player, DaveShopEntry entry) {
+        CompoundTag purchases = player.getPersistentData().getCompound(PLAYER_SHOP_PURCHASES_TAG);
+        purchases.putBoolean(playerPurchaseKey(entry), true);
+        player.getPersistentData().put(PLAYER_SHOP_PURCHASES_TAG, purchases);
+    }
+
+    private static String playerPurchaseKey(DaveShopEntry entry) {
+        return entry.gardenId().name() + ":" + entry.id();
     }
 
     private static boolean grantItem(ServerPlayer player, DaveShopEntry entry) {

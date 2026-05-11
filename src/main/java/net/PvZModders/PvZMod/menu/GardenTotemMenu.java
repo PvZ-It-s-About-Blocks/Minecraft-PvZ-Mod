@@ -9,6 +9,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.Container;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.Slot;
@@ -76,7 +77,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         this.currentPortalIndex = gardenTotem.getCurrentPortalIndex();
         this.gardenPortalIndex = gardenTotem.getGardenPortalIndex();
         this.shopPlantUnlockMask = gardenTotem.getShopPlantUnlockMask();
-        this.shopEntryAvailableMask = gardenTotem.getShopEntryAvailableMask();
+        this.shopEntryAvailableMask = gardenTotem.getShopEntryAvailableMask(playerInventory.player);
         this.coinCount = GreenhouseCoinManager.countCoins(playerInventory.player);
         addContainerSlots(playerInventory);
         addDataSlots();
@@ -225,7 +226,7 @@ public class GardenTotemMenu extends AbstractContainerMenu {
         addDataSlot(new DataSlot() {
             @Override
             public int get() {
-                return gardenTotem == null ? GardenTotemMenu.this.shopEntryAvailableMask : gardenTotem.getShopEntryAvailableMask();
+                return gardenTotem == null ? GardenTotemMenu.this.shopEntryAvailableMask : gardenTotem.getShopEntryAvailableMask(player);
             }
 
             @Override
@@ -363,6 +364,55 @@ public class GardenTotemMenu extends AbstractContainerMenu {
             slot.setChanged();
         }
         return original;
+    }
+
+    @Override
+    public void clicked(int slotId, int button, ClickType clickType, Player player) {
+        if (slotId == -999 && SeedStorage.isPlantSeedPacket(getCarried())) {
+            return;
+        }
+        if (clickType == ClickType.THROW
+                && slotId >= SEED_STORAGE_SLOT_START
+                && slotId < SEED_STORAGE_SLOT_START + SEED_STORAGE_SLOT_COUNT) {
+            return;
+        }
+        super.clicked(slotId, button, clickType, player);
+    }
+
+    @Override
+    public void removed(Player player) {
+        ItemStack carried = getCarried();
+        if (!player.level().isClientSide && SeedStorage.isPlantSeedPacket(carried)) {
+            ItemStack leftover = returnSeedPacketStackToStorage(player, carried);
+            if (!leftover.isEmpty()) {
+                player.getInventory().placeItemBackInInventory(leftover);
+            }
+            setCarried(ItemStack.EMPTY);
+        }
+        super.removed(player);
+    }
+
+    private ItemStack returnSeedPacketStackToStorage(Player player, ItemStack stack) {
+        ItemStack remaining = stack.copy();
+        for (int index = 0; index < SEED_STORAGE_SLOT_COUNT && !remaining.isEmpty(); index++) {
+            ItemStack current = seedStorageStacks[index];
+            if (current.isEmpty()) {
+                int moved = Math.min(remaining.getCount(), SeedStorage.getPlayerPacketCap(player));
+                seedStorageStacks[index] = remaining.copyWithCount(moved);
+                remaining.shrink(moved);
+                SeedStorage.setPlantSlotByStorageIndex(player, index, seedStorageStacks[index]);
+            } else if (ItemStack.isSameItemSameTags(current, remaining)) {
+                int room = SeedStorage.getPlayerPacketCap(player) - current.getCount();
+                if (room <= 0) {
+                    continue;
+                }
+                int moved = Math.min(remaining.getCount(), room);
+                current.grow(moved);
+                remaining.shrink(moved);
+                SeedStorage.setPlantSlotByStorageIndex(player, index, current);
+            }
+        }
+        return remaining;
     }
 
     private final class SeedStorageSlot extends Slot {

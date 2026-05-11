@@ -338,22 +338,18 @@ public class GardenTotemBlockEntity extends BlockEntity {
     }
 
     public int getShopEntryAvailableMask() {
+        return getShopEntryAvailableMask(null);
+    }
+
+    public int getShopEntryAvailableMask(net.minecraft.world.entity.player.Player player) {
         if (!(level instanceof ServerLevel serverLevel)) {
             return 0;
         }
-        DaveShopSavedData shopData = DaveShopSavedData.get(serverLevel);
-        PvZUpgradeSavedData upgradeData = PvZUpgradeSavedData.get(serverLevel);
         List<DaveShopEntry> stock = DaveShopRegistry.getShopStockForGarden(gardenId);
         int mask = 0;
         for (int i = 0; i < Math.min(31, stock.size()); i++) {
             DaveShopEntry entry = stock.get(i);
-            boolean available = switch (entry.purchaseType()) {
-                case PLANT_UNLOCK -> !shopData.isPlantUnlocked(gardenId, entry.plantId());
-                case UPGRADE -> GardenUpgradeCategory.byId(entry.upgradeCategoryId())
-                        .map(upgradeData::canUpgradeCategory)
-                        .orElse(false);
-                case ITEM, ARMOR, RECIPE, SPECIAL -> entry.repeatable() || !shopData.isPurchased(gardenId, entry.id());
-            };
+            boolean available = DaveShopPurchaseManager.isEntryAvailableForPlayer(serverLevel, player, entry);
             if (available) {
                 mask |= 1 << i;
             }

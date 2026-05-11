@@ -1242,7 +1242,7 @@ public final class PlantEntityManager {
             return;
         }
 
-        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, 0.0D));
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(level, plant, 0.0D));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
     }
 
@@ -1253,12 +1253,12 @@ public final class PlantEntityManager {
             return;
         }
 
-        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, -0.35D));
-        SunManager.spawnSunAt(level, sunflowerSunDropPos(plant, 0.35D));
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(level, plant, -0.35D));
+        SunManager.spawnSunAt(level, sunflowerSunDropPos(level, plant, 0.35D));
         tag.putLong(NEXT_ACTION_TICK_TAG, gameTime + SUNFLOWER_INTERVAL_TICKS);
     }
 
-    private static BlockPos sunflowerSunDropPos(SnowGolem plant, double sideOffset) {
+    private static BlockPos sunflowerSunDropPos(ServerLevel level, SnowGolem plant, double sideOffset) {
         Vec3 forward = plant.getLookAngle();
         Vec3 horizontalForward = new Vec3(forward.x, 0.0D, forward.z);
         if (horizontalForward.lengthSqr() < 0.001D) {
@@ -1266,9 +1266,36 @@ public final class PlantEntityManager {
             horizontalForward = new Vec3(horizontalForward.x, 0.0D, horizontalForward.z);
         }
         horizontalForward = horizontalForward.normalize();
-        Vec3 side = new Vec3(-horizontalForward.z, 0.0D, horizontalForward.x).scale(sideOffset);
-        Vec3 pos = plant.position().add(horizontalForward.scale(1.25D)).add(side).add(0.0D, 3.0D, 0.0D);
-        return BlockPos.containing(pos);
+        Vec3 perpendicular = new Vec3(-horizontalForward.z, 0.0D, horizontalForward.x);
+        Vec3 side = perpendicular.scale(sideOffset);
+        Vec3 origin = plant.position().add(0.0D, 3.0D, 0.0D);
+        Vec3[] offsets = new Vec3[] {
+                horizontalForward.scale(1.25D).add(side),
+                horizontalForward.scale(1.75D).add(side),
+                horizontalForward.scale(2.25D).add(side),
+                perpendicular.scale(1.25D).add(side),
+                perpendicular.scale(-1.25D).add(side),
+                horizontalForward.scale(-1.25D).add(side),
+                horizontalForward.scale(1.75D).add(perpendicular.scale(1.25D)).add(side),
+                horizontalForward.scale(1.75D).add(perpendicular.scale(-1.25D)).add(side)
+        };
+        for (Vec3 offset : offsets) {
+            BlockPos candidate = BlockPos.containing(origin.add(offset));
+            if (!isSunDropOverGardenTotem(level, candidate)) {
+                return candidate;
+            }
+        }
+        return plant.blockPosition().above(3);
+    }
+
+    private static boolean isSunDropOverGardenTotem(ServerLevel level, BlockPos pos) {
+        for (int y = pos.getY(); y >= pos.getY() - 8; y--) {
+            BlockPos checkPos = new BlockPos(pos.getX(), y, pos.getZ());
+            if (level.getBlockState(checkPos).is(ModBlocks.GARDEN_TOTEM.get())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void tickSunShroom(ServerLevel level, SnowGolem plant) {
